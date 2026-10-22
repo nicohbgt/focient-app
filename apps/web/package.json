@@ -7,6 +7,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@focient/contracts": "file:../../packages/contracts",
     "@focient/ui-token": "file:../../packages/ui-token",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

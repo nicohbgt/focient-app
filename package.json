@@ -1,0 +1,28 @@
+{
+  "name": "focient-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FoCient - Intelligent focus management & guilt-free adaptive rescheduling system",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "generate:tokens": "npm run generate --prefix packages/ui-token",
+    "test:tokens": "npm test --prefix packages/ui-token",
+    "typecheck:web": "npm run typecheck --prefix apps/web",
+    "typecheck:server": "npm run typecheck --prefix apps/server",
+    "typecheck:contracts": "npm run typecheck --prefix packages/contracts"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

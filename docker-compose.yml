@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: focient-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: focient
+      POSTGRES_PASSWORD: focient_password
+      POSTGRES_DB: focient_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U focient -d focient_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: focient-server
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://focient:focient_password@postgres:5432/focient_db?schema=public
+      JWT_SECRET: focient_production_super_secret_key_change_me
+    ports:
+      - '4000:4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: focient-web
+    restart: always
+    ports:
+      - '3000:80'
+    depends_on:
+      - server
+
+volumes:
+  postgres_data:

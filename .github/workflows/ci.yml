@@ -1,0 +1,41 @@
+name: FoCient CI Pipeline
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+
+jobs:
+  validate:
+    name: Lint, Test & Typecheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.x'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Verify Design Tokens (Staleness & Contract)
+        run: |
+          npm run generate:tokens
+          npm run test:tokens
+
+      - name: Typecheck Contracts & Web
+        run: |
+          npm run typecheck:contracts
+          npm run typecheck:web

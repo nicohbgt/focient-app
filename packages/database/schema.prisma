@@ -1,0 +1,149 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum TaskPriority {
+  TOP_3
+  NORMAL
+  LOW
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum ScheduleBlockType {
+  TASK
+  BUFFER
+  BREAK
+  FOCUS_SESSION
+}
+
+enum CapacityStatus {
+  LIGHT
+  OPTIMAL
+  NEAR_CAPACITY
+  OVERLOAD
+}
+
+enum NotificationType {
+  FOCUS_REMINDER
+  CAPACITY_WARNING
+  RIPPLE_SUGGESTION
+  DAILY_SUMMARY
+}
+
+model User {
+  id                   String           @id @default(uuid())
+  email                String           @unique
+  passwordHash         String
+  name                 String
+  timezone             String           @default("Asia/Jakarta")
+  workHourStart        String           @default("09:00")
+  workHourEnd          String           @default("17:00")
+  dailyCapacityMinutes Int              @default(480)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  tasks                Task[]
+  scheduleBlocks       ScheduleBlock[]
+  workloads            WorkloadDaily[]
+  rescheduleLogs       RescheduleLog[]
+  notifications        Notification[]
+
+  @@map("users")
+}
+
+model Task {
+  id              String        @id @default(uuid())
+  userId          String
+  title           String
+  notes           String?
+  durationMinutes Int
+  priority        TaskPriority  @default(NORMAL)
+  status          TaskStatus    @default(TODO)
+  category        String?
+  deadline        DateTime?
+  scheduledStart  DateTime?
+  scheduledEnd    DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scheduleBlocks  ScheduleBlock[]
+
+  @@index([userId, status])
+  @@index([userId, scheduledStart])
+  @@map("tasks")
+}
+
+model ScheduleBlock {
+  id         String            @id @default(uuid())
+  userId     String
+  taskId     String?
+  title      String
+  startTime  DateTime
+  endTime    DateTime
+  isLocked   Boolean           @default(false)
+  type       ScheduleBlockType @default(TASK)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task       Task?             @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([userId, startTime, endTime])
+  @@map("schedule_blocks")
+}
+
+model WorkloadDaily {
+  id               String         @id @default(uuid())
+  userId           String
+  date             String         // YYYY-MM-DD
+  allocatedMinutes Int            @default(0)
+  capacityMinutes  Int            @default(480)
+  status           CapacityStatus @default(LIGHT)
+  updatedAt        DateTime       @updatedAt
+
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("workloads_daily")
+}
+
+model RescheduleLog {
+  id             String   @id @default(uuid())
+  userId         String
+  delayedTaskId  String
+  delayMinutes   Int
+  tasksShifted   Int      @default(0)
+  reason         String?
+  appliedAt      DateTime @default(now())
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reschedule_logs")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
