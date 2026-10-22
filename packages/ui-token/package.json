@@ -1,0 +1,68 @@
+{
+  "name": "@focient/ui-token",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./color-token.css": "./src/color-token.css",
+    "./color-token": {
+      "types": "./src/color-token.d.ts",
+      "default": "./src/color-token.js"
+    },
+    "./color-token.json": "./tokens/color-token.json",
+    "./color-dark-token.css": "./src/color-dark-token.css",
+    "./color-dark-token": {
+      "types": "./src/color-dark-token.d.ts",
+      "default": "./src/color-dark-token.js"
+    },
+    "./color-dark-token.json": "./tokens/color-dark-token.json",
+    "./theme-token.css": "./src/theme-token.css",
+    "./spacing-token.css": "./src/spacing-token.css",
+    "./spacing-token": {
+      "types": "./src/spacing-token.d.ts",
+      "default": "./src/spacing-token.js"
+    },
+    "./spacing-token.json": "./tokens/spacing-token.json",
+    "./icon-token.css": "./src/icon-token.css",
+    "./icon-token": {
+      "types": "./src/icon-token.d.ts",
+      "default": "./src/icon-token.js"
+    },
+    "./icon-token.json": "./tokens/icon-token.json",
+    "./typography-token.css": "./src/typography-token.css",
+    "./typography-token": {
+      "types": "./src/typography-token.d.ts",
+      "default": "./src/typography-token.js"
+    },
+    "./typography-token.json": "./tokens/typography-token.json",
+    "./layout-token.css": "./src/layout-token.css",
+    "./layout-token": {
+      "types": "./src/layout-token.d.ts",
+      "default": "./src/layout-token.js"
+    },
+    "./layout-token.json": "./tokens/layout-token.json",
+    "./border-radius-token.css": "./src/border-radius-token.css",
+    "./border-radius-token": {
+      "types": "./src/border-radius-token.d.ts",
+      "default": "./src/border-radius-token.js"
+    },
+    "./border-radius-token.json": "./tokens/border-radius-token.json",
+    "./animation-token.css": "./src/animation-token.css",
+    "./animation-token": {
+      "types": "./src/animation-token.d.ts",
+      "default": "./src/animation-token.js"
+    },
+    "./animation-token.json": "./tokens/animation-token.json",
+    "./shadow-token.css": "./src/shadow-token.css",
+    "./shadow-token": {
+      "types": "./src/shadow-token.d.ts",
+      "default": "./src/shadow-token.js"
+    },
+    "./shadow-token.json": "./tokens/shadow-token.json"
+  },
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "check:generated": "node scripts/generate.mjs --check",
+    "test": "npm run check:generated && node --test test/token-contract.test.mjs"
+  }
+}

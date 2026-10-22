@@ -1,0 +1,36 @@
+/**
+ * GENERATED FILE. Source: ../tokens/layout-token.json
+ * Import this file once at the web application entry point.
+ */
+:root {
+  --grid-desktop-breakpoint-min: 64rem;
+  --grid-desktop-columns: 12;
+  --grid-desktop-margin: 2rem;
+  --grid-desktop-gutter: 1.5rem;
+  --grid-desktop-container-max-width: 80rem;
+  --grid-tablet-breakpoint-min: 37.5rem;
+  --grid-tablet-breakpoint-max: 64rem;
+  --grid-tablet-columns: 8;
+  --grid-tablet-margin: 1.5rem;
+  --grid-tablet-gutter: 1.25rem;
+  --grid-tablet-container-max-width: 100%;
+  --grid-mobile-breakpoint-max: 37.5rem;
+  --grid-mobile-columns: 4;
+  --grid-mobile-margin: 1.25rem;
+  --grid-mobile-gutter: 1rem;
+  --grid-mobile-container-max-width: 100%;
+  --layout-span-desktop-navigation: 3;
+  --layout-span-desktop-workspace: 6;
+  --layout-span-desktop-capacity: 3;
+  --layout-span-tablet-navigation: 3;
+  --layout-span-tablet-workspace: 5;
+  --layout-span-mobile-full: 4;
+  --layout-modal-mobile-width: 100%;
+  --layout-modal-mobile-max-height: 80vh;
+  --layout-modal-tablet-width: 30rem;
+  --layout-modal-tablet-padding: 2rem;
+  --layout-modal-desktop-width: 35rem;
+  --layout-modal-desktop-padding: 2rem;
+  --layout-navigation-mobile-bottom-bar-height: 4rem;
+  --layout-navigation-desktop-sidebar-width: 16rem;
+}

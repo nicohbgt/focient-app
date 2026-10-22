@@ -1,0 +1,36 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "spacing": {
+    "1": { "$type": "dimension", "$value": "4px" },
+    "2": { "$type": "dimension", "$value": "8px" },
+    "3": { "$type": "dimension", "$value": "12px" },
+    "4": { "$type": "dimension", "$value": "16px" },
+    "5": { "$type": "dimension", "$value": "20px" },
+    "6": { "$type": "dimension", "$value": "24px" },
+    "7": { "$type": "dimension", "$value": "28px" },
+    "8": { "$type": "dimension", "$value": "32px" },
+    "9": { "$type": "dimension", "$value": "36px" },
+    "10": { "$type": "dimension", "$value": "40px" },
+    "11": { "$type": "dimension", "$value": "44px" },
+    "12": { "$type": "dimension", "$value": "48px" },
+    "13": { "$type": "dimension", "$value": "52px" },
+    "14": { "$type": "dimension", "$value": "56px" },
+    "15": { "$type": "dimension", "$value": "60px" },
+    "16": { "$type": "dimension", "$value": "64px" },
+    "17": { "$type": "dimension", "$value": "68px" },
+    "18": { "$type": "dimension", "$value": "72px" },
+    "19": { "$type": "dimension", "$value": "76px" },
+    "20": { "$type": "dimension", "$value": "80px" },
+    "21": { "$type": "dimension", "$value": "84px" },
+    "22": { "$type": "dimension", "$value": "88px" },
+    "23": { "$type": "dimension", "$value": "92px" },
+    "24": { "$type": "dimension", "$value": "96px" },
+    "tight": {
+      "2": {
+        "$type": "dimension",
+        "$value": "8px",
+        "$description": "Semantic micro-spacing alias used for compact icon-to-label gaps."
+      }
+    }
+  }
+}

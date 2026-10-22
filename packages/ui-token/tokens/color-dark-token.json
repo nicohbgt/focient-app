@@ -1,0 +1,81 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "color": {
+    "primary": {
+      "bg": { "subtle": { "$type": "color", "$value": "#172554" } },
+      "border": {
+        "subtle": { "$type": "color", "$value": "#1E40AF" },
+        "bold": { "$type": "color", "$value": "#3B82F6" }
+      },
+      "track": { "base": { "$type": "color", "$value": "#1D4ED8" } },
+      "action": {
+        "base": { "$type": "color", "$value": "#3B82F6" },
+        "hover": { "$type": "color", "$value": "#60A5FA" }
+      },
+      "text": { "bold": { "$type": "color", "$value": "#DBEAFE" } }
+    },
+    "secondary": {
+      "bg": { "subtle": { "$type": "color", "$value": "#042F2E" } },
+      "border": {
+        "subtle": { "$type": "color", "$value": "#115E59" },
+        "bold": { "$type": "color", "$value": "#14B8A6" }
+      },
+      "track": { "base": { "$type": "color", "$value": "#0F766E" } },
+      "action": {
+        "base": { "$type": "color", "$value": "#14B8A6" },
+        "hover": { "$type": "color", "$value": "#2DD4BF" }
+      },
+      "text": { "bold": { "$type": "color", "$value": "#CCFBF1" } }
+    },
+    "accent": {
+      "bg": { "subtle": { "$type": "color", "$value": "#2E1065" } },
+      "border": {
+        "subtle": { "$type": "color", "$value": "#5B21B6" },
+        "bold": { "$type": "color", "$value": "#8B5CF6" }
+      },
+      "track": { "base": { "$type": "color", "$value": "#4C1D95" } },
+      "action": {
+        "base": { "$type": "color", "$value": "#8B5CF6" },
+        "hover": { "$type": "color", "$value": "#A78BFA" }
+      },
+      "text": { "bold": { "$type": "color", "$value": "#EDE9FE" } }
+    },
+    "neutral": {
+      "bg": { "canvas": { "$type": "color", "$value": "#090D16" } },
+      "surface": {
+        "card": { "$type": "color", "$value": "#0F172A" },
+        "muted": { "$type": "color", "$value": "#1E293B" }
+      },
+      "border": { "subtle": { "$type": "color", "$value": "#334155" } },
+      "text": {
+        "subtle": { "$type": "color", "$value": "#64748B" },
+        "muted": { "$type": "color", "$value": "#94A3B8" },
+        "bold": { "$type": "color", "$value": "#F8FAFC" }
+      }
+    },
+    "success": {
+      "bg": { "subtle": { "$type": "color", "$value": "#064E3B" } },
+      "border": { "subtle": { "$type": "color", "$value": "#047857" } },
+      "action": { "base": { "$type": "color", "$value": "#10B981" } },
+      "text": { "bold": { "$type": "color", "$value": "#D1FAE5" } }
+    },
+    "warning": {
+      "bg": { "subtle": { "$type": "color", "$value": "#451A03" } },
+      "border": { "subtle": { "$type": "color", "$value": "#B45309" } },
+      "action": { "base": { "$type": "color", "$value": "#F59E0B" } },
+      "text": { "bold": { "$type": "color", "$value": "#FEF3C7" } }
+    },
+    "danger": {
+      "bg": { "subtle": { "$type": "color", "$value": "#4C0519" } },
+      "border": { "subtle": { "$type": "color", "$value": "#BE123C" } },
+      "action": { "base": { "$type": "color", "$value": "#F43F5E" } },
+      "text": { "bold": { "$type": "color", "$value": "#FFE4E6" } }
+    },
+    "info": {
+      "bg": { "subtle": { "$type": "color", "$value": "#082F49" } },
+      "border": { "subtle": { "$type": "color", "$value": "#0369A1" } },
+      "action": { "base": { "$type": "color", "$value": "#38BDF8" } },
+      "text": { "bold": { "$type": "color", "$value": "#E0F2FE" } }
+    }
+  }
+}

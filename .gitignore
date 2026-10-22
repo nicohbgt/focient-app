@@ -1,0 +1,17 @@
+node_modules/
+.pnpm-store/
+dist/
+.turbo/
+
+# Dart & Flutter
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugin-dependencies
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

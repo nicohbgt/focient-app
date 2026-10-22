@@ -1,0 +1,30 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "shadow": {
+    "0": {
+      "$type": "shadow",
+      "$value": "none",
+      "$description": "Flat / Ground Canvas: Permukaan yang menyatu rata dengan kanvas. Relative Z-Index: z-0 / Auto."
+    },
+    "1": {
+      "$type": "shadow",
+      "$value": "0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 1px 3px 1px rgba(0, 0, 0, 0.20)",
+      "$description": "Subtle Grounding: Elevasi mikro kartu saat kondisi istirahat (rest state). Relative Z-Index: z-1 / Base."
+    },
+    "2": {
+      "$type": "shadow",
+      "$value": "0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 2px 6px 2px rgba(0, 0, 0, 0.20)",
+      "$description": "Raised / Interactive: Elemen yang terangkat saat menerima interaksi pengguna. Relative Z-Index: z-10 / Hover."
+    },
+    "3": {
+      "$type": "shadow",
+      "$value": "0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 4px 12px 4px rgba(0, 0, 0, 0.20)",
+      "$description": "Floating Focus: Elemen mengambang yang menjadi fokus perhatian utama. Relative Z-Index: z-20 / z-30."
+    },
+    "4": {
+      "$type": "shadow",
+      "$value": "0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 8px 24px 8px rgba(0, 0, 0, 0.20)",
+      "$description": "Overlay / Dialog: Lapisan permukaan tertinggi yang memutus alur kerja. Relative Z-Index: z-40 / z-50."
+    }
+  }
+}

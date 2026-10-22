@@ -1,0 +1,464 @@
+/* FoCient Component Styles */
+
+/* ==========================================================================
+   1. BUTTON (<Button/>)
+   ========================================================================== */
+.focient-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, 8px);
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-weight: 600;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  transition:
+    transform var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    background-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    border-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    box-shadow var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+/* Touch targets: Mobile 48px, Desktop 40px */
+.focient-btn--md {
+  min-height: 48px;
+  padding: 0 var(--space-4, 16px);
+  font-size: 14px;
+}
+
+@media (min-width: 64rem) {
+  .focient-btn--md {
+    min-height: 40px;
+    font-size: 16px;
+  }
+}
+
+/* Compact size for task card actions */
+.focient-btn--sm {
+  min-height: 32px;
+  padding: 0 var(--space-3, 12px);
+  font-size: 13px;
+  border-radius: var(--radius-sm, 4px);
+}
+
+/* Active / Press state: tactile feedback */
+.focient-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.focient-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.focient-btn--primary {
+  background-color: var(--color-primary-action-base, #2563EB);
+  color: #FFFFFF;
+}
+
+.focient-btn--primary:hover:not(:disabled) {
+  background-color: var(--color-primary-action-hover, #1D4ED8);
+}
+
+.focient-btn--secondary {
+  background-color: var(--color-secondary-action-base, #0D9488);
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+.focient-btn--secondary:hover:not(:disabled) {
+  background-color: var(--color-secondary-action-hover, #0F766E);
+}
+
+.focient-btn--ghost {
+  background-color: transparent;
+  border-color: var(--color-border, #CBD5E1);
+  color: var(--color-text-main, #0F172A);
+  font-weight: 500;
+}
+
+.focient-btn--ghost:hover:not(:disabled) {
+  background-color: var(--color-neutral-surface-muted, #F1F5F9);
+}
+
+/* ==========================================================================
+   2. INPUT FIELD (<InputField/>)
+   ========================================================================== */
+.focient-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+  width: 100%;
+}
+
+.focient-input-label {
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted, #64748B);
+}
+
+.focient-input {
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  background-color: var(--color-surface, #FFFFFF);
+  border: 1px solid var(--color-border, #CBD5E1);
+  border-radius: var(--radius-md, 8px);
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-main, #0F172A);
+  box-sizing: border-box;
+  transition:
+    border-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    box-shadow var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+@media (min-width: 64rem) {
+  .focient-input {
+    min-height: 40px;
+    font-size: 16px;
+  }
+}
+
+.focient-input::placeholder {
+  color: var(--color-text-subtle, #94A3B8);
+}
+
+.focient-input:focus {
+  outline: none;
+  border: 2px solid var(--color-primary-action-base, #2563EB);
+  padding: calc(var(--space-2, 8px) - 1px) calc(var(--space-4, 16px) - 1px);
+}
+
+.focient-input--error {
+  border-color: var(--color-danger-action-base, #E11D48);
+}
+
+/* ==========================================================================
+   3. CHECKBOX (<Checkbox/>)
+   ========================================================================== */
+.focient-checkbox-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.focient-checkbox-box {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm, 4px);
+  border: 1.5px solid var(--color-border, #CBD5E1);
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    border-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.focient-checkbox-wrapper:hover .focient-checkbox-box {
+  border-color: var(--color-primary-action-base, #2563EB);
+}
+
+.focient-checkbox-box--checked {
+  background-color: var(--color-primary-action-base, #2563EB);
+  border-color: var(--color-primary-action-base, #2563EB);
+}
+
+.focient-checkbox-icon {
+  width: 14px;
+  height: 14px;
+  color: #FFFFFF;
+  transform: scale(0.7);
+  opacity: 0;
+  transition:
+    transform var(--duration-fast, 150ms) var(--ease-decelerate, cubic-bezier(0, 0, 0.2, 1)),
+    opacity var(--duration-fast, 150ms) var(--ease-decelerate, cubic-bezier(0, 0, 0.2, 1));
+}
+
+.focient-checkbox-box--checked .focient-checkbox-icon {
+  transform: scale(1.0);
+  opacity: 1;
+}
+
+/* ==========================================================================
+   4. BADGE / TAG (<Badge/>)
+   ========================================================================== */
+.focient-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1, 4px) var(--space-2, 8px);
+  border-radius: var(--radius-full, 9999px);
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1;
+  font-feature-settings: var(--typography-feature-tabular-figures, 'tnum');
+  font-variant-numeric: tabular-nums;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+@media (min-width: 64rem) {
+  .focient-badge {
+    font-size: 12px;
+  }
+}
+
+.focient-badge--focus {
+  background-color: var(--color-primary-bg-subtle, #EFF6FF);
+  border-color: var(--color-primary-border-subtle, #DBEAFE);
+  color: var(--color-primary-text-bold, #1E3A8A);
+}
+
+.focient-badge--neutral {
+  background-color: var(--color-canvas, #F8FAFC);
+  border-color: var(--color-border, #CBD5E1);
+  color: var(--color-text-muted, #64748B);
+}
+
+.focient-badge--accent {
+  background-color: var(--color-accent-bg-subtle, #F5F3FF);
+  border-color: var(--color-accent-border-subtle, #DDD6FE);
+  color: var(--color-accent-text-bold, #4C1D95);
+}
+
+.focient-badge--warning {
+  background-color: var(--color-warning-bg-subtle, #FFFBEB);
+  border-color: var(--color-warning-border-subtle, #FDE68A);
+  color: var(--color-warning-text-bold, #92400E);
+}
+
+/* ==========================================================================
+   5. TASK CARD (<TaskCard/>)
+   ========================================================================== */
+.focient-task-card {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: var(--space-4, 16px);
+  gap: var(--space-3, 12px);
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--color-border, #CBD5E1);
+  background-color: var(--color-surface, #FFFFFF);
+  box-shadow: var(--shadow-1, 0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 1px 3px 1px rgba(0, 0, 0, 0.20));
+  box-sizing: border-box;
+  transition:
+    transform var(--duration-normal, 200ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    box-shadow var(--duration-normal, 200ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    opacity var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+@media (min-width: 64rem) {
+  .focient-task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-2, 0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 2px 6px 2px rgba(0, 0, 0, 0.20));
+  }
+}
+
+.focient-task-card--completed {
+  opacity: 0.6;
+}
+
+.focient-task-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.focient-task-card-title {
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-main, #0F172A);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.focient-task-card--completed .focient-task-card-title {
+  text-decoration: line-through;
+  color: var(--color-text-muted, #64748B);
+}
+
+.focient-task-card-notes {
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text-muted, #64748B);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.focient-task-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   6. DAILY CAPACITY METER (<DailyCapacityMeter/>)
+   ========================================================================== */
+.focient-capacity-meter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  width: 100%;
+}
+
+.focient-capacity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted, #64748B);
+}
+
+.focient-capacity-figures {
+  font-feature-settings: var(--typography-feature-tabular-figures, 'tnum');
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--color-text-main, #0F172A);
+}
+
+.focient-capacity-track {
+  width: 100%;
+  height: 8px;
+  background-color: #E2E8F0;
+  border-radius: var(--radius-full, 9999px);
+  overflow: hidden;
+  position: relative;
+}
+
+@media (min-width: 64rem) {
+  .focient-capacity-track {
+    height: 10px;
+  }
+}
+
+.focient-capacity-fill {
+  height: 100%;
+  border-radius: var(--radius-full, 9999px);
+  transition:
+    width var(--duration-deliberate, 400ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    background-color var(--duration-deliberate, 400ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+/* ==========================================================================
+   7. ADAPTIVE RESCHEDULE ALERT / BANNER / BOTTOM SHEET (<RescheduleAlert/>)
+   ========================================================================== */
+/* Desktop Push Banner */
+.focient-reschedule-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4, 16px);
+  padding: var(--space-4, 16px);
+  border-radius: var(--radius-lg, 12px);
+  background-color: var(--color-secondary-bg-subtle, #F0FDFA);
+  border: 1px solid var(--color-secondary-border-subtle, #CCFBF1);
+  box-shadow: var(--shadow-2, 0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 2px 6px 2px rgba(0, 0, 0, 0.20));
+  animation: focient-reveal 250ms var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+@keyframes focient-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.focient-reschedule-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.focient-reschedule-label {
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-secondary-text-bold, #134E4A);
+  margin: 0;
+}
+
+.focient-reschedule-description {
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 13px;
+  color: var(--color-text-muted, #64748B);
+  margin: 0;
+}
+
+.focient-reschedule-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  flex-shrink: 0;
+}
+
+/* Mobile Bottom Sheet Overlay */
+.focient-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  animation: focient-fade-in var(--duration-slow, 300ms) var(--ease-decelerate, cubic-bezier(0, 0, 0.2, 1));
+}
+
+@keyframes focient-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.focient-sheet-panel {
+  width: 100%;
+  background-color: var(--color-surface, #FFFFFF);
+  border-top-left-radius: var(--radius-xl, 16px);
+  border-top-right-radius: var(--radius-xl, 16px);
+  padding: var(--space-5, 20px) var(--space-4, 16px) var(--space-6, 24px);
+  box-shadow: var(--shadow-4, 0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 8px 24px 8px rgba(0, 0, 0, 0.20));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+  animation: focient-sheet-slide-up var(--duration-slow, 300ms) var(--ease-decelerate, cubic-bezier(0, 0, 0.2, 1));
+}
+
+@keyframes focient-sheet-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.focient-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: var(--radius-full, 9999px);
+  background-color: var(--color-border, #CBD5E1);
+  margin: 0 auto var(--space-2, 8px);
+}

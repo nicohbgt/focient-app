@@ -1,0 +1,36 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "icon": {
+    "size": {
+      "xs": { "$type": "dimension", "$value": "16px" },
+      "sm": { "$type": "dimension", "$value": "24px" },
+      "md": { "$type": "dimension", "$value": "32px" },
+      "lg": { "$type": "dimension", "$value": "36px" },
+      "xl": { "$type": "dimension", "$value": "40px" },
+      "2xl": { "$type": "dimension", "$value": "48px" },
+      "3xl": { "$type": "dimension", "$value": "56px" },
+      "4xl": { "$type": "dimension", "$value": "64px" }
+    },
+    "stroke": {
+      "xs": { "$type": "dimension", "$value": "0.5px" },
+      "sm": { "$type": "dimension", "$value": "0.5px" },
+      "md": { "$type": "dimension", "$value": "1px" },
+      "lg": { "$type": "dimension", "$value": "1px" },
+      "xl": { "$type": "dimension", "$value": "1px" },
+      "2xl": { "$type": "dimension", "$value": "1px" },
+      "3xl": { "$type": "dimension", "$value": "1.5px" },
+      "4xl": { "$type": "dimension", "$value": "1.5px" }
+    },
+    "style": {
+      "outline": { "$type": "string", "$value": "outline" },
+      "filled": { "$type": "string", "$value": "filled" }
+    },
+    "spacing": {
+      "xs": { "$type": "dimension", "$value": "4px" },
+      "sm": { "$type": "dimension", "$value": "8px" },
+      "md": { "$type": "dimension", "$value": "12px" },
+      "lg": { "$type": "dimension", "$value": "16px" },
+      "xl": { "$type": "dimension", "$value": "20px" }
+    }
+  }
+}

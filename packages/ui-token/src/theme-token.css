@@ -1,0 +1,13 @@
+/**
+ * FoCient Theme & Component Semantic Aliases
+ * Bridges standard design tokens to component-level semantic references.
+ */
+:root {
+  --color-border: var(--color-neutral-border-subtle);
+  --color-surface: var(--color-neutral-surface-card);
+  --color-canvas: var(--color-neutral-bg-canvas);
+  --color-text-main: var(--color-neutral-text-bold);
+  --color-text-muted: var(--color-neutral-text-muted);
+  --color-text-subtle: var(--color-neutral-text-subtle);
+  --color-warning: var(--color-warning-action-base);
+}

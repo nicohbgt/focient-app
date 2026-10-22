@@ -1,0 +1,13 @@
+/** GENERATED FILE. Source: ../tokens/animation-token.json */
+export const animationTokens = Object.freeze(
+  {
+  "duration-fast": "150ms",
+  "duration-normal": "200ms",
+  "duration-moderate": "250ms",
+  "duration-slow": "300ms",
+  "duration-deliberate": "400ms",
+  "ease-fluid": "cubic-bezier(0.4, 0, 0.2, 1)",
+  "ease-decelerate": "cubic-bezier(0.0, 0, 0.2, 1)",
+  "ease-accelerate": "cubic-bezier(0.4, 0, 1, 1)"
+},
+);
