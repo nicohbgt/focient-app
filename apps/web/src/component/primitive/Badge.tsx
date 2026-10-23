@@ -1,17 +1,20 @@
 import React from 'react';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'focus' | 'neutral' | 'accent' | 'warning';
+  variant?: 'focus' | 'neutral' | 'accent' | 'warning' | 'success';
+  size?: 'sm' | 'xs';
   children: React.ReactNode;
 }
 
 /**
- * FoCient Badge / Tag (<Badge/>)
+ * FoCient Badge (<Badge/>)
  *
- * Pill container with tabular figures (tnum) for duration and analytics metrics.
+ * Non-interactive status pill with tabular figures (tnum)
+ * for priorities, duration estimates, and workload indicators.
  */
 export const Badge: React.FC<BadgeProps> = ({
   variant = 'neutral',
+  size = 'sm',
   className = '',
   children,
   ...props
@@ -21,8 +24,12 @@ export const Badge: React.FC<BadgeProps> = ({
       className={[
         'focient-badge',
         `focient-badge--${variant}`,
+        `focient-badge--${size}`,
+        'focient-tnum',
         className,
-      ].filter(Boolean).join(' ')}
+      ]
+        .filter(Boolean)
+        .join(' ')}
       {...props}
     >
       {children}

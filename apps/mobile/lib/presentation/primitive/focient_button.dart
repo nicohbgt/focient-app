@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 
-enum FocientButtonVariant { primary, secondary, ghost }
+enum FocientButtonVariant { primary, secondary, ghost, outline }
 enum FocientButtonSize { md, sm }
 
 /// FoCient Interactive Button
 ///
-/// Implements tactile scale(0.98) physical press confirmation with zero latency.
+/// Implements tactile scale(0.98) physical press confirmation with zero latency
+/// and maximum contrast active state color shifts (#1E40AF for primary, #115E59 for secondary).
 class FocientButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final Widget child;
@@ -28,6 +29,7 @@ class FocientButton extends StatefulWidget {
 class _FocientButtonState extends State<FocientButton> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _scaleAnimation;
+  bool _isPressed = false;
 
   @override
   void initState() {
@@ -51,18 +53,30 @@ class _FocientButtonState extends State<FocientButton> with SingleTickerProvider
     if (widget.onPressed == null) {
       return (isDark ? FocientColorDarkTokens.neutralSurfaceMuted : FocientColorTokens.neutralSurfaceMuted);
     }
+    if (_isPressed) {
+      switch (widget.variant) {
+        case FocientButtonVariant.primary:
+          return isDark ? FocientColorDarkTokens.primaryBorderBold : FocientColorTokens.primaryBorderBold;
+        case FocientButtonVariant.secondary:
+          return isDark ? FocientColorDarkTokens.secondaryBorderBold : FocientColorTokens.secondaryBorderBold;
+        case FocientButtonVariant.ghost:
+        case FocientButtonVariant.outline:
+          return isDark ? FocientColorDarkTokens.neutralSurfaceMuted : FocientColorTokens.neutralSurfaceMuted;
+      }
+    }
     switch (widget.variant) {
       case FocientButtonVariant.primary:
         return isDark ? FocientColorDarkTokens.primaryActionBase : FocientColorTokens.primaryActionBase;
       case FocientButtonVariant.secondary:
         return isDark ? FocientColorDarkTokens.secondaryActionBase : FocientColorTokens.secondaryActionBase;
       case FocientButtonVariant.ghost:
+      case FocientButtonVariant.outline:
         return Colors.transparent;
     }
   }
 
   BorderSide _borderSide(bool isDark) {
-    if (widget.variant == FocientButtonVariant.ghost) {
+    if (widget.variant == FocientButtonVariant.ghost || widget.variant == FocientButtonVariant.outline) {
       return BorderSide(
         color: isDark ? FocientColorDarkTokens.neutralBorderSubtle : FocientColorTokens.neutralBorderSubtle,
         width: FocientBorderRadiusTokens.strokeRegular,
@@ -80,6 +94,7 @@ class _FocientButtonState extends State<FocientButton> with SingleTickerProvider
       case FocientButtonVariant.secondary:
         return Colors.white;
       case FocientButtonVariant.ghost:
+      case FocientButtonVariant.outline:
         return isDark ? FocientColorDarkTokens.neutralTextBold : FocientColorTokens.neutralTextBold;
     }
   }
@@ -92,9 +107,24 @@ class _FocientButtonState extends State<FocientButton> with SingleTickerProvider
     final radius = widget.size == FocientButtonSize.md ? FocientBorderRadiusTokens.radiusMd : FocientBorderRadiusTokens.radiusSm;
 
     return GestureDetector(
-      onTapDown: (_) => widget.onPressed != null ? _controller.forward() : null,
-      onTapUp: (_) => widget.onPressed != null ? _controller.reverse() : null,
-      onTapCancel: () => widget.onPressed != null ? _controller.reverse() : null,
+      onTapDown: (_) {
+        if (widget.onPressed != null) {
+          setState(() => _isPressed = true);
+          _controller.forward();
+        }
+      },
+      onTapUp: (_) {
+        if (widget.onPressed != null) {
+          setState(() => _isPressed = false);
+          _controller.reverse();
+        }
+      },
+      onTapCancel: () {
+        if (widget.onPressed != null) {
+          setState(() => _isPressed = false);
+          _controller.reverse();
+        }
+      },
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: OutlinedButton(

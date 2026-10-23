@@ -70,7 +70,7 @@ class TaskState extends ChangeNotifier {
   }
 
   void toggleTaskComplete(String taskId, bool isCompleted) {
-    final index = _tasks.indexWhere((t) => t.id === taskId);
+    final index = _tasks.indexWhere((t) => t.id == taskId);
     if (index != -1) {
       _tasks[index] = _tasks[index].copyWith(
         status: isCompleted ? TaskStatusEnum.completed : TaskStatusEnum.todo,

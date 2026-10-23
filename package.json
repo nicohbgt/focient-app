@@ -14,6 +14,7 @@
     "typecheck": "turbo run typecheck",
     "generate:tokens": "npm run generate --prefix packages/ui-token",
     "test:tokens": "npm test --prefix packages/ui-token",
+    "test:web": "npm test --prefix apps/web",
     "typecheck:web": "npm run typecheck --prefix apps/web",
     "typecheck:server": "npm run typecheck --prefix apps/server",
     "typecheck:contracts": "npm run typecheck --prefix packages/contracts"

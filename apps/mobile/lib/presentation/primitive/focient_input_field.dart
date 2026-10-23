@@ -45,6 +45,7 @@ class FocientInputField extends StatelessWidget {
           child: TextField(
             controller: controller,
             onChanged: onChanged,
+            cursorColor: isDark ? FocientColorDarkTokens.primaryActionBase : FocientColorTokens.primaryActionBase,
             style: TextStyle(
               fontFamily: FocientTypographyTokens.fontFamily,
               fontSize: 14,
@@ -79,7 +80,14 @@ class FocientInputField extends StatelessWidget {
                 borderRadius: BorderRadius.circular(FocientBorderRadiusTokens.radiusMd),
                 borderSide: BorderSide(
                   color: isDark ? FocientColorDarkTokens.dangerActionBase : FocientColorTokens.dangerActionBase,
-                  width: FocientBorderRadiusTokens.strokeRegular,
+                  width: FocientBorderRadiusTokens.strokeBold,
+                ),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(FocientBorderRadiusTokens.radiusMd),
+                borderSide: BorderSide(
+                  color: isDark ? FocientColorDarkTokens.dangerActionBase : FocientColorTokens.dangerActionBase,
+                  width: FocientBorderRadiusTokens.strokeBold,
                 ),
               ),
             ),
@@ -91,7 +99,8 @@ class FocientInputField extends StatelessWidget {
             errorText!,
             style: TextStyle(
               fontSize: 12,
-              color: isDark ? FocientColorDarkTokens.dangerActionBase : FocientColorTokens.dangerActionBase,
+              fontWeight: FontWeight.w500,
+              color: isDark ? FocientColorDarkTokens.dangerTextBold : FocientColorTokens.dangerTextBold,
             ),
           ),
         ],

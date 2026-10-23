@@ -1,9 +1,12 @@
 library focient_components;
 
+export 'focient_copywriting.dart';
 export 'primitive/focient_badge.dart';
 export 'primitive/focient_button.dart';
 export 'primitive/focient_checkbox.dart';
+export 'primitive/focient_icon.dart';
 export 'primitive/focient_input_field.dart';
+export 'primitive/focient_keyboard.dart';
 
 export 'organism/focient_daily_capacity_meter.dart';
 export 'organism/focient_reschedule_alert.dart';

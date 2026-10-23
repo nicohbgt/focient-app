@@ -47,7 +47,7 @@ class FocientDailyCapacityMeter extends StatelessWidget {
       fillColor = isDark ? FocientColorDarkTokens.warningActionBase : FocientColorTokens.warningActionBase;
       statusLabel = 'Kapasitas Penuh';
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        onOverloadDetected?.(allocatedMinutes, totalCapacityMinutes);
+        onOverloadDetected?.call(allocatedMinutes, totalCapacityMinutes);
       });
     }
 
@@ -85,7 +85,9 @@ class FocientDailyCapacityMeter extends StatelessWidget {
           child: Container(
             height: 8.0,
             width: double.infinity,
-            color: const Color(0xFFE2E8F0),
+            color: percentage < 50
+                ? (isDark ? FocientColorDarkTokens.secondaryBgSubtle : FocientColorTokens.secondaryBgSubtle)
+                : const Color(0xFFE2E8F0),
             child: Stack(
               children: [
                 AnimatedFractionallySizedBox(

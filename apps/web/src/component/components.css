@@ -1,180 +1,440 @@
-/* FoCient Component Styles */
-
 /* ==========================================================================
-   1. BUTTON (<Button/>)
+   FOCIENT DESIGN SYSTEM - COMPONENT STYLES (COMPREHENSIVE)
+   Standards: DTCG Semantic Tokens, 4-Point Spacing Grid, WCAG 2.1 AAA, Multi-Platform
    ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   0. BASE FOUNDATIONS, ACCESSIBILITY & TABULAR NUMBERS
+   -------------------------------------------------------------------------- */
+.focient-tnum {
+  font-feature-settings: var(--typography-feature-tabular-figures, 'tnum') 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Keyboard Accessible Focus Ring for All Interactive Elements */
+.focient-btn:focus-visible,
+.focient-input:focus-visible,
+.focient-checkbox-wrapper:focus-visible,
+.focient-radio-wrapper:focus-visible,
+.focient-toggle-wrapper:focus-visible,
+.focient-chip:focus-visible,
+.focient-nav-item:focus-visible,
+.focient-lang-btn:focus-visible {
+  outline: 2px solid #BFDBFE !important;
+  outline-offset: 2px !important;
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+    transform: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   1. BUTTON (<Button/>)
+   -------------------------------------------------------------------------- */
 .focient-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2, 8px);
   font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
-  font-weight: 600;
+  font-weight: 500;
   border-radius: var(--radius-md, 8px);
   border: 1px solid transparent;
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
   user-select: none;
+  box-sizing: border-box;
+  position: relative;
   transition:
-    transform var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
-    background-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
-    border-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
-    box-shadow var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
+    transform var(--duration-fast, 150ms) cubic-bezier(0.2, 0, 0, 1),
+    background-color var(--duration-fast, 150ms) cubic-bezier(0.2, 0, 0, 1),
+    border-color var(--duration-fast, 150ms) cubic-bezier(0.2, 0, 0, 1),
+    box-shadow var(--duration-fast, 150ms) cubic-bezier(0.2, 0, 0, 1),
+    opacity var(--duration-fast, 150ms) cubic-bezier(0.2, 0, 0, 1);
 }
 
-/* Touch targets: Mobile 48px, Desktop 40px */
-.focient-btn--md {
+/* Button Sizes */
+/* Large (lg) - Standard Mobile/Touch (48px) */
+.focient-btn--lg {
   min-height: 48px;
+  min-width: 48px;
+  padding: 0 var(--space-5, 20px);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Medium (md) - Standard Desktop (40px) */
+.focient-btn--md {
+  min-height: 40px;
   padding: 0 var(--space-4, 16px);
   font-size: 14px;
+  font-weight: 500;
 }
 
-@media (min-width: 64rem) {
-  .focient-btn--md {
-    min-height: 40px;
-    font-size: 16px;
-  }
-}
-
-/* Compact size for task card actions */
+/* Small (sm) - In-Card/Inline (32px) */
 .focient-btn--sm {
   min-height: 32px;
   padding: 0 var(--space-3, 12px);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 500;
   border-radius: var(--radius-sm, 4px);
 }
 
-/* Active / Press state: tactile feedback */
-.focient-btn:active:not(:disabled) {
+/* Full Width Modifier */
+.focient-btn--full {
+  width: 100%;
+}
+
+/* Mobile Touch Safety Fallback */
+@media (max-width: 63.99rem) {
+  .focient-btn--md {
+    min-height: 48px;
+    font-size: 15px;
+  }
+}
+
+/* Active / Pressed: scale(0.98) tactile confirmation in 150ms */
+.focient-btn:active:not(:disabled):not(.focient-btn--loading) {
   transform: scale(0.98);
 }
 
-.focient-btn:disabled {
-  opacity: 0.5;
+/* Disabled */
+.focient-btn:disabled,
+.focient-btn[aria-disabled="true"] {
+  opacity: 0.4;
   cursor: not-allowed;
+  pointer-events: none;
 }
 
+/* Variants */
 .focient-btn--primary {
   background-color: var(--color-primary-action-base, #2563EB);
   color: #FFFFFF;
 }
 
-.focient-btn--primary:hover:not(:disabled) {
-  background-color: var(--color-primary-action-hover, #1D4ED8);
+@media (hover: hover) and (pointer: fine) {
+  .focient-btn--primary:hover:not(:disabled):not(.focient-btn--loading) {
+    background-color: var(--color-primary-action-hover, #1D4ED8);
+  }
+}
+
+.focient-btn--primary:active:not(:disabled):not(.focient-btn--loading) {
+  background-color: var(--color-primary-border-bold, #1E40AF);
 }
 
 .focient-btn--secondary {
   background-color: var(--color-secondary-action-base, #0D9488);
   color: #FFFFFF;
-  font-weight: 500;
 }
 
-.focient-btn--secondary:hover:not(:disabled) {
-  background-color: var(--color-secondary-action-hover, #0F766E);
+@media (hover: hover) and (pointer: fine) {
+  .focient-btn--secondary:hover:not(:disabled):not(.focient-btn--loading) {
+    background-color: var(--color-secondary-action-hover, #0F766E);
+  }
 }
 
+.focient-btn--secondary:active:not(:disabled):not(.focient-btn--loading) {
+  background-color: var(--color-secondary-border-bold, #115E59);
+}
+
+.focient-btn--outline,
 .focient-btn--ghost {
   background-color: transparent;
-  border-color: var(--color-border, #CBD5E1);
-  color: var(--color-text-main, #0F172A);
-  font-weight: 500;
+  border-color: var(--color-neutral-border-subtle, #CBD5E1);
+  color: var(--color-neutral-text-bold, #0F172A);
 }
 
-.focient-btn--ghost:hover:not(:disabled) {
-  background-color: var(--color-neutral-surface-muted, #F1F5F9);
+@media (hover: hover) and (pointer: fine) {
+  .focient-btn--outline:hover:not(:disabled):not(.focient-btn--loading),
+  .focient-btn--ghost:hover:not(:disabled):not(.focient-btn--loading) {
+    background-color: var(--color-neutral-surface-muted, #F1F5F9);
+  }
 }
 
-/* ==========================================================================
+.focient-btn--outline:active:not(:disabled):not(.focient-btn--loading),
+.focient-btn--ghost:active:not(:disabled):not(.focient-btn--loading) {
+  background-color: #E2E8F0;
+}
+
+.focient-btn--destructive {
+  background-color: var(--color-danger-action-base, #E11D48);
+  color: #FFFFFF;
+}
+.focient-btn--destructive:hover:not(:disabled) {
+  background-color: #BE123C;
+}
+
+.focient-btn--subtle-primary {
+  background-color: var(--color-primary-bg-subtle, #EFF6FF);
+  border-color: var(--color-primary-border-subtle, #DBEAFE);
+  color: var(--color-primary-text-bold, #1E3A8A);
+}
+.focient-btn--subtle-primary:hover:not(:disabled) {
+  background-color: #DBEAFE;
+}
+
+.focient-btn--subtle-secondary {
+  background-color: var(--color-secondary-bg-subtle, #F0FDFA);
+  border-color: var(--color-secondary-border-subtle, #CCFBF1);
+  color: var(--color-secondary-text-bold, #134E4A);
+}
+.focient-btn--subtle-secondary:hover:not(:disabled) {
+  background-color: #CCFBF1;
+}
+
+/* Loading Spinner */
+.focient-btn--loading {
+  cursor: wait;
+}
+.focient-btn-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: focient-spin 700ms linear infinite;
+}
+.focient-btn--ghost .focient-btn-spinner,
+.focient-btn--subtle-primary .focient-btn-spinner,
+.focient-btn--subtle-secondary .focient-btn-spinner {
+  border-color: rgba(15, 23, 42, 0.2);
+  border-top-color: currentColor;
+}
+@keyframes focient-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --------------------------------------------------------------------------
    2. INPUT FIELD (<InputField/>)
-   ========================================================================== */
+   -------------------------------------------------------------------------- */
 .focient-input-container {
   display: flex;
   flex-direction: column;
   gap: var(--space-1, 4px);
   width: 100%;
+  box-sizing: border-box;
+}
+
+.focient-input-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .focient-input-label {
   font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
   font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-muted, #64748B);
+  font-weight: 600;
+  color: var(--color-text-main, #0F172A);
+}
+
+.focient-input-box-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 
 .focient-input {
   width: 100%;
   min-height: 48px;
-  padding: var(--space-2, 8px) var(--space-4, 16px);
-  background-color: var(--color-surface, #FFFFFF);
-  border: 1px solid var(--color-border, #CBD5E1);
+  padding: 0 var(--space-4, 16px);
+  background-color: var(--color-neutral-surface-card, #FFFFFF);
+  border: 1px solid var(--color-neutral-border-subtle, #CBD5E1);
   border-radius: var(--radius-md, 8px);
   font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
   font-size: 14px;
   font-weight: 400;
-  color: var(--color-text-main, #0F172A);
+  color: var(--color-neutral-text-bold, #0F172A);
+  caret-color: var(--color-primary-action-base, #2563EB);
   box-sizing: border-box;
   transition:
-    border-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
-    box-shadow var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
+    border-color var(--duration-fast, 150ms) cubic-bezier(0.2, 0, 0, 1),
+    background-color var(--duration-fast, 150ms) cubic-bezier(0.2, 0, 0, 1),
+    box-shadow var(--duration-fast, 150ms) cubic-bezier(0.2, 0, 0, 1);
 }
 
 @media (min-width: 64rem) {
   .focient-input {
     min-height: 40px;
-    font-size: 16px;
   }
 }
 
-.focient-input::placeholder {
-  color: var(--color-text-subtle, #94A3B8);
+@media (hover: hover) and (pointer: fine) {
+  .focient-input:hover:not(:disabled):not(:focus) {
+    border-color: var(--color-neutral-border-bold, #94A3B8);
+    cursor: text;
+  }
 }
 
 .focient-input:focus {
   outline: none;
   border: 2px solid var(--color-primary-action-base, #2563EB);
-  padding: calc(var(--space-2, 8px) - 1px) calc(var(--space-4, 16px) - 1px);
+  color: var(--color-neutral-text-bold, #0F172A);
+  padding-left: calc(var(--space-4, 16px) - 1px);
+  padding-right: calc(var(--space-4, 16px) - 1px);
+}
+
+.focient-input::placeholder {
+  color: var(--color-neutral-text-subtle, #94A3B8);
+}
+
+.focient-input:disabled {
+  background-color: var(--color-neutral-surface-muted, #F1F5F9);
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .focient-input--error {
-  border-color: var(--color-danger-action-base, #E11D48);
+  border: 2px solid var(--color-danger-action-base, #E11D48) !important;
 }
 
-/* ==========================================================================
+/* Input Leading & Trailing Slots */
+.focient-input-leading {
+  position: absolute;
+  left: var(--space-3, 12px);
+  display: flex;
+  align-items: center;
+  color: var(--color-text-muted, #64748B);
+  pointer-events: none;
+}
+.focient-input--with-leading {
+  padding-left: 38px !important;
+}
+
+.focient-input-trailing {
+  position: absolute;
+  right: var(--space-3, 12px);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1, 4px);
+  color: var(--color-text-muted, #64748B);
+}
+.focient-input--with-trailing {
+  padding-right: 48px !important;
+}
+
+.focient-input-icon-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--color-text-muted, #64748B);
+  border-radius: var(--radius-sm, 4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 150ms ease;
+}
+.focient-input-icon-btn:hover {
+  color: var(--color-text-main, #0F172A);
+}
+
+.focient-input-unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted, #64748B);
+  pointer-events: none;
+  padding-right: 4px;
+}
+
+/* Textarea variant */
+.focient-textarea {
+  min-height: 96px;
+  padding: 12px 16px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* Helper text & error note (Guilt-Free / Non-punitive) */
+.focient-input-helper {
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-muted, #64748B);
+  margin-top: 2px;
+}
+.focient-input-helper--error {
+  color: var(--color-danger-text-bold, #9F1239);
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
    3. CHECKBOX (<Checkbox/>)
-   ========================================================================== */
+   -------------------------------------------------------------------------- */
 .focient-checkbox-wrapper {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: var(--space-3, 12px);
   min-width: 48px;
   min-height: 48px;
   cursor: pointer;
   user-select: none;
   touch-action: manipulation;
+  outline: none;
+}
+
+@media (min-width: 64rem) {
+  .focient-checkbox-wrapper {
+    min-width: 36px;
+    min-height: 36px;
+  }
 }
 
 .focient-checkbox-box {
   width: 20px;
   height: 20px;
   border-radius: var(--radius-sm, 4px);
-  border: 1.5px solid var(--color-border, #CBD5E1);
-  background-color: transparent;
+  border: 1.5px solid var(--color-neutral-border-subtle, #CBD5E1);
+  background-color: var(--color-neutral-surface-card, #FFFFFF);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
   transition:
     background-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
-    border-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
+    border-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    box-shadow var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    transform 100ms var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
-.focient-checkbox-wrapper:hover .focient-checkbox-box {
-  border-color: var(--color-primary-action-base, #2563EB);
+@media (hover: hover) and (pointer: fine) {
+  .focient-checkbox-wrapper:hover:not(.focient-checkbox-wrapper--disabled) .focient-checkbox-box {
+    border-color: var(--color-primary-action-base, #2563EB);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+  }
+}
+
+.focient-checkbox-wrapper:active:not(.focient-checkbox-wrapper--disabled) .focient-checkbox-box {
+  transform: scale(0.92);
 }
 
 .focient-checkbox-box--checked {
-  background-color: var(--color-primary-action-base, #2563EB);
-  border-color: var(--color-primary-action-base, #2563EB);
+  background-color: var(--color-primary-action-base, #2563EB) !important;
+  border-color: var(--color-primary-action-base, #2563EB) !important;
+}
+
+.focient-checkbox-box--success {
+  background-color: var(--color-success-action-base, #059669) !important;
+  border-color: var(--color-success-action-base, #059669) !important;
+}
+
+.focient-checkbox-box--needs-adjustment {
+  background-color: var(--color-warning-bg-subtle, #FFFBEB) !important;
+  border-color: var(--color-warning-action-base, #D97706) !important;
+  color: var(--color-warning-action-base, #D97706) !important;
 }
 
 .focient-checkbox-icon {
@@ -184,37 +444,64 @@
   transform: scale(0.7);
   opacity: 0;
   transition:
-    transform var(--duration-fast, 150ms) var(--ease-decelerate, cubic-bezier(0, 0, 0.2, 1)),
-    opacity var(--duration-fast, 150ms) var(--ease-decelerate, cubic-bezier(0, 0, 0.2, 1));
+    transform var(--duration-fast, 150ms) var(--ease-decelerate, cubic-bezier(0.0, 0, 0.2, 1)),
+    opacity var(--duration-fast, 150ms) var(--ease-decelerate, cubic-bezier(0.0, 0, 0.2, 1));
 }
 
-.focient-checkbox-box--checked .focient-checkbox-icon {
+.focient-checkbox-box--checked .focient-checkbox-icon,
+.focient-checkbox-box--success .focient-checkbox-icon {
   transform: scale(1.0);
   opacity: 1;
 }
 
-/* ==========================================================================
-   4. BADGE / TAG (<Badge/>)
-   ========================================================================== */
+.focient-checkbox-wrapper--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.focient-checkbox-label {
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-main, #0F172A);
+  transition: color 150ms ease, text-decoration 150ms ease;
+}
+
+.focient-checkbox-label--strikethrough {
+  text-decoration: line-through;
+  color: var(--color-text-muted, #64748B);
+}
+
+/* --------------------------------------------------------------------------
+   4. BADGE, TAG & CHIP (<Badge/>, <Tag/>, <Chip/>)
+   -------------------------------------------------------------------------- */
+/* Status Badge (Non-interactive Pill) */
 .focient-badge {
   display: inline-flex;
   align-items: center;
-  padding: var(--space-1, 4px) var(--space-2, 8px);
+  gap: 4px;
   border-radius: var(--radius-full, 9999px);
   font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
   font-weight: 500;
-  font-size: 11px;
   line-height: 1;
-  font-feature-settings: var(--typography-feature-tabular-figures, 'tnum');
+  font-feature-settings: var(--typography-feature-tabular-figures, 'tnum') 1;
   font-variant-numeric: tabular-nums;
   border: 1px solid transparent;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
-@media (min-width: 64rem) {
-  .focient-badge {
-    font-size: 12px;
-  }
+.focient-badge--sm {
+  height: 24px;
+  padding: 0 var(--space-2, 8px);
+  font-size: 12px;
+}
+
+.focient-badge--xs {
+  height: 20px;
+  padding: 0 6px;
+  font-size: 11px;
 }
 
 .focient-badge--focus {
@@ -241,9 +528,880 @@
   color: var(--color-warning-text-bold, #92400E);
 }
 
-/* ==========================================================================
-   5. TASK CARD (<TaskCard/>)
-   ========================================================================== */
+.focient-badge--success {
+  background-color: var(--color-success-bg-subtle, #ECFDF5);
+  border-color: var(--color-success-border-subtle, #A7F3D0);
+  color: var(--color-success-text-bold, #065F46);
+}
+
+/* Project Category Tag (with 8px dot) */
+.focient-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm, 4px);
+  background-color: var(--color-neutral-surface-muted, #F1F5F9);
+  border: 1px solid var(--color-border, #CBD5E1);
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-main, #0F172A);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.focient-tag-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Chip (Interactive Filter & Input Chip) */
+.focient-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius-full, 9999px);
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid var(--color-neutral-border-subtle, #CBD5E1);
+  background-color: var(--color-neutral-surface-card, #FFFFFF);
+  color: var(--color-neutral-text-muted, #64748B);
+  padding: 0 var(--space-3, 12px);
+  height: 28px;
+  box-sizing: border-box;
+  transition:
+    background-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    border-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+@media (max-width: 63.99rem) {
+  .focient-chip {
+    height: 32px;
+    padding: 0 14px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .focient-chip:hover:not(.focient-chip--selected) {
+    background-color: var(--color-neutral-surface-muted, #F1F5F9);
+    border-color: var(--color-neutral-border-bold, #94A3B8);
+    color: var(--color-neutral-text-muted, #64748B);
+  }
+}
+
+.focient-chip--selected {
+  background-color: var(--color-primary-bg-subtle, #EFF6FF);
+  border: 1.5px solid var(--color-primary-action-base, #2563EB);
+  color: var(--color-primary-text-bold, #1E3A8A);
+  font-weight: 600;
+}
+
+.focient-chip-dismiss-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: inherit;
+  opacity: 0.7;
+  border-radius: 50%;
+  transition: opacity 150ms ease, color 150ms ease;
+}
+
+.focient-chip-dismiss-btn:hover {
+  opacity: 1;
+  color: var(--color-neutral-text-bold, #0F172A);
+}
+
+/* --------------------------------------------------------------------------
+   5. RADIO BUTTON & RADIO CARD ROW (<Radio/>, <RadioCard/>)
+   -------------------------------------------------------------------------- */
+.focient-radio-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  min-width: 48px;
+  min-height: 48px;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+@media (min-width: 64rem) {
+  .focient-radio-wrapper {
+    min-width: 36px;
+    min-height: 36px;
+  }
+}
+
+.focient-radio-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--color-neutral-border-subtle, #CBD5E1);
+  background-color: var(--color-neutral-surface-card, #FFFFFF);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition:
+    border-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    background-color var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+@media (min-width: 64rem) {
+  .focient-radio-circle {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .focient-radio-wrapper:hover:not(.focient-radio-wrapper--disabled) .focient-radio-circle {
+    border-color: var(--color-primary-action-base, #2563EB);
+    background-color: rgba(37, 99, 235, 0.08);
+  }
+}
+
+.focient-radio-circle--selected {
+  border: 2px solid var(--color-primary-action-base, #2563EB);
+}
+
+.focient-radio-circle--adaptive {
+  border: 2px solid var(--color-secondary-action-base, #0D9488);
+}
+
+.focient-radio-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--color-primary-action-base, #2563EB);
+  transform: scale(0);
+  transition: transform var(--duration-fast, 150ms) var(--ease-decelerate, cubic-bezier(0.0, 0, 0.2, 1));
+}
+
+@media (min-width: 64rem) {
+  .focient-radio-dot {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+.focient-radio-circle--selected .focient-radio-dot {
+  transform: scale(1);
+}
+
+.focient-radio-circle--adaptive .focient-radio-dot {
+  background-color: var(--color-secondary-action-base, #0D9488);
+}
+
+.focient-radio-wrapper--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Radio Card Row (Full row option e.g. for focus block duration) */
+.focient-radio-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 16px 12px;
+  border-radius: var(--radius-md, 8px);
+  border: 1.5px solid var(--color-border, #CBD5E1);
+  background-color: var(--color-surface, #FFFFFF);
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+  transition:
+    border-color 150ms cubic-bezier(0.2, 0, 0, 1),
+    background-color 150ms cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 150ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.focient-radio-card:hover:not(.focient-radio-card--disabled) {
+  border-color: var(--color-primary-action-base, #2563EB);
+}
+
+.focient-radio-card--selected {
+  border-color: var(--color-primary-action-base, #2563EB) !important;
+  background-color: var(--color-primary-bg-subtle, #EFF6FF) !important;
+}
+
+.focient-radio-card--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   6. TOGGLE SWITCH (<Toggle/>)
+   -------------------------------------------------------------------------- */
+.focient-toggle-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+/* Standard / Mobile Track (44px x 24px) */
+.focient-toggle-track {
+  width: 44px;
+  height: 24px;
+  background-color: var(--color-neutral-border-subtle, #CBD5E1);
+  border-radius: var(--radius-full, 9999px);
+  position: relative;
+  transition:
+    background-color var(--duration-normal, 200ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    box-shadow var(--duration-normal, 200ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
+  box-sizing: border-box;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+/* Compact / Desktop Track (36px x 20px) */
+.focient-toggle-track--compact {
+  width: 36px;
+  height: 20px;
+}
+
+.focient-toggle-knob {
+  width: 20px;
+  height: 20px;
+  background-color: #FFFFFF;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition:
+    transform var(--duration-normal, 200ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1)),
+    width var(--duration-fast, 150ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.focient-toggle-track--compact .focient-toggle-knob {
+  width: 16px;
+  height: 16px;
+}
+
+/* Checked States */
+.focient-toggle-track--checked {
+  background-color: var(--color-primary-action-base, #2563EB);
+}
+
+.focient-toggle-track--checked .focient-toggle-knob {
+  transform: translateX(20px);
+}
+
+.focient-toggle-track--compact.focient-toggle-track--checked .focient-toggle-knob {
+  transform: translateX(16px);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .focient-toggle-wrapper:hover:not(.focient-toggle-wrapper--disabled) .focient-toggle-track:not(.focient-toggle-track--checked) {
+    background-color: var(--color-neutral-border-bold, #94A3B8);
+  }
+  .focient-toggle-wrapper:hover:not(.focient-toggle-wrapper--disabled) .focient-toggle-track--checked {
+    background-color: var(--color-primary-action-hover, #1D4ED8);
+  }
+}
+
+/* Tactile Pressed Expansion (Elastic Thumb Effect: width 24px) */
+.focient-toggle-wrapper:active:not(.focient-toggle-wrapper--disabled) .focient-toggle-knob,
+.focient-toggle-wrapper--pressed .focient-toggle-knob {
+  width: 24px;
+}
+
+.focient-toggle-wrapper--disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.focient-toggle-wrapper--disabled .focient-toggle-track {
+  background-color: var(--color-neutral-surface-muted, #F1F5F9);
+}
+
+.focient-toggle-wrapper--disabled .focient-toggle-knob {
+  background-color: var(--color-neutral-border-subtle, #CBD5E1);
+  box-shadow: none;
+}
+
+.focient-toggle-wrapper--disabled .focient-checkbox-label {
+  opacity: 0.4;
+}
+
+/* --------------------------------------------------------------------------
+   7. TOOLTIP (<Tooltip/>) - CALM UI / SOFT LIGHT
+   -------------------------------------------------------------------------- */
+.focient-tooltip-container {
+  position: relative;
+  display: inline-flex;
+}
+
+.focient-tooltip-bubble {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(2px);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm, 4px);
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  box-shadow: var(--shadow-1, 0px 1px 3px rgba(0, 0, 0, 0.12));
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-neutral-border-subtle, #CBD5E1);
+  color: #334155;
+  transition:
+    opacity 100ms var(--ease-accelerate, cubic-bezier(0.4, 0, 1, 1)),
+    transform 100ms var(--ease-accelerate, cubic-bezier(0.4, 0, 1, 1)),
+    visibility 100ms;
+  z-index: 50;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .focient-tooltip-container:hover .focient-tooltip-bubble:not(.focient-tooltip--dismissed),
+  .focient-tooltip-container:focus-within .focient-tooltip-bubble:not(.focient-tooltip--dismissed) {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+    transition:
+      opacity 150ms var(--ease-decelerate, cubic-bezier(0.0, 0, 0.2, 1)) 300ms,
+      transform 150ms var(--ease-decelerate, cubic-bezier(0.0, 0, 0.2, 1)) 300ms,
+      visibility 150ms 300ms;
+  }
+}
+
+/* Mobile / touch screens: Tooltip is suppressed/disabled */
+@media (hover: none) {
+  .focient-tooltip-bubble {
+    display: none !important;
+  }
+}
+
+.focient-tooltip--neutral {
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border, #CBD5E1);
+  color: #334155;
+}
+
+.focient-tooltip--info {
+  background-color: var(--color-info-bg-subtle, #F0F9FF);
+  border: 1px solid var(--color-info-border-subtle, #BAE6FD);
+  color: var(--color-info-text-bold, #075985);
+}
+
+.focient-tooltip--adaptive {
+  background-color: var(--color-secondary-bg-subtle, #F0FDFA);
+  border: 1px solid var(--color-secondary-border-subtle, #CCFBF1);
+  color: var(--color-secondary-text-bold, #134E4A);
+}
+
+/* --------------------------------------------------------------------------
+   8. NAVIGATION BARS (TOP, SIDE, BOTTOM)
+   -------------------------------------------------------------------------- */
+/* Top Header */
+.focient-top-nav {
+  height: 64px;
+  background-color: var(--color-surface, #FFFFFF);
+  border-bottom: 1px solid var(--color-border, #CBD5E1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-6, 24px);
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+@media (max-width: 63.99rem) {
+  .focient-top-nav {
+    height: 56px;
+    padding: 0 var(--space-4, 16px);
+  }
+}
+
+.focient-top-nav-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+}
+
+.focient-page-title {
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-main, #0F172A);
+  margin: 0;
+}
+
+.focient-top-nav-center {
+  display: flex;
+  align-items: center;
+  width: 320px;
+}
+
+@media (max-width: 63.99rem) {
+  .focient-top-nav-center {
+    display: none;
+  }
+}
+
+.focient-top-nav-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+}
+
+.focient-lang-switcher {
+  display: inline-flex;
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid var(--color-border, #CBD5E1);
+  overflow: hidden;
+}
+
+.focient-lang-btn {
+  background: var(--color-surface, #FFFFFF);
+  border: none;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-text-muted, #64748B);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.focient-lang-btn--active {
+  background: var(--color-primary-bg-subtle, #EFF6FF);
+  color: var(--color-primary-action-base, #2563EB);
+}
+
+/* Side Navigation (Desktop >= 1024px) */
+.focient-side-nav {
+  height: 100vh;
+  background-color: var(--color-surface, #FFFFFF);
+  border-right: 1px solid var(--color-border, #CBD5E1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-4, 16px);
+  box-sizing: border-box;
+  transition: width 200ms cubic-bezier(0.2, 0, 0, 1);
+  position: sticky;
+  top: 0;
+}
+
+.focient-side-nav--expanded {
+  width: 250px;
+}
+
+.focient-side-nav--collapsed {
+  width: 72px;
+}
+
+.focient-nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-md, 8px);
+  color: var(--color-text-muted, #64748B);
+  text-decoration: none;
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  box-sizing: border-box;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    border-left 150ms ease;
+}
+
+.focient-nav-item:hover {
+  background-color: var(--color-neutral-surface-muted, #F1F5F9);
+  color: var(--color-text-main, #0F172A);
+}
+
+.focient-nav-item--active {
+  background-color: var(--color-primary-bg-subtle, #EFF6FF);
+  color: var(--color-primary-text-bold, #1E3A8A);
+  border-left: 3px solid var(--color-primary-action-base, #2563EB);
+  font-weight: 600;
+}
+
+.focient-nav-item-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Bottom Navigation (Mobile <= 600px) */
+.focient-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background-color: var(--color-surface, #FFFFFF);
+  border-top: 1px solid var(--color-border, #CBD5E1);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 35;
+}
+
+.focient-bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 48px;
+  min-height: 48px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted, #64748B);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.focient-bottom-nav-item--active {
+  color: var(--color-primary-action-base, #2563EB);
+  font-weight: 600;
+}
+
+.focient-bottom-nav-add-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: var(--color-primary-action-base, #2563EB);
+  color: #FFFFFF;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  cursor: pointer;
+  margin-top: -16px;
+  transition: transform 150ms ease;
+}
+.focient-bottom-nav-add-btn:active {
+  transform: scale(0.92);
+}
+
+/* --------------------------------------------------------------------------
+   9. TOAST & ALERT (<Toast/>, <Alert/>)
+   -------------------------------------------------------------------------- */
+/* Floating Transient Toast */
+.focient-toast-container {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  pointer-events: none;
+}
+
+/* Desktop: Bottom-Right */
+@media (min-width: 64rem) {
+  .focient-toast-container {
+    bottom: 24px;
+    right: 24px;
+    width: 400px;
+  }
+}
+
+/* Mobile: Bottom-Center */
+@media (max-width: 63.99rem) {
+  .focient-toast-container {
+    bottom: 76px;
+    left: 16px;
+    right: 16px;
+  }
+}
+
+.focient-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  padding: 12px 16px;
+  border-radius: var(--radius-md, 8px);
+  background-color: #0F172A;
+  color: #FFFFFF;
+  box-shadow: var(--shadow-3, 0 4px 12px rgba(0, 0, 0, 0.25));
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 14px;
+  animation: focient-toast-in 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+@keyframes focient-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.focient-toast-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.focient-toast-action-btn {
+  background: none;
+  border: none;
+  color: #93C5FD;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm, 4px);
+}
+.focient-toast-action-btn:hover {
+  color: #FFFFFF;
+  text-decoration: underline;
+}
+
+/* System Banner / Inline Alert */
+.focient-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3, 12px);
+  padding: 14px 16px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid transparent;
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.focient-alert--success {
+  background-color: var(--color-success-bg-subtle, #ECFDF5);
+  border-color: var(--color-success-border-subtle, #A7F3D0);
+  color: var(--color-success-text-bold, #065F46);
+}
+
+.focient-alert--adaptive,
+.focient-alert--info {
+  background-color: var(--color-secondary-bg-subtle, #F0FDFA);
+  border-color: var(--color-secondary-border-subtle, #CCFBF1);
+  color: var(--color-secondary-text-bold, #134E4A);
+}
+
+.focient-alert--warning {
+  background-color: var(--color-warning-bg-subtle, #FFFBEB);
+  border-color: var(--color-warning-border-subtle, #FDE68A);
+  color: var(--color-warning-text-bold, #92400E);
+}
+
+.focient-alert--danger {
+  background-color: var(--color-danger-bg-subtle, #FFF1F2);
+  border-color: var(--color-danger-border-subtle, #FECDD3);
+  color: var(--color-danger-text-bold, #9F1239);
+}
+
+.focient-alert-body {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.focient-alert-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 2px 0;
+}
+
+/* --------------------------------------------------------------------------
+   10. MODAL & BOTTOM SHEET (<Modal/>, <BottomSheet/>)
+   -------------------------------------------------------------------------- */
+.focient-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: focient-scrim-in 300ms var(--ease-decelerate, cubic-bezier(0.0, 0, 0.2, 1)) forwards;
+}
+
+.focient-modal-backdrop--exiting {
+  animation: focient-scrim-out 200ms var(--ease-accelerate, cubic-bezier(0.4, 0, 1, 1)) forwards;
+}
+
+@keyframes focient-scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes focient-scrim-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Desktop Centered Dialog (560px) */
+.focient-modal-dialog {
+  width: 560px;
+  max-width: calc(100vw - 32px);
+  background-color: var(--color-neutral-surface-card, #FFFFFF);
+  border-radius: var(--radius-xl, 16px);
+  padding: 32px;
+  box-shadow: var(--shadow-4, 0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 8px 24px 8px rgba(0, 0, 0, 0.20));
+  box-sizing: border-box;
+  animation: focient-modal-in 300ms var(--ease-decelerate, cubic-bezier(0.0, 0, 0.2, 1)) forwards;
+}
+
+.focient-modal-dialog--exiting {
+  animation: focient-dialog-out 200ms var(--ease-accelerate, cubic-bezier(0.4, 0, 1, 1)) forwards;
+}
+
+@keyframes focient-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes focient-dialog-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+.focient-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4, 16px);
+}
+
+.focient-modal-title {
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-neutral-text-bold, #0F172A);
+  margin: 0;
+}
+
+.focient-modal-body {
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 14px;
+  color: var(--color-neutral-text-muted, #64748B);
+  line-height: 1.5;
+  margin-bottom: var(--space-6, 24px);
+}
+
+.focient-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3, 12px);
+}
+
+/* Mobile Bottom Sheet (100% width, slide-up 300ms) */
+@media (max-width: 63.99rem) {
+  .focient-modal-backdrop--sheet {
+    align-items: flex-end;
+  }
+
+  .focient-bottom-sheet {
+    width: 100%;
+    max-height: 90vh;
+    border-top-left-radius: var(--radius-xl, 16px);
+    border-top-right-radius: var(--radius-xl, 16px);
+    background-color: var(--color-neutral-surface-card, #FFFFFF);
+    padding: 20px 16px 28px;
+    box-sizing: border-box;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    animation: focient-sheet-slide-up 300ms var(--ease-decelerate, cubic-bezier(0.0, 0, 0.2, 1)) forwards;
+    touch-action: pan-y;
+  }
+
+  .focient-bottom-sheet--exiting {
+    animation: focient-sheet-slide-down 250ms var(--ease-accelerate, cubic-bezier(0.4, 0, 1, 1)) forwards;
+  }
+
+  .focient-bottom-sheet-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: var(--radius-full, 9999px);
+    background-color: var(--color-neutral-border-subtle, #CBD5E1);
+    margin: 0 auto 16px auto;
+    cursor: grab;
+    transition: background-color 150ms ease;
+  }
+
+  .focient-bottom-sheet-handle:active {
+    cursor: grabbing;
+    background-color: var(--color-neutral-border-bold, #94A3B8);
+  }
+
+  .focient-modal-actions--sheet {
+    flex-direction: column-reverse;
+    width: 100%;
+  }
+
+  .focient-modal-actions--sheet .focient-btn {
+    width: 100%;
+  }
+}
+
+@keyframes focient-sheet-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes focient-sheet-slide-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+/* --------------------------------------------------------------------------
+   11. ALL 7 CARDS SUITE (THE COMPLETE CARDS SUITE)
+   -------------------------------------------------------------------------- */
+/* Base Task Card */
 .focient-task-card {
   display: flex;
   align-items: center;
@@ -251,8 +1409,8 @@
   padding: var(--space-4, 16px);
   gap: var(--space-3, 12px);
   border-radius: var(--radius-lg, 12px);
-  border: 1px solid var(--color-border, #CBD5E1);
-  background-color: var(--color-surface, #FFFFFF);
+  border: 1px solid var(--color-neutral-border-subtle, #CBD5E1);
+  background-color: var(--color-neutral-surface-card, #FFFFFF);
   box-shadow: var(--shadow-1, 0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 1px 3px 1px rgba(0, 0, 0, 0.20));
   box-sizing: border-box;
   transition:
@@ -262,14 +1420,18 @@
 }
 
 @media (min-width: 64rem) {
-  .focient-task-card:hover {
+  .focient-task-card:hover:not(.focient-task-card--dragging) {
     transform: translateY(-2px);
     box-shadow: var(--shadow-2, 0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 2px 6px 2px rgba(0, 0, 0, 0.20));
   }
 }
 
-.focient-task-card--completed {
-  opacity: 0.6;
+/* Dragging / Reorder State (Desktop grabbing & floating shadow 3, scale 1.02) */
+.focient-task-card--dragging {
+  cursor: grabbing !important;
+  transform: scale(1.02) !important;
+  box-shadow: var(--shadow-3, 0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 4px 12px 4px rgba(0, 0, 0, 0.20)) !important;
+  z-index: 10;
 }
 
 .focient-task-card-content {
@@ -291,11 +1453,6 @@
   white-space: nowrap;
 }
 
-.focient-task-card--completed .focient-task-card-title {
-  text-decoration: line-through;
-  color: var(--color-text-muted, #64748B);
-}
-
 .focient-task-card-notes {
   font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
   font-size: 13px;
@@ -314,9 +1471,105 @@
   flex-shrink: 0;
 }
 
-/* ==========================================================================
-   6. DAILY CAPACITY METER (<DailyCapacityMeter/>)
-   ========================================================================== */
+/* Card 1: Single-Task Focus Card (Active Focus) */
+.focient-card--single-focus {
+  background-color: var(--color-primary-bg-subtle, #EFF6FF);
+  border: 1.5px solid var(--color-primary-action-base, #2563EB);
+  box-shadow: var(--shadow-2, 0 4px 10px rgba(37, 99, 235, 0.15));
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3, 12px);
+}
+
+.focient-focus-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.focient-focus-progress-track {
+  width: 100%;
+  height: 6px;
+  background-color: #DBEAFE;
+  border-radius: var(--radius-full, 9999px);
+  overflow: hidden;
+}
+
+.focient-focus-progress-fill {
+  height: 100%;
+  background-color: var(--color-primary-action-base, #2563EB);
+  border-radius: var(--radius-full, 9999px);
+  transition: width 300ms linear;
+}
+
+.focient-focus-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+}
+
+/* Card 2: Top 3 Priority Card */
+.focient-card--top-3 {
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border, #CBD5E1);
+  border-radius: var(--radius-lg, 12px);
+}
+
+/* Card 3: Timeline / Scheduled Task Card */
+.focient-card--scheduled {
+  padding: 16px;
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--color-border, #CBD5E1);
+  position: relative;
+}
+
+.focient-card-time-slot {
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted, #64748B);
+  font-feature-settings: 'tnum' 1;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 2px;
+}
+
+/* Card 4: Guilt-Free Adaptive / Reschedule Card */
+.focient-card--reschedule {
+  background-color: var(--color-warning-bg-subtle, #FFFBEB);
+  border: 1px solid var(--color-warning-border-subtle, #FDE68A);
+}
+
+/* Card 5: Backlog / Unscheduled Task Card */
+.focient-card--backlog {
+  padding: 12px 16px;
+  border-radius: var(--radius-md, 8px);
+}
+
+/* Card 6: Completed Task Card */
+.focient-card--completed {
+  background-color: var(--color-canvas, #F8FAFC);
+  border-color: #E2E8F0;
+  opacity: 0.6;
+}
+
+.focient-card--completed .focient-task-card-title {
+  text-decoration: line-through;
+  color: var(--color-text-muted, #64748B);
+}
+
+/* Card 7: Daily Capacity Meter & Analytics Card */
+.focient-capacity-card {
+  background-color: var(--color-surface, #FFFFFF);
+  border: 1px solid var(--color-border, #CBD5E1);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-4, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+  box-sizing: border-box;
+}
+
 .focient-capacity-meter {
   display: flex;
   flex-direction: column;
@@ -335,7 +1588,7 @@
 }
 
 .focient-capacity-figures {
-  font-feature-settings: var(--typography-feature-tabular-figures, 'tnum');
+  font-feature-settings: var(--typography-feature-tabular-figures, 'tnum') 1;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--color-text-main, #0F172A);
@@ -348,12 +1601,17 @@
   border-radius: var(--radius-full, 9999px);
   overflow: hidden;
   position: relative;
+  transition: background-color var(--duration-deliberate, 400ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 @media (min-width: 64rem) {
   .focient-capacity-track {
     height: 10px;
   }
+}
+
+.focient-capacity-track--light {
+  background-color: #CCFBF1;
 }
 
 .focient-capacity-fill {
@@ -364,101 +1622,275 @@
     background-color var(--duration-deliberate, 400ms) var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
-/* ==========================================================================
-   7. ADAPTIVE RESCHEDULE ALERT / BANNER / BOTTOM SHEET (<RescheduleAlert/>)
-   ========================================================================== */
-/* Desktop Push Banner */
-.focient-reschedule-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4, 16px);
-  padding: var(--space-4, 16px);
-  border-radius: var(--radius-lg, 12px);
-  background-color: var(--color-secondary-bg-subtle, #F0FDFA);
-  border: 1px solid var(--color-secondary-border-subtle, #CCFBF1);
-  box-shadow: var(--shadow-2, 0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 2px 6px 2px rgba(0, 0, 0, 0.20));
-  animation: focient-reveal 250ms var(--ease-fluid, cubic-bezier(0.4, 0, 0.2, 1));
-}
-
-@keyframes focient-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.focient-reschedule-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.focient-reschedule-label {
+.focient-capacity-advice {
   font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-secondary-text-bold, #134E4A);
+  font-size: 12px;
+  color: var(--color-warning-text-bold, #92400E);
+  background-color: var(--color-warning-bg-subtle, #FFFBEB);
+  border: 1px solid var(--color-warning-border-subtle, #FDE68A);
+  border-radius: var(--radius-sm, 4px);
+  padding: 8px 12px;
   margin: 0;
+  line-height: 1.4;
 }
 
-.focient-reschedule-description {
-  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
-  font-size: 13px;
-  color: var(--color-text-muted, #64748B);
-  margin: 0;
-}
-
-.focient-reschedule-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2, 8px);
-  flex-shrink: 0;
-}
-
-/* Mobile Bottom Sheet Overlay */
-.focient-sheet-backdrop {
+/* --------------------------------------------------------------------------
+   12. VIRTUAL KEYBOARD (NUMBER & GENERAL / MOBILE INPUT)
+   -------------------------------------------------------------------------- */
+.focient-keyboard-backdrop {
   position: fixed;
   inset: 0;
   background-color: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(4px);
-  z-index: 40;
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 55;
   display: flex;
   align-items: flex-end;
-  animation: focient-fade-in var(--duration-slow, 300ms) var(--ease-decelerate, cubic-bezier(0, 0, 0.2, 1));
+  animation: focient-fade-in 200ms cubic-bezier(0, 0, 0.2, 1);
 }
 
-@keyframes focient-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.focient-sheet-panel {
+.focient-keyboard-sheet {
   width: 100%;
-  background-color: var(--color-surface, #FFFFFF);
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: #F1F5F9;
   border-top-left-radius: var(--radius-xl, 16px);
   border-top-right-radius: var(--radius-xl, 16px);
-  padding: var(--space-5, 20px) var(--space-4, 16px) var(--space-6, 24px);
-  box-shadow: var(--shadow-4, 0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 8px 24px 8px rgba(0, 0, 0, 0.20));
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4, 16px);
-  animation: focient-sheet-slide-up var(--duration-slow, 300ms) var(--ease-decelerate, cubic-bezier(0, 0, 0.2, 1));
+  padding: 12px 8px calc(16px + env(safe-area-inset-bottom)) 8px;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18);
+  box-sizing: border-box;
+  animation: focient-sheet-slide-up 250ms cubic-bezier(0, 0, 0.2, 1);
 }
 
-@keyframes focient-sheet-slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-.focient-sheet-handle {
+.focient-keyboard-sheet-handle {
   width: 36px;
   height: 4px;
   border-radius: var(--radius-full, 9999px);
   background-color: var(--color-border, #CBD5E1);
-  margin: 0 auto var(--space-2, 8px);
+  margin: 0 auto 10px auto;
+}
+
+/* Inline Docked Container */
+.focient-keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  width: 100%;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.focient-keyboard--docked {
+  background-color: #F1F5F9;
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-3, 12px);
+  border: 1px solid var(--color-border, #CBD5E1);
+}
+
+/* Top Preview Bar */
+.focient-keyboard-preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2, 8px);
+  background-color: var(--color-surface, #FFFFFF);
+  border: 1.5px solid var(--color-primary-action-base, #2563EB);
+  border-radius: var(--radius-md, 8px);
+  padding: 8px 12px;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+.focient-keyboard-preview-text {
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-text-main, #0F172A);
+  overflow-x: auto;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.focient-keyboard-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 18px;
+  background-color: var(--color-primary-action-base, #2563EB);
+  vertical-align: text-bottom;
+  margin-left: 2px;
+  animation: focient-cursor-blink 1000ms infinite;
+}
+
+@keyframes focient-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Duration Preset Chips */
+.focient-keyboard-presets {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.focient-keyboard-preset-chip {
+  min-height: 36px;
+  min-width: 48px;
+  padding: 0 10px;
+  border-radius: var(--radius-full, 9999px);
+  border: 1px solid var(--color-border, #CBD5E1);
+  background-color: #FFFFFF;
+  color: var(--color-text-main, #0F172A);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 100ms ease;
+}
+
+.focient-keyboard-preset-chip:active {
+  transform: scale(0.94);
+  background-color: var(--color-primary-bg-subtle, #EFF6FF);
+  border-color: var(--color-primary-action-base, #2563EB);
+}
+
+/* Number Grid (3 Columns) */
+.focient-keyboard-num-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+
+.focient-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  height: 52px;
+  border-radius: var(--radius-md, 8px);
+  border: none;
+  background-color: #FFFFFF;
+  color: var(--color-text-main, #0F172A);
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  user-select: none;
+  touch-action: manipulation;
+  transition:
+    transform 100ms cubic-bezier(0.2, 0, 0, 1),
+    background-color 100ms ease,
+    box-shadow 100ms ease;
+}
+
+.focient-key:active {
+  transform: scale(0.92);
+  background-color: var(--color-primary-bg-subtle, #EFF6FF);
+}
+
+.focient-key:focus-visible {
+  outline: 2px solid #BFDBFE !important;
+  outline-offset: 2px !important;
+}
+
+.focient-key--num {
+  font-size: 22px;
+  font-feature-settings: 'tnum' 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.focient-key--special {
+  background-color: #E2E8F0;
+  color: var(--color-text-muted, #64748B);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.focient-key--action {
+  background-color: var(--color-primary-action-base, #2563EB);
+  color: #FFFFFF;
+  font-weight: 600;
+  font-size: 15px;
+}
+.focient-key--action:active {
+  background-color: var(--color-primary-action-hover, #1D4ED8);
+}
+
+/* General / QWERTY Keyboard Rows */
+.focient-keyboard-general-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.focient-keyboard-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+}
+
+.focient-key--letter {
+  flex: 1;
+  min-width: 28px;
+  min-height: 48px;
+  height: 48px;
+  font-size: 17px;
+  font-weight: 500;
+  padding: 0;
+}
+
+.focient-key--shift {
+  flex: 1.4;
+  background-color: #E2E8F0;
+  color: var(--color-text-main, #0F172A);
+  font-size: 14px;
+}
+
+.focient-key--shift-active {
+  background-color: var(--color-primary-action-base, #2563EB) !important;
+  color: #FFFFFF !important;
+}
+
+.focient-key--backspace {
+  flex: 1.4;
+  background-color: #E2E8F0;
+  color: var(--color-text-main, #0F172A);
+}
+
+.focient-key--mode {
+  flex: 1.4;
+  background-color: #E2E8F0;
+  color: var(--color-text-main, #0F172A);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.focient-key--space {
+  flex: 4;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted, #64748B);
+}
+
+.focient-key--done {
+  flex: 2;
+  background-color: var(--color-primary-action-base, #2563EB);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 600;
+}
+.focient-key--done:active {
+  background-color: var(--color-primary-action-hover, #1D4ED8);
 }
