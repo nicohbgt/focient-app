@@ -49,6 +49,19 @@ class FoCientCopywriting {
   final String minutesShort;
   final String hoursShort;
 
+  // Empathetic Validation Messages (Client & Server Contract)
+  final String taskTitleValidation;
+  final String taskDurationValidation;
+  final String taskCategoryValidation;
+  final String taskStartTimeValidation;
+  final String taskTop3QuotaValidation;
+  final String workHoursLimitValidation;
+  final String workHoursRangeValidation;
+  final String workHoursFormatValidation;
+  final String selectedCategoriesValidation;
+  final String confirmedStartTimeValidation;
+  final String endTimeCalculatedNotice;
+
   const FoCientCopywriting({
     required this.language,
     required this.localeName,
@@ -85,6 +98,17 @@ class FoCientCopywriting {
     required this.dailyWorkload,
     required this.minutesShort,
     required this.hoursShort,
+    required this.taskTitleValidation,
+    required this.taskDurationValidation,
+    required this.taskCategoryValidation,
+    required this.taskStartTimeValidation,
+    required this.taskTop3QuotaValidation,
+    required this.workHoursLimitValidation,
+    required this.workHoursRangeValidation,
+    required this.workHoursFormatValidation,
+    required this.selectedCategoriesValidation,
+    required this.confirmedStartTimeValidation,
+    required this.endTimeCalculatedNotice,
   });
 
   static const FoCientCopywriting id = FoCientCopywriting(
@@ -125,6 +149,18 @@ class FoCientCopywriting {
     dailyWorkload: 'Beban Kerja Harian',
     minutesShort: 'mnt',
     hoursShort: 'jam',
+    taskTitleValidation: 'Beri nama tugas singkat agar fokus kerjamu lebih terarah.',
+    taskDurationValidation: 'Tentukan durasi antara 5 hingga 480 menit (contoh: 30m atau 45m).',
+    taskCategoryValidation: 'Pilih satu pilar kategori agar pembagian fokusmu tercatat rapi.',
+    taskStartTimeValidation: 'Format jam mulai belum pas. Pilih slot waktu yang tersedia.',
+    taskTop3QuotaValidation:
+        '3 tugas fokus utama sudah penuh. Selesaikan salah satunya terlebih dahulu atau alihkan prioritas.',
+    workHoursLimitValidation: 'Tentukan batasan jam kerja harian yang realistis antara 1 hingga 16 jam.',
+    workHoursRangeValidation: 'Rentang jam kerja belum sesuai. Pastikan jam selesai setelah jam mulai.',
+    workHoursFormatValidation: 'Format waktu belum pas. Gunakan format 24 jam HH:mm (contoh: 09:00).',
+    selectedCategoriesValidation: 'Pilih minimal satu kategori kerja untuk memulai rencana pertamamu.',
+    confirmedStartTimeValidation: 'Slot waktu ini sudah terlewat. Pilih jam saat ini atau slot berikutnya.',
+    endTimeCalculatedNotice: 'Waktu selesai dihitung otomatis oleh sistem',
   );
 
   static const FoCientCopywriting en = FoCientCopywriting(
@@ -165,6 +201,18 @@ class FoCientCopywriting {
     dailyWorkload: 'Daily Workload',
     minutesShort: 'min',
     hoursShort: 'hr',
+    taskTitleValidation: 'Give your task a short title to guide your focus.',
+    taskDurationValidation: 'Set a duration between 5 and 480 minutes (e.g., 30m or 45m).',
+    taskCategoryValidation: 'Select a category pillar to keep your focus organized.',
+    taskStartTimeValidation: 'Start time format is not quite right. Select an available time slot.',
+    taskTop3QuotaValidation:
+        'The 3 main focus tasks are full. Complete one first or switch priority.',
+    workHoursLimitValidation: 'Set a realistic daily work hour limit between 1 and 16 hours.',
+    workHoursRangeValidation: 'Work hour range is not aligned. Make sure end time is after start time.',
+    workHoursFormatValidation: 'Time format is not aligned. Use 24-hour HH:mm (e.g., 09:00).',
+    selectedCategoriesValidation: 'Select at least one work category to start your first plan.',
+    confirmedStartTimeValidation: 'This time slot has already passed. Choose the current time or the next available slot.',
+    endTimeCalculatedNotice: 'End time is automatically calculated by the system',
   );
 
   static FoCientCopywriting of(FoCientLanguage language) {

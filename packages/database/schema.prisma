@@ -9,6 +9,7 @@ generator client {
 
 enum TaskPriority {
   TOP_3
+  REGULAR
   NORMAL
   LOW
 }
@@ -67,8 +68,9 @@ model Task {
   title           String
   notes           String?
   durationMinutes Int
-  priority        TaskPriority  @default(NORMAL)
+  priority        TaskPriority  @default(REGULAR)
   status          TaskStatus    @default(TODO)
+  categoryId      String?
   category        String?
   deadline        DateTime?
   scheduledStart  DateTime?

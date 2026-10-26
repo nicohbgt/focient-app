@@ -38,16 +38,26 @@ export interface AuthResponseDto {
 // ==========================================
 // 2. Task Management DTOs
 // ==========================================
-export type TaskPriority = 'TOP_3' | 'NORMAL' | 'LOW';
+export type TaskPriority = 'TOP_3' | 'REGULAR' | 'NORMAL' | 'LOW';
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'COMPLETED';
+
+export interface CategoryDto {
+  id: string;
+  userId?: string;
+  name: string;
+  color?: string;
+  isActive: boolean;
+}
 
 export interface CreateTaskDto {
   title: string;
   notes?: string;
   durationMinutes: number;
+  categoryId?: string;
   priority?: TaskPriority;
   deadline?: string;
   category?: string;
+  startTime?: string;
   scheduledStart?: string;
 }
 
@@ -55,10 +65,12 @@ export interface UpdateTaskDto {
   title?: string;
   notes?: string;
   durationMinutes?: number;
+  categoryId?: string;
   priority?: TaskPriority;
   status?: TaskStatus;
   deadline?: string;
   category?: string;
+  startTime?: string;
   scheduledStart?: string;
   completedAt?: string;
 }
@@ -71,8 +83,11 @@ export interface TaskResponseDto {
   durationMinutes: number;
   priority: TaskPriority;
   status: TaskStatus;
-  deadline?: string;
+  categoryId?: string;
   category?: string;
+  startTime?: string;
+  endTime?: string;
+  deadline?: string;
   scheduledStart?: string;
   scheduledEnd?: string;
   completedAt?: string;
@@ -85,6 +100,34 @@ export interface TaskFilterDto {
   priority?: TaskPriority;
   date?: string;
   isFocusTop3?: boolean;
+}
+
+// ==========================================
+// 2.1 Onboarding & Setup DTOs
+// ==========================================
+export interface OnboardingSetupDto {
+  workHoursLimit: number; // 1 to 16 hours (step 0.5)
+  startWorkTime: string;  // 24h format "HH:mm"
+  endWorkTime: string;    // 24h format "HH:mm"
+  selectedCategories: string[]; // 1 to 5 categories
+}
+
+// ==========================================
+// 2.2 Adaptive Scheduling Confirmation DTOs
+// ==========================================
+export interface AdaptiveScheduleConfirmDto {
+  taskId: string;
+  confirmedStartTime: string; // ISO 8601
+}
+
+/**
+ * Calculates endTime automatically: endTime = startTime + durationMinutes.
+ * FoCient principle: Independent time formatting without user input for endTime.
+ */
+export function calculateEndTime(startTimeIso: string, durationMinutes: number): string {
+  const start = new Date(startTimeIso);
+  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+  return end.toISOString();
 }
 
 // ==========================================

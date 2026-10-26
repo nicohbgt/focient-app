@@ -156,6 +156,21 @@ export interface FoCientCopywriting {
     preset45m: string;
     preset60m: string;
   };
+
+  // Empathetic Validation Messages (Client & Server Matrix)
+  validations: {
+    taskTitle: string;
+    taskDuration: string;
+    taskCategory: string;
+    taskStartTime: string;
+    taskTop3Quota: string;
+    workHoursLimit: string;
+    workHoursRange: string;
+    workHoursFormat: string;
+    selectedCategories: string;
+    confirmedStartTime: string;
+    endTimeCalculated: string;
+  };
 }
 
 export const idCopywriting: FoCientCopywriting = {
@@ -301,6 +316,21 @@ export const idCopywriting: FoCientCopywriting = {
     preset45m: '+45m',
     preset60m: '+60m',
   },
+
+  validations: {
+    taskTitle: 'Beri nama tugas singkat agar fokus kerjamu lebih terarah.',
+    taskDuration: 'Tentukan durasi antara 5 hingga 480 menit (contoh: 30m atau 45m).',
+    taskCategory: 'Pilih satu pilar kategori agar pembagian fokusmu tercatat rapi.',
+    taskStartTime: 'Format jam mulai belum pas. Pilih slot waktu yang tersedia.',
+    taskTop3Quota:
+      '3 tugas fokus utama sudah penuh. Selesaikan salah satunya terlebih dahulu atau alihkan prioritas.',
+    workHoursLimit: 'Tentukan batasan jam kerja harian yang realistis antara 1 hingga 16 jam.',
+    workHoursRange: 'Rentang jam kerja belum sesuai. Pastikan jam selesai setelah jam mulai.',
+    workHoursFormat: 'Format waktu belum pas. Gunakan format 24 jam HH:mm (contoh: 09:00).',
+    selectedCategories: 'Pilih minimal satu kategori kerja untuk memulai rencana pertamamu.',
+    confirmedStartTime: 'Slot waktu ini sudah terlewat. Pilih jam saat ini atau slot berikutnya.',
+    endTimeCalculated: 'Waktu selesai dihitung otomatis oleh sistem',
+  },
 };
 
 export const enCopywriting: FoCientCopywriting = {
@@ -445,6 +475,21 @@ export const enCopywriting: FoCientCopywriting = {
     preset30m: '+30m',
     preset45m: '+45m',
     preset60m: '+60m',
+  },
+
+  validations: {
+    taskTitle: 'Give your task a short title to guide your focus.',
+    taskDuration: 'Set a duration between 5 and 480 minutes (e.g., 30m or 45m).',
+    taskCategory: 'Select a category pillar to keep your focus organized.',
+    taskStartTime: 'Start time format is not quite right. Select an available time slot.',
+    taskTop3Quota:
+      'The 3 main focus tasks are full. Complete one first or switch priority.',
+    workHoursLimit: 'Set a realistic daily work hour limit between 1 and 16 hours.',
+    workHoursRange: 'Work hour range is not aligned. Make sure end time is after start time.',
+    workHoursFormat: 'Time format is not aligned. Use 24-hour HH:mm (e.g., 09:00).',
+    selectedCategories: 'Select at least one work category to start your first plan.',
+    confirmedStartTime: 'This time slot has already passed. Choose the current time or the next available slot.',
+    endTimeCalculated: 'End time is automatically calculated by the system',
   },
 };
 

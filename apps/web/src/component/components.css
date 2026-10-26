@@ -296,8 +296,13 @@
   pointer-events: none;
 }
 
-.focient-input--error {
+.focient-input--error,
+.focient-input--invalid {
   border: 2px solid var(--color-danger-action-base, #E11D48) !important;
+}
+
+.focient-input--warning {
+  border: 2px solid var(--color-warning-border, #F59E0B) !important;
 }
 
 /* Input Leading & Trailing Slots */
@@ -368,6 +373,23 @@
 .focient-input-helper--error {
   color: var(--color-danger-text-bold, #9F1239);
   font-weight: 500;
+}
+
+.focient-input-helper--warning {
+  color: var(--color-warning-text-bold, #B45309);
+  font-weight: 500;
+}
+
+.focient-warning-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  background-color: var(--color-warning-surface-subtle, #FEF3C7);
+  border: 1px solid var(--color-warning-border, #F59E0B);
+  border-radius: var(--radius-md, 8px);
+  font-size: 13px;
+  color: var(--color-warning-text-bold, #92400E);
 }
 
 /* --------------------------------------------------------------------------

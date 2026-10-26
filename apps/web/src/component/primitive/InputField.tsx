@@ -8,6 +8,9 @@ export interface InputFieldProps
   label?: string;
   helperText?: string;
   error?: string;
+  isInvalid?: boolean;
+  warning?: string;
+  isWarning?: boolean;
   variant?: 'text' | 'search' | 'numeric' | 'password' | 'textarea' | 'select';
   unit?: string;
   leadingIcon?: React.ReactNode;
@@ -21,9 +24,12 @@ export interface InputFieldProps
 /**
  * FoCient Input Field (<InputField/>)
  *
- * Designed with calm visual hierarchy and guilt-free solutive error guidance.
- * Height 48px (Mobile) / 40px (Desktop), radius 8px, 2px primary focus state.
- * Supports tabular numbers (tnum) for numeric durations.
+ * Implements FoCient Validation Standards:
+ * - isInvalid: true applies border --color-danger-action-base (#E11D48)
+ * - isWarning: true applies border --color-warning-border (Amber #F59E0B)
+ * - Tabular figures (tnum) for all numeric durations and quantities
+ * - WCAG 2.1 AAA Accessibility: aria-invalid, aria-describedby, role="alert"
+ * - Height 48px (Mobile) / 40px (Desktop), radius 8px, 2px focus state
  */
 export const InputField = React.forwardRef<
   HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
@@ -34,6 +40,9 @@ export const InputField = React.forwardRef<
       label,
       helperText,
       error,
+      isInvalid = false,
+      warning,
+      isWarning = false,
       variant = 'text',
       unit,
       leadingIcon,
@@ -64,6 +73,13 @@ export const InputField = React.forwardRef<
     const resolvedKeyboardMode = virtualKeyboardMode || (isNumeric ? 'number' : 'general');
 
     const hasValue = value !== undefined && value !== '';
+    const hasError = Boolean(error) || isInvalid;
+    const hasWarning = !hasError && (Boolean(warning) || isWarning);
+
+    const errorId = inputId ? `${inputId}-error` : undefined;
+    const warningId = inputId ? `${inputId}-warning` : undefined;
+    const helperId = inputId ? `${inputId}-helper` : undefined;
+    const describedBy = hasError ? errorId : hasWarning ? warningId : helperText ? helperId : undefined;
 
     return (
       <div className="focient-input-container">
@@ -91,11 +107,14 @@ export const InputField = React.forwardRef<
               tabIndex={disabled ? -1 : undefined}
               value={value as string}
               onChange={onChange as unknown as React.ChangeEventHandler<HTMLSelectElement>}
+              aria-invalid={hasError ? true : undefined}
+              aria-describedby={describedBy}
               className={[
                 'focient-input',
                 hasValue ? 'focient-input--filled' : '',
                 (leadingIcon || isSearch) ? 'focient-input--with-leading' : '',
-                error ? 'focient-input--error' : '',
+                hasError ? 'focient-input--error focient-input--invalid' : '',
+                hasWarning ? 'focient-input--warning' : '',
                 className,
               ]
                 .filter(Boolean)
@@ -119,11 +138,14 @@ export const InputField = React.forwardRef<
               tabIndex={disabled ? -1 : undefined}
               value={value}
               onChange={onChange as React.ChangeEventHandler<HTMLTextAreaElement>}
+              aria-invalid={hasError ? true : undefined}
+              aria-describedby={describedBy}
               className={[
                 'focient-input',
                 'focient-textarea',
                 hasValue ? 'focient-input--filled' : '',
-                error ? 'focient-input--error' : '',
+                hasError ? 'focient-input--error focient-input--invalid' : '',
+                hasWarning ? 'focient-input--warning' : '',
                 className,
               ]
                 .filter(Boolean)
@@ -139,13 +161,16 @@ export const InputField = React.forwardRef<
               tabIndex={disabled ? -1 : undefined}
               value={value}
               onChange={onChange as React.ChangeEventHandler<HTMLInputElement>}
+              aria-invalid={hasError ? true : undefined}
+              aria-describedby={describedBy}
               className={[
                 'focient-input',
                 isNumeric ? 'focient-tnum' : '',
                 hasValue ? 'focient-input--filled' : '',
                 (leadingIcon || isSearch) ? 'focient-input--with-leading' : '',
                 (unit || clearable || onClear || isPassword) ? 'focient-input--with-trailing' : '',
-                error ? 'focient-input--error' : '',
+                hasError ? 'focient-input--error focient-input--invalid' : '',
+                hasWarning ? 'focient-input--warning' : '',
                 className,
               ]
                 .filter(Boolean)
@@ -211,13 +236,19 @@ export const InputField = React.forwardRef<
           </div>
         </div>
 
-        {/* Solutive Helper Text / Non-Punitive Error */}
-        {error ? (
-          <span className="focient-input-helper focient-input-helper--error" role="alert">
+        {/* Solutive Helper Text / Non-Punitive Error / Warning */}
+        {hasError && error ? (
+          <span id={errorId} className="focient-input-helper focient-input-helper--error" role="alert">
             {error}
           </span>
+        ) : hasWarning && warning ? (
+          <span id={warningId} className="focient-input-helper focient-input-helper--warning" role="alert">
+            {warning}
+          </span>
         ) : helperText ? (
-          <span className="focient-input-helper">{helperText}</span>
+          <span id={helperId} className="focient-input-helper">
+            {helperText}
+          </span>
         ) : null}
 
         {/* Mobile Virtual Keyboard Sheet */}

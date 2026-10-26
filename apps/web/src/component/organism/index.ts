@@ -4,3 +4,6 @@ export * from './RescheduleAlert.js';
 export * from './NavBar.js';
 export * from './Toast.js';
 export * from './Modal.js';
+export * from './TaskValidationForm.js';
+export * from './OnboardingValidationForm.js';
+export * from './AdaptiveScheduleConfirmModal.js';

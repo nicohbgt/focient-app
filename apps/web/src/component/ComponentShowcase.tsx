@@ -41,6 +41,9 @@ import {
   AdaptiveRescheduleModal,
   QuickTaskEntryModal,
   DestructiveModal,
+  TaskValidationForm,
+  OnboardingValidationForm,
+  AdaptiveScheduleConfirmModal,
 } from './organism/index.js';
 import {
   Icon,
@@ -132,6 +135,7 @@ export const ComponentShowcaseInner: React.FC = () => {
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
   const [quickTaskModalOpen, setQuickTaskModalOpen] = useState(false);
   const [destructiveModalOpen, setDestructiveModalOpen] = useState(false);
+  const [adaptiveValidationModalOpen, setAdaptiveValidationModalOpen] = useState(false);
 
   // Lucide Icon Gallery State
   const [iconSearch, setIconSearch] = useState('');
@@ -1018,9 +1022,78 @@ export const ComponentShowcaseInner: React.FC = () => {
           </div>
         </section>
 
+        {/* Section 7: FoCient Guilt-Free Validation & Contract Standards */}
+        <section style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '20px' }}>🛡️</span>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>
+                7. FoCient Guilt-Free Validation & Contract Standards (Client & Server)
+              </h3>
+            </div>
+            <p style={{ margin: 0, color: '#64748B', fontSize: '13px' }}>
+              Zero punitive vocabulary • Auto-calculated endTime (endTime=startTime+durationMinutes) • Tabular figures (tnum) • Top 3 focus quota • WCAG 2.1 AAA aria-invalid states
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+            {/* Task Management Validation Form */}
+            <div>
+              <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600, color: '#1E293B' }}>
+                A. Task Management Form Contract
+              </h4>
+              <TaskValidationForm
+                onSubmit={(taskData) => {
+                  addToast(`Tugas tervalidasi: "${taskData.title}" (${taskData.durationMinutes}m)`);
+                }}
+              />
+            </div>
+
+            {/* Onboarding / Setup Validation Form */}
+            <div>
+              <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600, color: '#1E293B' }}>
+                B. Onboarding / Setup Form Contract
+              </h4>
+              <OnboardingValidationForm
+                onSubmit={(setupData) => {
+                  addToast(`Preferensi tersimpan: ${setupData.workHoursLimit} jam (${setupData.startWorkTime} - ${setupData.endWorkTime})`);
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Adaptive Scheduling Slot Helper Dialog */}
+          <div style={{ padding: '16px', backgroundColor: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A' }}>
+                C. Adaptive Scheduling Confirmation Helper (Past Time Slot Guard)
+              </div>
+              <div style={{ fontSize: '13px', color: '#64748B', marginTop: '2px' }}>
+                Memastikan tugas adaptif hari ini tidak dijadwalkan pada slot masa lalu, dengan respons kesalahan empatik tanpa rasa bersalah.
+              </div>
+            </div>
+            <Button
+              variant="subtle-primary"
+              onClick={() => setAdaptiveValidationModalOpen(true)}
+            >
+              Buka Konfirmasi Slot Adaptif
+            </Button>
+          </div>
+        </section>
+
       </div>
 
       {/* Modals & Dialogs */}
+      <AdaptiveScheduleConfirmModal
+        open={adaptiveValidationModalOpen}
+        onClose={() => setAdaptiveValidationModalOpen(false)}
+        taskTitle="Sesi Fokus Mendalam FoCient"
+        durationMinutes={45}
+        initialStartTime={new Date(Date.now() - 3600000).toISOString()} // 1 hour ago to demonstrate past slot helper
+        onConfirm={(confirmedTime) => {
+          addToast(`Slot waktu dikonfirmasi: ${new Date(confirmedTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+        }}
+      />
       <AdaptiveRescheduleModal
         open={rescheduleModalOpen}
         onClose={() => setRescheduleModalOpen(false)}
