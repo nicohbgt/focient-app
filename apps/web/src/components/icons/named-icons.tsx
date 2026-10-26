@@ -39,3 +39,7 @@ export const MoonIcon: React.FC<NamedIconProps> = (props) => <Icon name="moon" {
 export const BellIcon: React.FC<NamedIconProps> = (props) => <Icon name="bell" {...props} />;
 export const GripVerticalIcon: React.FC<NamedIconProps> = (props) => <Icon name="grip-vertical" {...props} />;
 export const LayoutDashboardIcon: React.FC<NamedIconProps> = (props) => <Icon name="layout-dashboard" {...props} />;
+export const AlertOctagonIcon: React.FC<NamedIconProps> = (props) => <Icon name="alert-octagon" {...props} />;
+export const RefreshCcwIcon: React.FC<NamedIconProps> = (props) => <Icon name="refresh-ccw" {...props} />;
+export const CloudOffIcon: React.FC<NamedIconProps> = (props) => <Icon name="cloud-off" {...props} />;
+export const ServerCrashIcon: React.FC<NamedIconProps> = (props) => <Icon name="server-crash" {...props} />;

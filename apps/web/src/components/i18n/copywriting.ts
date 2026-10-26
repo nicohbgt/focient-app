@@ -171,6 +171,22 @@ export interface FoCientCopywriting {
     confirmedStartTime: string;
     endTimeCalculated: string;
   };
+
+  // Error & Fail States (Guilt-Free, Anti-Accusatory, One-Click Recovery)
+  errorStates: {
+    microFailToast: string;
+    retryAction: string;
+    moduleFailTitle: string;
+    moduleFailBody: string;
+    reloadModuleAction: string;
+    syncConflictTitle: string;
+    syncConflictBody: string;
+    useLatestVersionAction: string;
+    keepDraftAction: string;
+    fullViewTitle: string;
+    fullViewBody: string;
+    fullViewAction: string;
+  };
 }
 
 export const idCopywriting: FoCientCopywriting = {
@@ -331,6 +347,21 @@ export const idCopywriting: FoCientCopywriting = {
     confirmedStartTime: 'Slot waktu ini sudah terlewat. Pilih jam saat ini atau slot berikutnya.',
     endTimeCalculated: 'Waktu selesai dihitung otomatis oleh sistem',
   },
+
+  errorStates: {
+    microFailToast: 'Perubahan belum tersimpan. Draf kamu tetap aman di perangkat.',
+    retryAction: 'Coba Lagi',
+    moduleFailTitle: 'Modul Belum Dapat Dimuat',
+    moduleFailBody: 'Data analitik sedang tidak dapat dijangkau. Aktivitas utama tetap dapat kamu jalankan seperti biasa.',
+    reloadModuleAction: 'Muat Ulang Modul',
+    syncConflictTitle: 'Ditemukan Penyesuaian Jadwal Terbaru',
+    syncConflictBody: 'Ada pembaruan linimasa dari perangkat lain. Pilih versi yang ingin kamu jadikan acuan fokus.',
+    useLatestVersionAction: 'Gunakan Versi Terkini',
+    keepDraftAction: 'Pertahankan Draf Ini',
+    fullViewTitle: 'Sistem Sedang Menyesuaikan Diri',
+    fullViewBody: 'Layanan FoCient sedang mengalami kendala sinkronisasi singkat. Tenang, seluruh tugas lokalmu tetap aman di perangkat ini.',
+    fullViewAction: 'Periksa Jaringan & Muat Ulang',
+  },
 };
 
 export const enCopywriting: FoCientCopywriting = {
@@ -490,6 +521,21 @@ export const enCopywriting: FoCientCopywriting = {
     selectedCategories: 'Select at least one work category to start your first plan.',
     confirmedStartTime: 'This time slot has already passed. Choose the current time or the next available slot.',
     endTimeCalculated: 'End time is automatically calculated by the system',
+  },
+
+  errorStates: {
+    microFailToast: "Changes couldn't be saved. Your draft remains safe on this device.",
+    retryAction: 'Try Again',
+    moduleFailTitle: 'Module Temporarily Unavailable',
+    moduleFailBody: "Analytics data couldn't be reached right now. Your main activities can continue smoothly.",
+    reloadModuleAction: 'Reload Module',
+    syncConflictTitle: 'Newer Schedule Adjustments Detected',
+    syncConflictBody: "Timeline updates were found from another device. Choose which version you'd like to use as your focus baseline.",
+    useLatestVersionAction: 'Use Latest Version',
+    keepDraftAction: 'Keep This Draft',
+    fullViewTitle: 'System Is Adjusting',
+    fullViewBody: 'FoCient services are experiencing a brief synchronization hiccup. All your local tasks remain completely safe on this device.',
+    fullViewAction: 'Check Network & Reload',
   },
 };
 

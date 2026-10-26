@@ -5,6 +5,7 @@ import { CheckCircleIcon, AlertCircleIcon, InfoIcon, XIcon } from '../icons/inde
 export interface ToastMessage {
   id: string;
   message: string;
+  variant?: 'default' | 'danger' | 'success';
   actionLabel?: string;
   onAction?: () => void;
   duration?: number;
@@ -19,12 +20,13 @@ export interface ToastProps {
 /**
  * FoCient Transient Toast (<Toast/>)
  *
- * Auto-dismiss with 4000ms (standard) / 6000ms (with undo action).
+ * Auto-dismiss with 4000ms (standard) / 6000ms (with undo action) / 7000ms (danger fail state).
  * Hovering on toast pauses the timer.
  */
 export const Toast: React.FC<ToastProps> = ({ toast, onDismiss, className = '' }) => {
   const { copywriting } = useFoCientI18n();
-  const defaultDuration = toast.actionLabel ? 6000 : 4000;
+  const isDanger = toast.variant === 'danger';
+  const defaultDuration = isDanger ? 7000 : toast.actionLabel ? 6000 : 4000;
   const duration = toast.duration ?? defaultDuration;
 
   const [remainingTime, setRemainingTime] = useState(duration);
@@ -55,12 +57,19 @@ export const Toast: React.FC<ToastProps> = ({ toast, onDismiss, className = '' }
   return (
     <div
       role="status"
-      aria-live="polite"
-      className={['focient-toast', className].filter(Boolean).join(' ')}
+      aria-live={isDanger ? 'assertive' : 'polite'}
+      className={['focient-toast', isDanger ? 'focient-toast--danger' : '', className].filter(Boolean).join(' ')}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="focient-toast-content">{toast.message}</div>
+      <div className="focient-toast-content">
+        {isDanger && (
+          <span style={{ color: 'var(--error-icon-base, #E11D48)', display: 'inline-flex', flexShrink: 0 }}>
+            <AlertCircleIcon size="xs" />
+          </span>
+        )}
+        <span>{toast.message}</span>
+      </div>
 
       {toast.actionLabel && (
         <button
@@ -77,8 +86,8 @@ export const Toast: React.FC<ToastProps> = ({ toast, onDismiss, className = '' }
 
       <button
         type="button"
-        className="focient-toast-action-btn"
-        style={{ padding: '2px 4px', opacity: 0.6 }}
+        className="focient-toast-action-btn focient-toast-close-btn"
+        style={{ padding: '2px 4px' }}
         onClick={() => onDismiss(toast.id)}
         aria-label={copywriting.actions.close}
       >

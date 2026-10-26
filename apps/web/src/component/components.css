@@ -6,6 +6,26 @@
 /* --------------------------------------------------------------------------
    0. BASE FOUNDATIONS, ACCESSIBILITY & TABULAR NUMBERS
    -------------------------------------------------------------------------- */
+:root {
+  --error-surface-subtle: #FFF1F2;
+  --error-border-subtle: #FECDD3;
+  --error-border-action: #E11D48;
+  --error-border-width: 2px;
+  --error-text-bold: #9F1239;
+  --error-text-muted: #64748B;
+  --error-icon-base: #E11D48;
+  --error-icon-muted: #64748B;
+  --error-action-destructive: #E11D48;
+  --error-conflict-surface: #FFFBEB;
+  --error-conflict-border: #FDE68A;
+  --error-conflict-accent: #D97706;
+  --error-conflict-text: #92400E;
+  --error-shake-offset: 4px;
+  --error-shake-duration: 200ms;
+  --error-toast-duration: 7000ms;
+  --error-helper-min-height: 20px;
+}
+
 .focient-tnum {
   font-feature-settings: var(--typography-feature-tabular-figures, 'tnum') 1;
   font-variant-numeric: tabular-nums;
@@ -214,6 +234,23 @@
   to { transform: rotate(360deg); }
 }
 
+/* Micro Action Fail Shake Animation (4px horizontal shake over 200ms) */
+@keyframes focient-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20%, 60% {
+    transform: translateX(calc(-1 * var(--error-shake-offset, 4px)));
+  }
+  40%, 80% {
+    transform: translateX(var(--error-shake-offset, 4px));
+  }
+}
+
+.focient-btn--shake {
+  animation: focient-shake var(--error-shake-duration, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* --------------------------------------------------------------------------
    2. INPUT FIELD (<InputField/>)
    -------------------------------------------------------------------------- */
@@ -298,7 +335,7 @@
 
 .focient-input--error,
 .focient-input--invalid {
-  border: 2px solid var(--color-danger-action-base, #E11D48) !important;
+  border: var(--error-border-width, 2px) solid var(--error-border-action, var(--color-danger-action-base, #E11D48)) !important;
 }
 
 .focient-input--warning {
@@ -371,13 +408,28 @@
   margin-top: 2px;
 }
 .focient-input-helper--error {
-  color: var(--color-danger-text-bold, #9F1239);
+  color: var(--error-text-bold, var(--color-danger-text-bold, #9F1239));
   font-weight: 500;
 }
 
 .focient-input-helper--warning {
   color: var(--color-warning-text-bold, #B45309);
   font-weight: 500;
+}
+
+/* Zero Layout Shift Helper Text Container & Trailing Alert Icon */
+.focient-input-helper-container {
+  min-height: var(--error-helper-min-height, 20px);
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.focient-input-trailing-alert {
+  color: var(--error-icon-base, var(--color-danger-action-base, #E11D48));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .focient-warning-banner {
@@ -1262,6 +1314,159 @@
   font-size: 14px;
   font-weight: 600;
   margin: 0 0 2px 0;
+}
+
+/* Danger Toast Variant (Subtle Red Surface, 1px Border, AAA Bold Text) */
+.focient-toast--danger {
+  background-color: var(--error-surface-subtle, #FFF1F2) !important;
+  border: 1px solid var(--error-border-subtle, #FECDD3) !important;
+  color: var(--error-text-bold, #9F1239) !important;
+  box-shadow: var(--shadow-3, 0 4px 12px rgba(0, 0, 0, 0.15)) !important;
+}
+
+.focient-toast--danger .focient-toast-content {
+  color: var(--error-text-bold, #9F1239);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+}
+
+.focient-toast--danger .focient-toast-action-btn {
+  color: var(--error-text-bold, #9F1239);
+  font-weight: 700;
+}
+
+.focient-toast--danger .focient-toast-action-btn:hover {
+  color: #7F1D1D;
+  text-decoration: underline;
+}
+
+.focient-toast--danger .focient-toast-close-btn {
+  color: var(--error-text-bold, #9F1239);
+  opacity: 0.7;
+}
+
+.focient-toast--danger .focient-toast-close-btn:hover {
+  opacity: 1;
+}
+
+/* Module / Component Inline Fail (<InlineModuleFail/>) */
+.focient-inline-fail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background-color: var(--error-surface-subtle, #FFF1F2);
+  border: 1px solid var(--error-border-subtle, #FECDD3);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-6, 24px);
+  gap: var(--space-3, 12px);
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.focient-inline-fail-icon {
+  color: var(--error-icon-base, #E11D48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.focient-inline-fail-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--error-text-bold, #9F1239);
+  margin: 0;
+}
+
+.focient-inline-fail-body {
+  font-size: 14px;
+  color: var(--error-text-muted, #64748B);
+  line-height: 1.5;
+  max-width: 480px;
+  margin: 0;
+}
+
+/* Data Conflict / Sync Fail Banner (<SyncConflictAlert/>) */
+.focient-sync-conflict-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3, 12px);
+  background-color: var(--error-conflict-surface, #FFFBEB);
+  border: 1px solid var(--error-conflict-border, #FDE68A);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-4, 16px);
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.focient-sync-conflict-icon {
+  color: var(--error-conflict-accent, #D97706);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.focient-sync-conflict-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.focient-sync-conflict-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--error-conflict-text, #92400E);
+  margin: 0 0 2px 0;
+}
+
+.focient-sync-conflict-description {
+  font-size: 13px;
+  color: var(--error-text-muted, #64748B);
+  line-height: 1.5;
+  margin: 0 0 var(--space-3, 12px) 0;
+}
+
+.focient-sync-conflict-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  flex-wrap: wrap;
+}
+
+/* Full-View / Page-Level Error (<FullViewError/>) */
+.focient-fullview-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 480px;
+  padding: var(--space-16, 64px) var(--space-6, 24px);
+  box-sizing: border-box;
+  width: 100%;
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+}
+
+.focient-fullview-icon {
+  color: var(--error-icon-muted, #64748B);
+  margin-bottom: var(--space-5, 20px);
+}
+
+.focient-fullview-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-neutral-text-bold, #0F172A);
+  margin: 0 0 var(--space-2, 8px) 0;
+}
+
+.focient-fullview-body {
+  font-size: 15px;
+  color: var(--error-text-muted, #64748B);
+  max-width: 480px;
+  line-height: 1.6;
+  margin: 0 0 var(--space-6, 24px) 0;
 }
 
 /* --------------------------------------------------------------------------

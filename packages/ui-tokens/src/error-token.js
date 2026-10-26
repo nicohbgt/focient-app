@@ -1,0 +1,22 @@
+/** GENERATED FILE. Source: ../tokens/error-token.json */
+export const errorTokens = Object.freeze(
+  {
+  "error-surface-subtle": "#FFF1F2",
+  "error-border-subtle": "#FECDD3",
+  "error-border-action": "#E11D48",
+  "error-border-width": "2px",
+  "error-text-bold": "#9F1239",
+  "error-text-muted": "#64748B",
+  "error-icon-base": "#E11D48",
+  "error-icon-muted": "#64748B",
+  "error-action-destructive": "#E11D48",
+  "error-conflict-surface": "#FFFBEB",
+  "error-conflict-border": "#FDE68A",
+  "error-conflict-accent": "#D97706",
+  "error-conflict-text": "#92400E",
+  "error-shake-offset": "4px",
+  "error-shake-duration": "200ms",
+  "error-toast-duration": "7000ms",
+  "error-helper-min-height": "20px"
+},
+);

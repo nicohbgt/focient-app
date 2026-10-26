@@ -5,6 +5,7 @@ import test from 'node:test';
 import { animationTokens } from '../src/animation-token.js';
 import { colorDarkTokens } from '../src/color-dark-token.js';
 import { colorTokens } from '../src/color-token.js';
+import { errorTokens } from '../src/error-token.js';
 import { iconTokens } from '../src/icon-token.js';
 import { shadowTokens } from '../src/shadow-token.js';
 import { spacingTokens } from '../src/spacing-token.js';
@@ -261,4 +262,42 @@ test('dark mode color artifacts contain canonical tokens and match contrast requ
     const ratio = contrastRatio(colorDarkTokens[`color-${category}-text-bold`], colorDarkTokens[`color-${category}-bg-subtle`]);
     assert.ok(ratio >= 7, `${category} dark mode contrast was ${ratio.toFixed(2)}:1; expected at least 7:1`);
   }
+});
+
+test('error and fail state token artifacts meet DTCG and multi-sensory accessibility contracts', async () => {
+  const source = JSON.parse(await readFile(new URL('tokens/error-token.json', packageUrl), 'utf8'));
+  const expected = flattenTokens(source.error, 'error');
+  const css = await readFile(new URL('src/error-token.css', packageUrl), 'utf8');
+  const dart = await readFile(new URL('lib/error_token.dart', packageUrl), 'utf8');
+  const cssTokens = Object.fromEntries(
+    [...css.matchAll(/--(error-[a-z-]+): ([^;]+);/g)].map(([, name, value]) => [name, value])
+  );
+
+  assert.deepEqual(errorTokens, expected);
+  assert.deepEqual(cssTokens, expected);
+
+  // Flutter Dart token class
+  assert.match(dart, /abstract final class FocientErrorTokens/);
+  assert.match(dart, /static const Color surfaceSubtle = Color\(0xFFFFF1F2\);/);
+  assert.match(dart, /static const Color borderSubtle = Color\(0xFFFECDD3\);/);
+  assert.match(dart, /static const Color borderAction = Color\(0xFFE11D48\);/);
+  assert.match(dart, /static const double borderWidth = 2\.0;/);
+  assert.match(dart, /static const Color textBold = Color\(0xFF9F1239\);/);
+  assert.match(dart, /static const Color textMuted = Color\(0xFF64748B\);/);
+  assert.match(dart, /static const Color iconBase = Color\(0xFFE11D48\);/);
+  assert.match(dart, /static const Color conflictSurface = Color\(0xFFFFFBEB\);/);
+  assert.match(dart, /static const Color conflictBorder = Color\(0xFFFDE68A\);/);
+  assert.match(dart, /static const Color conflictAccent = Color\(0xFFD97706\);/);
+  assert.match(dart, /static const double shakeOffset = 4\.0;/);
+  assert.match(dart, /static const Duration shakeDuration = Duration\(milliseconds: 200\);/);
+  assert.match(dart, /static const Duration toastDuration = Duration\(milliseconds: 7000\);/);
+  assert.match(dart, /static const double helperMinHeight = 20\.0;/);
+
+  // WCAG 2.1 AAA Contrast Contract: error message text (#9F1239) on error surface (#FFF1F2) >= 7:1
+  const errorTextRatio = contrastRatio(errorTokens['error-text-bold'], errorTokens['error-surface-subtle']);
+  assert.ok(errorTextRatio >= 7.0, `Error text contrast was ${errorTextRatio.toFixed(2)}:1; expected >= 7:1 (AAA)`);
+
+  // Error text on white card surface also >= 7:1 (AAA)
+  const errorCardRatio = contrastRatio(errorTokens['error-text-bold'], '#FFFFFF');
+  assert.ok(errorCardRatio >= 7.0, `Error text on white contrast was ${errorCardRatio.toFixed(2)}:1; expected >= 7:1 (AAA)`);
 });

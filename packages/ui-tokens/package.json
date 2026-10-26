@@ -63,7 +63,13 @@
       "types": "./src/shadow-token.d.ts",
       "default": "./src/shadow-token.js"
     },
-    "./shadow-token.json": "./tokens/shadow-token.json"
+    "./shadow-token.json": "./tokens/shadow-token.json",
+    "./error-token.css": "./src/error-token.css",
+    "./error-token": {
+      "types": "./src/error-token.d.ts",
+      "default": "./src/error-token.js"
+    },
+    "./error-token.json": "./tokens/error-token.json"
   },
   "scripts": {
     "generate": "node scripts/generate.mjs",

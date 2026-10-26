@@ -1,0 +1,108 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "error": {
+    "surface": {
+      "subtle": {
+        "$type": "color",
+        "$value": "#FFF1F2",
+        "$description": "System fail & error alert/toast surface background."
+      }
+    },
+    "border": {
+      "subtle": {
+        "$type": "color",
+        "$value": "#FECDD3",
+        "$description": "1px border stroke for system fail card, inline alert, and danger toast."
+      },
+      "action": {
+        "$type": "color",
+        "$value": "#E11D48",
+        "$description": "Active error border stroke for invalid input fields."
+      },
+      "width": {
+        "$type": "dimension",
+        "$value": "2px",
+        "$description": "Border stroke width for input fields in error state."
+      }
+    },
+    "text": {
+      "bold": {
+        "$type": "color",
+        "$value": "#9F1239",
+        "$description": "High-contrast error message title and helper text passing WCAG 2.1 AAA."
+      },
+      "muted": {
+        "$type": "color",
+        "$value": "#64748B",
+        "$description": "Calming, non-accusatory secondary description text for system failures."
+      }
+    },
+    "icon": {
+      "base": {
+        "$type": "color",
+        "$value": "#E11D48",
+        "$description": "Accent color for danger/error icons (AlertOctagon, AlertCircle, RefreshCcw)."
+      },
+      "muted": {
+        "$type": "color",
+        "$value": "#64748B",
+        "$description": "Muted icon color for full-view offline/server-crash illustrations."
+      }
+    },
+    "action": {
+      "destructive": {
+        "$type": "color",
+        "$value": "#E11D48",
+        "$description": "Base color for fatal/destructive recovery triggers."
+      }
+    },
+    "conflict": {
+      "surface": {
+        "$type": "color",
+        "$value": "#FFFBEB",
+        "$description": "Warm amber surface for sync conflict banners to prevent cognitive panic."
+      },
+      "border": {
+        "$type": "color",
+        "$value": "#FDE68A",
+        "$description": "Border stroke for sync conflict banner dialogs."
+      },
+      "accent": {
+        "$type": "color",
+        "$value": "#D97706",
+        "$description": "Accent marker and icon color for timeline sync conflicts."
+      },
+      "text": {
+        "$type": "color",
+        "$value": "#92400E",
+        "$description": "High-contrast title text for sync conflict resolutions."
+      }
+    },
+    "shake": {
+      "offset": {
+        "$type": "dimension",
+        "$value": "4px",
+        "$description": "Horizontal micro-shake offset distance on action failure."
+      },
+      "duration": {
+        "$type": "duration",
+        "$value": "200ms",
+        "$description": "Micro-shake animation duration for button action fail."
+      }
+    },
+    "toast": {
+      "duration": {
+        "$type": "duration",
+        "$value": "7000ms",
+        "$description": "Auto-dismiss duration for danger/error toasts (6-8s) to allow reading."
+      }
+    },
+    "helper": {
+      "min-height": {
+        "$type": "dimension",
+        "$value": "20px",
+        "$description": "Reserved container min-height for input helper/error text to prevent layout shift."
+      }
+    }
+  }
+}

@@ -137,6 +137,24 @@ const domains = [
     removePrefixForDart: false,
     dartLine: (name, value, domain) => createDartShadowLine(name, value, domain),
   },
+  {
+    name: 'error-token',
+    sourceGroup: 'error',
+    prefix: 'error',
+    javaScriptExport: 'errorTokens',
+    typeName: 'ErrorTokenName',
+    dartFile: 'error_token.dart',
+    dartClass: 'FocientErrorTokens',
+    dartImports: ["import 'package:flutter/widgets.dart';"],
+    dartDocumentation: [
+      '/// Shared semantic error, fail, and conflict tokens for FoCient Flutter applications.',
+      '///',
+      '/// Encapsulates multi-sensory feedback, zero layout shift, and anti-accusatory visual specifications.',
+    ],
+    cssValue: (value) => value,
+    removePrefixForDart: true,
+    dartLine: (name, value, domain) => createDartErrorLine(name, value, domain),
+  },
 ];
 
 function flattenTokens(node, prefix, path = [], tokens = {}, nameForPath = (segments) => `${prefix}-${segments.join('-')}`) {
@@ -241,6 +259,29 @@ function createDartShadowLine(name, value, domain) {
     layers.join('\n'),
     '  ];',
   ].join('\n');
+}
+
+function createDartErrorLine(name, value, domain) {
+  const dartName = toDartName(name, domain.removePrefixForDart);
+  if (typeof value === 'string' && value.startsWith('#')) {
+    return `  static const Color ${dartName} = Color(0xFF${value.slice(1)});`;
+  }
+  if (typeof value === 'string' && /^(\d+)ms$/.test(value)) {
+    const ms = Number.parseInt(value, 10);
+    return [
+      `  static const Duration ${dartName} = Duration(milliseconds: ${ms});`,
+      `  static const int ${dartName}Ms = ${ms};`,
+    ].join('\n');
+  }
+  if (typeof value === 'string' && /^(\d+(?:\.\d+)?)px$/.test(value)) {
+    return `  static const double ${dartName} = ${toDartDouble(value)};`;
+  }
+  if (typeof value === 'number') {
+    return Number.isInteger(value)
+      ? `  static const int ${dartName} = ${value};`
+      : `  static const double ${dartName} = ${value};`;
+  }
+  return `  static const String ${dartName} = '${value}';`;
 }
 
 function toDartName(tokenName, removePrefix) {

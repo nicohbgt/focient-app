@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useFoCientI18n } from '../i18n/I18nContext.js';
 import { MobileKeyboardBottomSheet } from './Keyboard.js';
-import { SearchIcon, XIcon } from '../icons/index.js';
+import { SearchIcon, XIcon, AlertCircleIcon } from '../icons/index.js';
 
 export interface InputFieldProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement | HTMLTextAreaElement>, 'size'> {
@@ -9,6 +9,7 @@ export interface InputFieldProps
   helperText?: string;
   error?: string;
   isInvalid?: boolean;
+  hasError?: boolean;
   warning?: string;
   isWarning?: boolean;
   variant?: 'text' | 'search' | 'numeric' | 'password' | 'textarea' | 'select';
@@ -41,6 +42,7 @@ export const InputField = React.forwardRef<
       helperText,
       error,
       isInvalid = false,
+      hasError: propHasError = false,
       warning,
       isWarning = false,
       variant = 'text',
@@ -73,7 +75,7 @@ export const InputField = React.forwardRef<
     const resolvedKeyboardMode = virtualKeyboardMode || (isNumeric ? 'number' : 'general');
 
     const hasValue = value !== undefined && value !== '';
-    const hasError = Boolean(error) || isInvalid;
+    const hasError = Boolean(error) || isInvalid || propHasError;
     const hasWarning = !hasError && (Boolean(warning) || isWarning);
 
     const errorId = inputId ? `${inputId}-error` : undefined;
@@ -168,7 +170,7 @@ export const InputField = React.forwardRef<
                 isNumeric ? 'focient-tnum' : '',
                 hasValue ? 'focient-input--filled' : '',
                 (leadingIcon || isSearch) ? 'focient-input--with-leading' : '',
-                (unit || clearable || onClear || isPassword) ? 'focient-input--with-trailing' : '',
+                (unit || clearable || onClear || isPassword || hasError) ? 'focient-input--with-trailing' : '',
                 hasError ? 'focient-input--error focient-input--invalid' : '',
                 hasWarning ? 'focient-input--warning' : '',
                 className,
@@ -233,23 +235,34 @@ export const InputField = React.forwardRef<
                 </svg>
               </button>
             )}
+
+            {/* Multi-Sensory Trailing Alert Icon (16px, #E11D48) */}
+            {hasError && (
+              <span className="focient-input-trailing-alert" aria-hidden="true">
+                <AlertCircleIcon size="xs" />
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Solutive Helper Text / Non-Punitive Error / Warning */}
-        {hasError && error ? (
-          <span id={errorId} className="focient-input-helper focient-input-helper--error" role="alert">
-            {error}
-          </span>
-        ) : hasWarning && warning ? (
-          <span id={warningId} className="focient-input-helper focient-input-helper--warning" role="alert">
-            {warning}
-          </span>
-        ) : helperText ? (
-          <span id={helperId} className="focient-input-helper">
-            {helperText}
-          </span>
-        ) : null}
+        {/* Solutive Helper Text / Non-Punitive Error / Warning with Zero Layout Shift */}
+        {(hasError || hasWarning || helperText) && (
+          <div className="focient-input-helper-container">
+            {hasError && error ? (
+              <span id={errorId} className="focient-input-helper focient-input-helper--error" role="alert">
+                {error}
+              </span>
+            ) : hasWarning && warning ? (
+              <span id={warningId} className="focient-input-helper focient-input-helper--warning" role="alert">
+                {warning}
+              </span>
+            ) : helperText ? (
+              <span id={helperId} className="focient-input-helper">
+                {helperText}
+              </span>
+            ) : null}
+          </div>
+        )}
 
         {/* Mobile Virtual Keyboard Sheet */}
         {enableVirtualKeyboard && (

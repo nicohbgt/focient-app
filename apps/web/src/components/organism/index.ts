@@ -7,3 +7,6 @@ export * from './Modal.js';
 export * from './TaskValidationForm.js';
 export * from './OnboardingValidationForm.js';
 export * from './AdaptiveScheduleConfirmModal.js';
+export * from './InlineModuleFail.js';
+export * from './SyncConflictAlert.js';
+export * from './FullViewError.js';

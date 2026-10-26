@@ -4,6 +4,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: 'primary' | 'secondary' | 'ghost' | 'outline' | 'destructive' | 'subtle-primary' | 'subtle-secondary';
   size?: 'lg' | 'md' | 'sm';
   loading?: boolean;
+  shake?: boolean;
   fullWidth?: boolean;
   leadingIcon?: React.ReactNode;
   trailingIcon?: React.ReactNode;
@@ -27,6 +28,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       variant = 'primary',
       size = 'md',
       loading = false,
+      shake = false,
       fullWidth = false,
       leadingIcon,
       trailingIcon,
@@ -43,6 +45,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       `focient-btn--${size}`,
       fullWidth ? 'focient-btn--full' : '',
       loading ? 'focient-btn--loading' : '',
+      shake ? 'focient-btn--shake' : '',
       className,
     ]
       .filter(Boolean)

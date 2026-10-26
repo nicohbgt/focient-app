@@ -44,6 +44,9 @@ import {
   TaskValidationForm,
   OnboardingValidationForm,
   AdaptiveScheduleConfirmModal,
+  InlineModuleFail,
+  SyncConflictAlert,
+  FullViewError,
 } from './organism/index.js';
 import {
   Icon,
@@ -149,6 +152,15 @@ export const ComponentShowcaseInner: React.FC = () => {
   // Reschedule Alert banner state
   const [alertOpen, setAlertOpen] = useState(true);
 
+  // Error & Fail States interactive state
+  const [btnShake, setBtnShake] = useState(false);
+  const [microFailLoading, setMicroFailLoading] = useState(false);
+  const [showFullViewPreview, setShowFullViewPreview] = useState(false);
+  const [fullViewType, setFullViewType] = useState<'offline' | 'server'>('offline');
+  const [inlineModuleRetrying, setInlineModuleRetrying] = useState(false);
+  const [interactiveErrorField, setInteractiveErrorField] = useState('45xx');
+  const [interactiveErrorActive, setInteractiveErrorActive] = useState(true);
+
   // Toasts
   const [toasts, setToasts] = useState<ToastMessage[]>([
     {
@@ -159,16 +171,39 @@ export const ComponentShowcaseInner: React.FC = () => {
     },
   ]);
 
-  const addToast = (message: string, actionLabel?: string) => {
+  const addToast = (
+    message: string,
+    actionLabel?: string,
+    variant: 'default' | 'danger' | 'success' = 'default',
+    onAction?: () => void
+  ) => {
     setToasts((prev) => [
       ...prev,
       {
         id: String(Date.now()),
         message,
+        variant,
         actionLabel,
-        duration: actionLabel ? 6000 : 4000,
+        onAction,
+        duration: variant === 'danger' ? 7000 : actionLabel ? 6000 : 4000,
       },
     ]);
+  };
+
+  const triggerMicroActionFail = () => {
+    setMicroFailLoading(true);
+    setBtnShake(false);
+    setTimeout(() => {
+      setMicroFailLoading(false);
+      setBtnShake(true);
+      setTimeout(() => setBtnShake(false), 300);
+      addToast(
+        copywriting.errorStates.microFailToast,
+        copywriting.errorStates.retryAction,
+        'danger',
+        () => triggerMicroActionFail()
+      );
+    }, 600);
   };
 
   const removeToast = (id: string) => {
@@ -1078,6 +1113,199 @@ export const ComponentShowcaseInner: React.FC = () => {
             >
               Buka Konfirmasi Slot Adaptif
             </Button>
+          </div>
+        </section>
+
+        {/* Section 10: Error & Fail State System Matrix */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ borderBottom: '2px solid #E2E8F0', paddingBottom: '8px' }}>
+            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>
+              10. Error & Fail State System Matrix (DTCG Tokens, Anti-Accusatory, Zero Layout Shift)
+            </h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+              Pemisahan tegas System Failure vs Task Dynamics: Merah murni untuk kendala teknis fatal/validasi format; jadwal terlewat dialihkan ke Soft Teal/Warm Amber. Seluruh pesan bebas stigma dengan pemulihan sekali sentuh.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+            {/* Level 1: Micro Action Fail */}
+            <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#E11D48', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Level 1: Micro Action Fail
+                </span>
+                <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                  Tombol Aksi Lokal Gagal Simpan
+                </h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Tombol kembali dari Loading ke Default disertai mikro goyang 4px (200ms) + Toast Danger Subtle (7000ms) tanpa menghilangkan draf lokal.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <Button
+                  variant="primary"
+                  loading={microFailLoading}
+                  shake={btnShake}
+                  onClick={triggerMicroActionFail}
+                >
+                  Simpan Draf (Simulasi Gagal)
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setBtnShake(true);
+                    setTimeout(() => setBtnShake(false), 250);
+                  }}
+                >
+                  Uji Goyang 4px Manual
+                </Button>
+              </div>
+            </div>
+
+            {/* Level 2: Field-Level Validation Error */}
+            <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#E11D48', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Level 2: Form Field Error
+                </span>
+                <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                  Multi-Sensory Feedback & Zero Layout Shift
+                </h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Border 2px (#E11D48) + Ikon trailing 16px AlertCircle + Teks panduan konkret (#9F1239 WCAG AAA) + Container bantuan min-height 20px.
+                </p>
+              </div>
+
+              <InputField
+                label="Estimasi Durasi Sesi Fokus"
+                value={interactiveErrorField}
+                onChange={(e) => setInteractiveErrorField(e.target.value)}
+                hasError={interactiveErrorActive}
+                error={
+                  interactiveErrorActive
+                    ? 'Format durasi belum pas, contoh: 45m atau 1h 30m'
+                    : undefined
+                }
+                helperText="Durasi realistis menjaga stamina fokusmu tetap optimal"
+                unit="mnt"
+              />
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setInteractiveErrorActive((prev) => !prev)}
+                >
+                  {interactiveErrorActive ? 'Simulasikan Input Valid' : 'Simulasikan Input Invalid'}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Level 3: Module / Component Inline Fail */}
+          <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#E11D48', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Level 3: Module / Component Inline Fail
+              </span>
+              <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                Kartu Kegagalan Modul Terisolasi
+              </h4>
+              <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                Latar #FFF1F2, garis tepi 1px #FECDD3, ikon 28px AlertOctagon/RefreshCcw #E11D48, dan tombol muat ulang sekali klik tanpa menghambat kartu lainnya.
+              </p>
+            </div>
+
+            <InlineModuleFail
+              icon="octagon"
+              loading={inlineModuleRetrying}
+              onRetry={() => {
+                setInlineModuleRetrying(true);
+                setTimeout(() => {
+                  setInlineModuleRetrying(false);
+                  addToast('Modul analitik berhasil dimuat ulang!');
+                }, 800);
+              }}
+            />
+          </div>
+
+          {/* Level 4: Data Conflict / Sync Fail */}
+          <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Level 4: Data Conflict / Sync Fail
+              </span>
+              <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                Banner Persisten Benturan Penjadwalan Lintas Perangkat
+              </h4>
+              <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                Menggunakan token Warm Amber (#FFFBEB / #FDE68A / #D97706), strictly tanpa warna merah guna mencegah kepanikan kognitif, dilengkapi tombol pemulihan ganda.
+              </p>
+            </div>
+
+            <SyncConflictAlert
+              onUseLatest={() => {
+                addToast('Linimasa diperbarui ke versi cloud terkini.');
+              }}
+              onKeepDraft={() => {
+                addToast('Draf lokal dipertahankan dan disinkronkan kembali.');
+              }}
+            />
+          </div>
+
+          {/* Level 5: Full-View / Page-Level Error */}
+          <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Level 5: Full-View / Page-Level System Fail
+                </span>
+                <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                  Layar Penuh Pemulihan Sistem (Offline / Server 500)
+                </h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Layout terpusat, ikon garis halus 64px #64748B, copywriting menenangkan tanpa rasa bersalah, dan tombol CTA besar 48px.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setFullViewType('offline');
+                    setShowFullViewPreview((prev) => !prev);
+                  }}
+                >
+                  {showFullViewPreview && fullViewType === 'offline' ? 'Tutup Pratinjau' : 'Pratinjau Mode Offline (CloudOff)'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setFullViewType('server');
+                    setShowFullViewPreview(true);
+                  }}
+                >
+                  Pratinjau Server 500 (ServerCrash)
+                </Button>
+              </div>
+            </div>
+
+            {showFullViewPreview && (
+              <div style={{ border: '2px dashed #CBD5E1', borderRadius: '12px', backgroundColor: '#F8FAFC' }}>
+                <FullViewError
+                  type={fullViewType}
+                  onRetry={() => {
+                    addToast('Koneksi sistem berhasil dipulihkan.');
+                    setShowFullViewPreview(false);
+                  }}
+                />
+              </div>
+            )}
           </div>
         </section>
 

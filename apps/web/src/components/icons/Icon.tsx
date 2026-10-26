@@ -36,7 +36,11 @@ export type IconName =
   | 'moon'
   | 'bell'
   | 'grip-vertical'
-  | 'layout-dashboard';
+  | 'layout-dashboard'
+  | 'alert-octagon'
+  | 'refresh-ccw'
+  | 'cloud-off'
+  | 'server-crash';
 
 export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | number;
 export type IconVariant = 'outline' | 'filled';
@@ -376,6 +380,46 @@ const iconRegistry: Record<IconName, { outline: React.ReactNode; filled?: React.
         <rect width="7" height="5" x="14" y="3" rx="1" />
         <rect width="7" height="9" x="14" y="12" rx="1" />
         <rect width="7" height="5" x="3" y="16" rx="1" />
+      </>
+    ),
+  },
+  'alert-octagon': {
+    outline: (
+      <>
+        <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" />
+        <line x1="12" x2="12" y1="8" y2="12" />
+        <line x1="12" x2="12.01" y1="16" y2="16" />
+      </>
+    ),
+  },
+  'refresh-ccw': {
+    outline: (
+      <>
+        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+        <path d="M16 21h5v-5" />
+      </>
+    ),
+  },
+  'cloud-off': {
+    outline: (
+      <>
+        <path d="m2 2 20 20" />
+        <path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193" />
+        <path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07" />
+      </>
+    ),
+  },
+  'server-crash': {
+    outline: (
+      <>
+        <path d="M6 10H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" />
+        <path d="M6 14H4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2" />
+        <line x1="6" x2="6.01" y1="6" y2="6" strokeWidth="2.5" />
+        <line x1="6" x2="6.01" y1="18" y2="18" strokeWidth="2.5" />
+        <path d="m14 10-4 4" />
+        <path d="m10 10 4 4" />
       </>
     ),
   },
