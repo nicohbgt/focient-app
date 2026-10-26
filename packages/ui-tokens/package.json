@@ -69,7 +69,13 @@
       "types": "./src/error-token.d.ts",
       "default": "./src/error-token.js"
     },
-    "./error-token.json": "./tokens/error-token.json"
+    "./error-token.json": "./tokens/error-token.json",
+    "./empty-token.css": "./src/empty-token.css",
+    "./empty-token": {
+      "types": "./src/empty-token.d.ts",
+      "default": "./src/empty-token.js"
+    },
+    "./empty-token.json": "./tokens/empty-token.json"
   },
   "scripts": {
     "generate": "node scripts/generate.mjs",

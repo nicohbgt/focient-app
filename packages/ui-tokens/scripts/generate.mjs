@@ -155,6 +155,24 @@ const domains = [
     removePrefixForDart: true,
     dartLine: (name, value, domain) => createDartErrorLine(name, value, domain),
   },
+  {
+    name: 'empty-token',
+    sourceGroup: 'empty',
+    prefix: 'empty',
+    javaScriptExport: 'emptyTokens',
+    typeName: 'EmptyTokenName',
+    dartFile: 'empty_token.dart',
+    dartClass: 'FocientEmptyTokens',
+    dartImports: ["import 'package:flutter/widgets.dart';"],
+    dartDocumentation: [
+      '/// Shared semantic empty state tokens for FoCient Flutter applications.',
+      '///',
+      '/// Supports calm whitespace, reflective validation, and zero-decision-fatigue single actions.',
+    ],
+    cssValue: (value) => value,
+    removePrefixForDart: true,
+    dartLine: (name, value, domain) => createDartEmptyLine(name, value, domain),
+  },
 ];
 
 function flattenTokens(node, prefix, path = [], tokens = {}, nameForPath = (segments) => `${prefix}-${segments.join('-')}`) {
@@ -272,6 +290,22 @@ function createDartErrorLine(name, value, domain) {
       `  static const Duration ${dartName} = Duration(milliseconds: ${ms});`,
       `  static const int ${dartName}Ms = ${ms};`,
     ].join('\n');
+  }
+  if (typeof value === 'string' && /^(\d+(?:\.\d+)?)px$/.test(value)) {
+    return `  static const double ${dartName} = ${toDartDouble(value)};`;
+  }
+  if (typeof value === 'number') {
+    return Number.isInteger(value)
+      ? `  static const int ${dartName} = ${value};`
+      : `  static const double ${dartName} = ${value};`;
+  }
+  return `  static const String ${dartName} = '${value}';`;
+}
+
+function createDartEmptyLine(name, value, domain) {
+  const dartName = toDartName(name, domain.removePrefixForDart);
+  if (typeof value === 'string' && value.startsWith('#')) {
+    return `  static const Color ${dartName} = Color(0xFF${value.slice(1)});`;
   }
   if (typeof value === 'string' && /^(\d+(?:\.\d+)?)px$/.test(value)) {
     return `  static const double ${dartName} = ${toDartDouble(value)};`;

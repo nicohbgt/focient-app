@@ -1,0 +1,18 @@
+/** GENERATED FILE. Source: ../tokens/empty-token.json */
+export const emptyTokens = Object.freeze(
+  {
+  "empty-canvas-bg": "#F8FAFC",
+  "empty-icon-ring-bg": "#F0FDFA",
+  "empty-icon-ring-success": "#ECFDF5",
+  "empty-icon-ring-muted": "#F1F5F9",
+  "empty-icon-ring-size": "80px",
+  "empty-icon-accent-onboarding": "#0D9488",
+  "empty-icon-accent-success": "#059669",
+  "empty-icon-accent-search": "#64748B",
+  "empty-icon-accent-rest": "#0D9488",
+  "empty-text-title": "#0F172A",
+  "empty-text-body": "#64748B",
+  "empty-layout-min-height": "360px",
+  "empty-layout-padding-y": "64px"
+},
+);

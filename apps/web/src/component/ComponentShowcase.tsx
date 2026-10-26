@@ -47,6 +47,8 @@ import {
   InlineModuleFail,
   SyncConflictAlert,
   FullViewError,
+  EmptyState,
+  EmptyStateVariant,
 } from './organism/index.js';
 import {
   Icon,
@@ -160,6 +162,9 @@ export const ComponentShowcaseInner: React.FC = () => {
   const [inlineModuleRetrying, setInlineModuleRetrying] = useState(false);
   const [interactiveErrorField, setInteractiveErrorField] = useState('45xx');
   const [interactiveErrorActive, setInteractiveErrorActive] = useState(true);
+
+  // Empty State interactive playground
+  const [selectedEmptyVariant, setSelectedEmptyVariant] = useState<EmptyStateVariant>('onboarding');
 
   // Toasts
   const [toasts, setToasts] = useState<ToastMessage[]>([
@@ -1305,6 +1310,82 @@ export const ComponentShowcaseInner: React.FC = () => {
                   }}
                 />
               </div>
+            )}
+          </div>
+        </section>
+
+        {/* Section 11: Empty State System (Calm Whitespace & Reflective Validation) */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ borderBottom: '2px solid #E2E8F0', paddingBottom: '8px' }}>
+            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>
+              11. Empty State System (Calm Whitespace & Reflective Validation)
+            </h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+              Jeda reflektif dan validasi afirmatif tanpa selebrasi berisik atau tuntutan instan. Menggunakan jarak makro (--space-14 hingga --space-24) dan satu jalur tindakan yang jelas.
+            </p>
+          </div>
+
+          {/* Interactive Variant Switcher */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant={selectedEmptyVariant === 'onboarding' ? 'primary' : 'outline'}
+              onClick={() => setSelectedEmptyVariant('onboarding')}
+            >
+              1. First-Time / Onboarding
+            </Button>
+            <Button
+              size="sm"
+              variant={selectedEmptyVariant === 'all-completed' ? 'primary' : 'outline'}
+              onClick={() => setSelectedEmptyVariant('all-completed')}
+            >
+              2. All Tasks Completed (Zero Inbox)
+            </Button>
+            <Button
+              size="sm"
+              variant={selectedEmptyVariant === 'search-empty' ? 'primary' : 'outline'}
+              onClick={() => setSelectedEmptyVariant('search-empty')}
+            >
+              3. Filter / Search Zero Results
+            </Button>
+            <Button
+              size="sm"
+              variant={selectedEmptyVariant === 'rest-day' ? 'primary' : 'outline'}
+              onClick={() => setSelectedEmptyVariant('rest-day')}
+            >
+              4. Analytics & Rest Day State
+            </Button>
+          </div>
+
+          {/* Empty State Component Live Canvas */}
+          <div style={{ border: '1px solid #CBD5E1', borderRadius: '16px', overflow: 'hidden' }}>
+            {selectedEmptyVariant === 'onboarding' && (
+              <EmptyState
+                variant="onboarding"
+                onAction={() => addToast('Membuka modal tambah tugas pertama.')}
+              />
+            )}
+
+            {selectedEmptyVariant === 'all-completed' && (
+              <EmptyState
+                variant="all-completed"
+                onAction={() => addToast('Membuka ringkasan capaian fokus hari ini.')}
+                onSecondaryAction={() => addToast('Membuka evaluasi dan analitik mingguan.')}
+              />
+            )}
+
+            {selectedEmptyVariant === 'search-empty' && (
+              <EmptyState
+                variant="search-empty"
+                onAction={() => addToast('Filter pencarian telah direset.')}
+              />
+            )}
+
+            {selectedEmptyVariant === 'rest-day' && (
+              <EmptyState
+                variant="rest-day"
+                onAction={() => addToast('Membuka kalender penataan hari berikutnya.')}
+              />
             )}
           </div>
         </section>

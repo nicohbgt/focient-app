@@ -5,6 +5,7 @@ import test from 'node:test';
 import { animationTokens } from '../src/animation-token.js';
 import { colorDarkTokens } from '../src/color-dark-token.js';
 import { colorTokens } from '../src/color-token.js';
+import { emptyTokens } from '../src/empty-token.js';
 import { errorTokens } from '../src/error-token.js';
 import { iconTokens } from '../src/icon-token.js';
 import { shadowTokens } from '../src/shadow-token.js';
@@ -300,4 +301,41 @@ test('error and fail state token artifacts meet DTCG and multi-sensory accessibi
   // Error text on white card surface also >= 7:1 (AAA)
   const errorCardRatio = contrastRatio(errorTokens['error-text-bold'], '#FFFFFF');
   assert.ok(errorCardRatio >= 7.0, `Error text on white contrast was ${errorCardRatio.toFixed(2)}:1; expected >= 7:1 (AAA)`);
+});
+
+test('empty state token artifacts preserve calm whitespace and semantic visual mappings', async () => {
+  const source = JSON.parse(await readFile(new URL('tokens/empty-token.json', packageUrl), 'utf8'));
+  const expected = flattenTokens(source.empty, 'empty');
+  const css = await readFile(new URL('src/empty-token.css', packageUrl), 'utf8');
+  const dart = await readFile(new URL('lib/empty_token.dart', packageUrl), 'utf8');
+  const cssTokens = Object.fromEntries(
+    [...css.matchAll(/--(empty-[a-z-]+): ([^;]+);/g)].map(([, name, value]) => [name, value])
+  );
+
+  assert.deepEqual(emptyTokens, expected);
+  assert.deepEqual(cssTokens, expected);
+
+  // Flutter Dart token class
+  assert.match(dart, /abstract final class FocientEmptyTokens/);
+  assert.match(dart, /static const Color canvasBg = Color\(0xFFF8FAFC\);/);
+  assert.match(dart, /static const Color iconRingBg = Color\(0xFFF0FDFA\);/);
+  assert.match(dart, /static const Color iconRingSuccess = Color\(0xFFECFDF5\);/);
+  assert.match(dart, /static const Color iconRingMuted = Color\(0xFFF1F5F9\);/);
+  assert.match(dart, /static const double iconRingSize = 80\.0;/);
+  assert.match(dart, /static const Color iconAccentOnboarding = Color\(0xFF0D9488\);/);
+  assert.match(dart, /static const Color iconAccentSuccess = Color\(0xFF059669\);/);
+  assert.match(dart, /static const Color iconAccentSearch = Color\(0xFF64748B\);/);
+  assert.match(dart, /static const Color iconAccentRest = Color\(0xFF0D9488\);/);
+  assert.match(dart, /static const Color textTitle = Color\(0xFF0F172A\);/);
+  assert.match(dart, /static const Color textBody = Color\(0xFF64748B\);/);
+  assert.match(dart, /static const double layoutMinHeight = 360\.0;/);
+  assert.match(dart, /static const double layoutPaddingY = 64\.0;/);
+
+  // Headline contrast on canvas (#0F172A on #F8FAFC) >= 12:1 (well exceeds AAA)
+  const titleRatio = contrastRatio(emptyTokens['empty-text-title'], emptyTokens['empty-canvas-bg']);
+  assert.ok(titleRatio >= 7.0, `Title contrast was ${titleRatio.toFixed(2)}:1; expected >= 7:1 (AAA)`);
+
+  // Body contrast on canvas (#64748B on #F8FAFC) >= 4.5:1 (AA compliant for calm body text)
+  const bodyRatio = contrastRatio(emptyTokens['empty-text-body'], emptyTokens['empty-canvas-bg']);
+  assert.ok(bodyRatio >= 4.5, `Body contrast was ${bodyRatio.toFixed(2)}:1; expected >= 4.5:1`);
 });

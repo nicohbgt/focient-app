@@ -43,3 +43,7 @@ export const AlertOctagonIcon: React.FC<NamedIconProps> = (props) => <Icon name=
 export const RefreshCcwIcon: React.FC<NamedIconProps> = (props) => <Icon name="refresh-ccw" {...props} />;
 export const CloudOffIcon: React.FC<NamedIconProps> = (props) => <Icon name="cloud-off" {...props} />;
 export const ServerCrashIcon: React.FC<NamedIconProps> = (props) => <Icon name="server-crash" {...props} />;
+export const RouteIcon: React.FC<NamedIconProps> = (props) => <Icon name="route" {...props} />;
+export const CalendarPlusIcon: React.FC<NamedIconProps> = (props) => <Icon name="calendar-plus" {...props} />;
+export const HourglassIcon: React.FC<NamedIconProps> = (props) => <Icon name="hourglass" {...props} />;
+export const ActivityIcon: React.FC<NamedIconProps> = (props) => <Icon name="activity" {...props} />;

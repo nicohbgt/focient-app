@@ -24,6 +24,21 @@
   --error-shake-duration: 200ms;
   --error-toast-duration: 7000ms;
   --error-helper-min-height: 20px;
+
+  /* Empty State Semantic Tokens */
+  --empty-canvas-bg: #F8FAFC;
+  --empty-icon-ring-bg: #F0FDFA;
+  --empty-icon-ring-success: #ECFDF5;
+  --empty-icon-ring-muted: #F1F5F9;
+  --empty-icon-ring-size: 80px;
+  --empty-icon-accent-onboarding: #0D9488;
+  --empty-icon-accent-success: #059669;
+  --empty-icon-accent-search: #64748B;
+  --empty-icon-accent-rest: #0D9488;
+  --empty-text-title: #0F172A;
+  --empty-text-body: #64748B;
+  --empty-layout-min-height: 360px;
+  --empty-layout-padding-y: 64px;
 }
 
 .focient-tnum {
@@ -1467,6 +1482,88 @@
   max-width: 480px;
   line-height: 1.6;
   margin: 0 0 var(--space-6, 24px) 0;
+}
+
+/* --------------------------------------------------------------------------
+   9B. EMPTY STATE (<EmptyState/>)
+   Standards: Whitespace Lapang, Ketiadaan Stigma, Single Clear Action
+   -------------------------------------------------------------------------- */
+.focient-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: var(--empty-layout-min-height, 360px);
+  padding: var(--empty-layout-padding-y, var(--space-16, 64px)) var(--space-6, 24px);
+  background-color: var(--empty-canvas-bg, var(--color-neutral-surface-canvas, #F8FAFC));
+  border-radius: var(--radius-xl, 16px);
+  box-sizing: border-box;
+  width: 100%;
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+}
+
+.focient-empty-icon-ring {
+  width: var(--empty-icon-ring-size, 80px);
+  height: var(--empty-icon-ring-size, 80px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-5, 20px);
+  flex-shrink: 0;
+  transition: transform var(--duration-fast, 150ms) ease;
+}
+
+/* Variant Icon Rings */
+.focient-empty-icon-ring--onboarding {
+  background-color: var(--empty-icon-ring-bg, var(--color-secondary-bg-subtle, #F0FDFA));
+  color: var(--empty-icon-accent-onboarding, var(--color-secondary-action-base, #0D9488));
+}
+
+.focient-empty-icon-ring--completed {
+  background-color: var(--empty-icon-ring-success, var(--color-success-bg-subtle, #ECFDF5));
+  color: var(--empty-icon-accent-success, var(--color-capacity-optimal, #059669));
+}
+
+.focient-empty-icon-ring--search {
+  background-color: var(--empty-icon-ring-muted, var(--color-neutral-surface-muted, #F1F5F9));
+  color: var(--empty-icon-accent-search, var(--color-neutral-text-muted, #64748B));
+}
+
+.focient-empty-icon-ring--rest {
+  background-color: var(--empty-icon-ring-bg, var(--color-secondary-bg-subtle, #F0FDFA));
+  color: var(--empty-icon-accent-rest, var(--color-secondary-action-base, #0D9488));
+}
+
+.focient-empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--empty-text-title, var(--color-neutral-text-bold, #0F172A));
+  margin: 0 0 var(--space-2, 8px) 0;
+  line-height: 1.4;
+}
+
+@media (min-width: 64rem) {
+  .focient-empty-title {
+    font-size: 20px;
+  }
+}
+
+.focient-empty-body {
+  font-size: 14px;
+  color: var(--empty-text-body, var(--color-neutral-text-muted, #64748B));
+  line-height: 1.5;
+  max-width: 440px;
+  margin: 0 0 var(--space-6, 24px) 0;
+}
+
+.focient-empty-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3, 12px);
+  flex-wrap: wrap;
 }
 
 /* --------------------------------------------------------------------------

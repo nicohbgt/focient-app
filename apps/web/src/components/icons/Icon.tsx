@@ -40,7 +40,11 @@ export type IconName =
   | 'alert-octagon'
   | 'refresh-ccw'
   | 'cloud-off'
-  | 'server-crash';
+  | 'server-crash'
+  | 'route'
+  | 'calendar-plus'
+  | 'hourglass'
+  | 'activity';
 
 export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | number;
 export type IconVariant = 'outline' | 'filled';
@@ -422,6 +426,40 @@ const iconRegistry: Record<IconName, { outline: React.ReactNode; filled?: React.
         <path d="m10 10 4 4" />
       </>
     ),
+  },
+  route: {
+    outline: (
+      <>
+        <circle cx="6" cy="19" r="3" />
+        <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
+        <circle cx="18" cy="5" r="3" />
+      </>
+    ),
+  },
+  'calendar-plus': {
+    outline: (
+      <>
+        <path d="M8 2v4" />
+        <path d="M16 2v4" />
+        <rect width="18" height="18" x="3" y="4" rx="2" />
+        <path d="M3 10h18" />
+        <path d="M10 16h4" />
+        <path d="M12 14v4" />
+      </>
+    ),
+  },
+  hourglass: {
+    outline: (
+      <>
+        <path d="M5 22h14" />
+        <path d="M5 2h14" />
+        <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
+        <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
+      </>
+    ),
+  },
+  activity: {
+    outline: <path d="M22 12h-4l-3 9L9 3l-3 9H2" />,
   },
 };
 

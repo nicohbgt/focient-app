@@ -187,6 +187,23 @@ export interface FoCientCopywriting {
     fullViewBody: string;
     fullViewAction: string;
   };
+
+  // Empty States (Calm Whitespace, Reflective Validation, Single Action Path)
+  emptyStates: {
+    onboardingTitle: string;
+    onboardingBody: string;
+    onboardingAction: string;
+    allCompletedTitle: string;
+    allCompletedBody: string;
+    allCompletedAction: string;
+    allCompletedSecondaryAction: string;
+    searchEmptyTitle: string;
+    searchEmptyBody: string;
+    searchEmptyAction: string;
+    restDayTitle: string;
+    restDayBody: string;
+    restDayAction: string;
+  };
 }
 
 export const idCopywriting: FoCientCopywriting = {
@@ -362,6 +379,22 @@ export const idCopywriting: FoCientCopywriting = {
     fullViewBody: 'Layanan FoCient sedang mengalami kendala sinkronisasi singkat. Tenang, seluruh tugas lokalmu tetap aman di perangkat ini.',
     fullViewAction: 'Periksa Jaringan & Muat Ulang',
   },
+
+  emptyStates: {
+    onboardingTitle: 'Mulai Hari dengan Ritme Tenang',
+    onboardingBody: 'Tuliskan aktivitas atau biarkan sistem membantu menyusun jadwal harianmu secara adaptif.',
+    onboardingAction: '+ Tambah Tugas Pertama',
+    allCompletedTitle: 'Fokus Hari Ini Telah Tuntas',
+    allCompletedBody: 'Kamu telah menyelesaikan prioritas utamamu dengan baik. Nikmati waktu istirahat untuk memulihkan energi.',
+    allCompletedAction: 'Lihat Ringkasan Hari Ini',
+    allCompletedSecondaryAction: 'Tinjau Evaluasi Mingguan',
+    searchEmptyTitle: 'Tidak Menemukan Tugas Terkait',
+    searchEmptyBody: 'Coba periksa kembali ejaan kata kunci atau sesuaikan filter kategori yang dipilih.',
+    searchEmptyAction: 'Reset Filter Pencarian',
+    restDayTitle: 'Waktunya Menjaga Kapasitas Energi',
+    restDayBody: 'Tidak ada agenda yang dijadwalkan untuk sesi ini. Istirahat yang terencana adalah bagian penting dari produktivitas.',
+    restDayAction: 'Atur Jadwal Hari Berikutnya',
+  },
 };
 
 export const enCopywriting: FoCientCopywriting = {
@@ -536,6 +569,22 @@ export const enCopywriting: FoCientCopywriting = {
     fullViewTitle: 'System Is Adjusting',
     fullViewBody: 'FoCient services are experiencing a brief synchronization hiccup. All your local tasks remain completely safe on this device.',
     fullViewAction: 'Check Network & Reload',
+  },
+
+  emptyStates: {
+    onboardingTitle: 'Start Your Day in a Calm Rhythm',
+    onboardingBody: 'Write down your activities or let the system adaptively plan your daily schedule.',
+    onboardingAction: '+ Add First Task',
+    allCompletedTitle: "Today's Focus Is Complete",
+    allCompletedBody: 'You have accomplished your main priorities well. Enjoy your rest to recharge your energy.',
+    allCompletedAction: "View Today's Summary",
+    allCompletedSecondaryAction: 'Review Weekly Insights',
+    searchEmptyTitle: 'No Related Tasks Found',
+    searchEmptyBody: 'Double check your keyword spelling or adjust the selected category filters.',
+    searchEmptyAction: 'Reset Search Filter',
+    restDayTitle: 'Time to Protect Your Energy Capacity',
+    restDayBody: 'No agendas scheduled for this session. Planned rest is an essential pillar of true productivity.',
+    restDayAction: "Plan Next Day's Schedule",
   },
 };
 
