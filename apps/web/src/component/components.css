@@ -39,6 +39,20 @@
   --empty-text-body: #64748B;
   --empty-layout-min-height: 360px;
   --empty-layout-padding-y: 64px;
+
+  /* Loading & Skeleton Shimmer Semantic Tokens */
+  --loading-skeleton-base: #F1F5F9;
+  --loading-skeleton-shimmer: rgba(255, 255, 255, 0.65);
+  --loading-skeleton-radius: 4px;
+  --loading-progress-bar-color: #2563EB;
+  --loading-progress-bar-height: 3px;
+  --loading-sync-accent: #0D9488;
+  --loading-sync-surface: #F0FDFA;
+  --loading-sync-border: #CCFBF1;
+  --loading-sync-text: #0F766E;
+  --loading-duration-shimmer: 1600ms;
+  --loading-duration-spin: 700ms;
+  --loading-duration-sync-spin: 1500ms;
 }
 
 .focient-tnum {
@@ -229,7 +243,9 @@
 
 /* Loading Spinner */
 .focient-btn--loading {
-  cursor: wait;
+  cursor: wait !important;
+  pointer-events: none !important;
+  user-select: none;
 }
 .focient-btn-spinner {
   width: 20px;
@@ -237,7 +253,14 @@
   border: 2.5px solid rgba(255, 255, 255, 0.3);
   border-top-color: currentColor;
   border-radius: 50%;
-  animation: focient-spin 700ms linear infinite;
+  animation: focient-spin var(--loading-duration-spin, 700ms) linear infinite;
+  box-sizing: border-box;
+}
+
+.focient-btn--sm .focient-btn-spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
 }
 .focient-btn--ghost .focient-btn-spinner,
 .focient-btn--subtle-primary .focient-btn-spinner,
@@ -1564,6 +1587,137 @@
   justify-content: center;
   gap: var(--space-3, 12px);
   flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------------
+   9C. SKELETON SHIMMER & LOADING STATES (<Skeleton/>, <TopProgressBar/>, <AdaptiveSyncBadge/>)
+   Standards: Zero Layout Shift, Soft Shimmer Wave (1.6s ease-in-out), WCAG Anti-Anxiety
+   -------------------------------------------------------------------------- */
+@keyframes focient-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.focient-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--loading-skeleton-base, #F1F5F9) 0%,
+    var(--loading-skeleton-shimmer, rgba(255, 255, 255, 0.65)) 50%,
+    var(--loading-skeleton-base, #F1F5F9) 100%
+  );
+  background-size: 200% 100%;
+  animation: focient-shimmer var(--loading-duration-shimmer, 1600ms) infinite ease-in-out;
+  border-radius: var(--loading-skeleton-radius, var(--radius-sm, 4px));
+  display: block;
+}
+
+:root[data-theme="dark"] .focient-skeleton,
+[data-theme="dark"] .focient-skeleton,
+.dark .focient-skeleton {
+  background: linear-gradient(
+    90deg,
+    #1E293B 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    #1E293B 100%
+  );
+  background-size: 200% 100%;
+}
+
+.focient-skeleton--circle {
+  border-radius: 50% !important;
+}
+
+.focient-skeleton--card {
+  border-radius: var(--radius-lg, 12px) !important;
+}
+
+.focient-skeleton--text {
+  height: 14px;
+  border-radius: var(--radius-sm, 4px);
+}
+
+.focient-skeleton--title {
+  height: 20px;
+  border-radius: var(--radius-sm, 4px);
+}
+
+.focient-skeleton--badge {
+  height: 24px;
+  border-radius: var(--radius-full, 9999px);
+}
+
+/* Reduced Motion Override for Skeleton */
+@media (prefers-reduced-motion: reduce) {
+  .focient-skeleton {
+    animation: none !important;
+    background: var(--loading-skeleton-base, #F1F5F9) !important;
+    opacity: 0.85;
+  }
+}
+
+/* Global Thin Progress Bar (Top of Screen) */
+.focient-top-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--loading-progress-bar-height, 3px);
+  background-color: transparent;
+  z-index: 100;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.focient-top-progress-bar-indicator {
+  height: 100%;
+  background-color: var(--loading-progress-bar-color, var(--color-primary-action-base, #2563EB));
+  border-radius: 0 2px 2px 0;
+  transition: width var(--duration-fast, 150ms) ease;
+}
+
+.focient-top-progress-bar-indicator--indeterminate {
+  width: 40%;
+  animation: focient-progress-indeterminate 1200ms infinite ease-in-out;
+}
+
+@keyframes focient-progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(150%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+/* Background Sync Indicator (<AdaptiveSyncBadge/>) */
+.focient-sync-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: 6px 12px;
+  background-color: var(--loading-sync-surface, #F0FDFA);
+  border: 1px solid var(--loading-sync-border, #CCFBF1);
+  border-radius: var(--radius-full, 9999px);
+  color: var(--loading-sync-text, #0F766E);
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  box-sizing: border-box;
+}
+
+.focient-sync-spin-icon {
+  color: var(--loading-sync-accent, #0D9488);
+  display: flex;
+  align-items: center;
+  animation: focient-spin var(--loading-duration-sync-spin, 1500ms) linear infinite;
+  flex-shrink: 0;
 }
 
 /* --------------------------------------------------------------------------

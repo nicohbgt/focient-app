@@ -75,7 +75,13 @@
       "types": "./src/empty-token.d.ts",
       "default": "./src/empty-token.js"
     },
-    "./empty-token.json": "./tokens/empty-token.json"
+    "./empty-token.json": "./tokens/empty-token.json",
+    "./loading-token.css": "./src/loading-token.css",
+    "./loading-token": {
+      "types": "./src/loading-token.d.ts",
+      "default": "./src/loading-token.js"
+    },
+    "./loading-token.json": "./tokens/loading-token.json"
   },
   "scripts": {
     "generate": "node scripts/generate.mjs",

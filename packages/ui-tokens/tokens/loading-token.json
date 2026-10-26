@@ -1,0 +1,73 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "loading": {
+    "skeleton": {
+      "base": {
+        "$type": "color",
+        "$value": "#F1F5F9",
+        "$description": "Latar dasar blok geometri skeleton dalam light mode."
+      },
+      "shimmer": {
+        "$type": "color",
+        "$value": "rgba(255, 255, 255, 0.65)",
+        "$description": "Kilauan gelombang gradasi bergerak pada skeleton shimmer."
+      },
+      "radius": {
+        "$type": "dimension",
+        "$value": "4px",
+        "$description": "Radius standar untuk garis teks dan badge skeleton."
+      }
+    },
+    "progress": {
+      "bar-color": {
+        "$type": "color",
+        "$value": "#2563EB",
+        "$description": "Warna garis progres mikro di tepi paling atas layar."
+      },
+      "bar-height": {
+        "$type": "dimension",
+        "$value": "3px",
+        "$description": "Ketebalan garis progres mikro global."
+      }
+    },
+    "sync": {
+      "accent": {
+        "$type": "color",
+        "$value": "#0D9488",
+        "$description": "Warna aksen ikon sinkronisasi adaptif di latar belakang."
+      },
+      "surface": {
+        "$type": "color",
+        "$value": "#F0FDFA",
+        "$description": "Warna latar belakang pill indikator sinkronisasi adaptif."
+      },
+      "border": {
+        "$type": "color",
+        "$value": "#CCFBF1",
+        "$description": "Warna border pill indikator sinkronisasi adaptif."
+      },
+      "text": {
+        "$type": "color",
+        "$value": "#0F766E",
+        "$description": "Warna teks label indikator sinkronisasi adaptif."
+      }
+    },
+    "duration": {
+      "shimmer": {
+        "$type": "duration",
+        "$value": "1600ms",
+        "$description": "Durasi siklus gelombang shimmer skeleton (1.5s - 2.0s)."
+      },
+      "spin": {
+        "$type": "duration",
+        "$value": "700ms",
+        "$description": "Durasi putaran penuh pemutar tombol aksi."
+      },
+      "sync-spin": {
+        "$type": "duration",
+        "$value": "1500ms",
+        "$description": "Durasi putaran lambat tenang untuk indikator sinkronisasi latar belakang."
+      }
+    }
+  }
+}

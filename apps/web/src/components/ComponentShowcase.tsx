@@ -19,6 +19,7 @@ import {
   NumericKeyboard,
   GeneralKeyboard,
   MobileKeyboardBottomSheet,
+  Skeleton,
 } from './primitive/index.js';
 import {
   TaskCard,
@@ -49,6 +50,10 @@ import {
   FullViewError,
   EmptyState,
   EmptyStateVariant,
+  TaskCardSkeleton,
+  CapacityMeterSkeleton,
+  AdaptiveSyncBadge,
+  TopProgressBar,
 } from './organism/index.js';
 import {
   Icon,
@@ -166,6 +171,11 @@ export const ComponentShowcaseInner: React.FC = () => {
   // Empty State interactive playground
   const [selectedEmptyVariant, setSelectedEmptyVariant] = useState<EmptyStateVariant>('onboarding');
 
+  // Loading State interactive playground
+  const [topBarLoading, setTopBarLoading] = useState(false);
+  const [simulatedCardLoading, setSimulatedCardLoading] = useState(false);
+  const [simulatedCapacityLoading, setSimulatedCapacityLoading] = useState(false);
+
   // Toasts
   const [toasts, setToasts] = useState<ToastMessage[]>([
     {
@@ -217,6 +227,9 @@ export const ComponentShowcaseInner: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', color: '#0F172A', fontFamily: 'Inter, sans-serif' }}>
+      {/* Global Top Micro Progress Bar */}
+      <TopProgressBar loading={topBarLoading} />
+
       {/* Top Navigation */}
       <TopNavBar
         workloadPercentage={72}
@@ -1387,6 +1400,176 @@ export const ComponentShowcaseInner: React.FC = () => {
                 onAction={() => addToast('Membuka kalender penataan hari berikutnya.')}
               />
             )}
+          </div>
+        </section>
+
+        {/* Section 12: Loading & Skeleton Shimmer State System */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ borderBottom: '2px solid #E2E8F0', paddingBottom: '8px' }}>
+            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>
+              12. Loading & Skeleton Shimmer System (Anti-Anxiety, CLS = 0, Double-Submit Guard)
+            </h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+              Pencegahan aksi ganda otomatis (pointer-events: none, cursor: wait), replikasi geometris presisi untuk Zero Layout Shift (CLS), dan animasi shimmer halus (1600ms).
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+            {/* Level A: Micro Button Loading */}
+            <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Micro Action Loading
+                </span>
+                <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                  Pencegahan Submit Ganda & Kursor Tunggu
+                </h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Label memudar digantikan circular spinner 20px (md/lg) atau 16px (sm) dengan warna currentColor dan cursor: wait.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <Button
+                  variant="primary"
+                  size="md"
+                  loading={btnLoading}
+                  onClick={() => {
+                    setBtnLoading(true);
+                    setTimeout(() => setBtnLoading(false), 2000);
+                  }}
+                >
+                  {btnLoading ? 'Menyimpan...' : 'Klik Uji Loading 2 Detik'}
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={btnLoading}
+                  onClick={() => {
+                    setBtnLoading(true);
+                    setTimeout(() => setBtnLoading(false), 2000);
+                  }}
+                >
+                  Small (16px Spinner)
+                </Button>
+              </div>
+            </div>
+
+            {/* Level C: Background Sync Adaptive Indicator */}
+            <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#0D9488', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Background Sync
+                </span>
+                <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                  Indikator Penyesuaian AI Non-Intrusif
+                </h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Pill mikro dengan putaran tenang 1500ms dan copywriting suportif tanpa kepanikan kognitif.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                <AdaptiveSyncBadge />
+                <AdaptiveSyncBadge label="Menyimpan preferensi fokus..." />
+              </div>
+
+              <div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setTopBarLoading(true);
+                    setTimeout(() => setTopBarLoading(false), 2500);
+                  }}
+                >
+                  {topBarLoading ? 'Garis Progres Aktif...' : 'Simulasi Global Top Progress Bar'}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Level B: Structural Shimmer Zero Layout Shift Demo */}
+          <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Structural Shimmer Wave
+                </span>
+                <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                  Replikasi Geometris Zero Layout Shift (CLS = 0)
+                </h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Perbandingan sisi demi sisi antara skeleton shimmer dan komponen nyata. Dimensi dan padding 100% presisi.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Button
+                  size="sm"
+                  variant={simulatedCardLoading ? 'primary' : 'outline'}
+                  onClick={() => setSimulatedCardLoading((prev) => !prev)}
+                >
+                  {simulatedCardLoading ? 'Tampilkan Konten Nyata' : 'Simulasi TaskCard Shimmer'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant={simulatedCapacityLoading ? 'primary' : 'outline'}
+                  onClick={() => setSimulatedCapacityLoading((prev) => !prev)}
+                >
+                  {simulatedCapacityLoading ? 'Tampilkan Konten Nyata' : 'Simulasi Capacity Shimmer'}
+                </Button>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+              {/* TaskCard vs Skeleton */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>
+                  {simulatedCardLoading ? 'Status: Skeleton Shimmer Loading' : 'Status: Kartu Tugas Aktif'}
+                </div>
+
+                {simulatedCardLoading ? (
+                  <TaskCardSkeleton count={2} />
+                ) : (
+                  <>
+                    <TaskCard
+                      id="loaded-card-1"
+                      title="Sesi Fokus Mendalam FoCient"
+                      duration="45m"
+                      timeSlot="09:00 - 09:45"
+                      projectCategory="Arsitektur"
+                      projectColor="blue"
+                    />
+                    <TaskCard
+                      id="loaded-card-2"
+                      title="Evaluasi Kapasitas Harian Tim"
+                      duration="30m"
+                      timeSlot="10:00 - 10:30"
+                      projectCategory="Strategi"
+                      projectColor="teal"
+                    />
+                  </>
+                )}
+              </div>
+
+              {/* CapacityMeter vs Skeleton */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>
+                  {simulatedCapacityLoading ? 'Status: Skeleton Shimmer Loading' : 'Status: Capacity Meter Nyata'}
+                </div>
+
+                {simulatedCapacityLoading ? (
+                  <CapacityMeterSkeleton />
+                ) : (
+                  <DailyCapacityMeterCard
+                    allocatedMinutes={240}
+                    totalCapacityMinutes={360}
+                  />
+                )}
+              </div>
+            </div>
           </div>
         </section>
 

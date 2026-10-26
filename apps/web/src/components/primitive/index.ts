@@ -8,3 +8,4 @@ export * from './Radio.js';
 export * from './Toggle.js';
 export * from './Tooltip.js';
 export * from './Keyboard.js';
+export * from './Skeleton.js';

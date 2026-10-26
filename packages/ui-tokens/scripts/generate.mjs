@@ -173,6 +173,24 @@ const domains = [
     removePrefixForDart: true,
     dartLine: (name, value, domain) => createDartEmptyLine(name, value, domain),
   },
+  {
+    name: 'loading-token',
+    sourceGroup: 'loading',
+    prefix: 'loading',
+    javaScriptExport: 'loadingTokens',
+    typeName: 'LoadingTokenName',
+    dartFile: 'loading_token.dart',
+    dartClass: 'FocientLoadingTokens',
+    dartImports: ["import 'package:flutter/widgets.dart';"],
+    dartDocumentation: [
+      '/// Shared semantic loading, skeleton shimmer, and sync tokens for FoCient Flutter applications.',
+      '///',
+      '/// Supports zero layout shift, tactile button feedback, and calm background sync.',
+    ],
+    cssValue: (value) => value,
+    removePrefixForDart: true,
+    dartLine: (name, value, domain) => createDartLoadingLine(name, value, domain),
+  },
 ];
 
 function flattenTokens(node, prefix, path = [], tokens = {}, nameForPath = (segments) => `${prefix}-${segments.join('-')}`) {
@@ -306,6 +324,40 @@ function createDartEmptyLine(name, value, domain) {
   const dartName = toDartName(name, domain.removePrefixForDart);
   if (typeof value === 'string' && value.startsWith('#')) {
     return `  static const Color ${dartName} = Color(0xFF${value.slice(1)});`;
+  }
+  if (typeof value === 'string' && /^(\d+(?:\.\d+)?)px$/.test(value)) {
+    return `  static const double ${dartName} = ${toDartDouble(value)};`;
+  }
+  if (typeof value === 'number') {
+    return Number.isInteger(value)
+      ? `  static const int ${dartName} = ${value};`
+      : `  static const double ${dartName} = ${value};`;
+  }
+  return `  static const String ${dartName} = '${value}';`;
+}
+
+function createDartLoadingLine(name, value, domain) {
+  const dartName = toDartName(name, domain.removePrefixForDart);
+  if (typeof value === 'string' && value.startsWith('#')) {
+    return `  static const Color ${dartName} = Color(0xFF${value.slice(1)});`;
+  }
+  if (typeof value === 'string' && value.startsWith('rgba')) {
+    const match = /rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/.exec(value);
+    if (match) {
+      const [, r, g, b, a] = match;
+      const alphaHex = Math.round(Number.parseFloat(a) * 255).toString(16).toUpperCase().padStart(2, '0');
+      const rHex = Number.parseInt(r, 10).toString(16).toUpperCase().padStart(2, '0');
+      const gHex = Number.parseInt(g, 10).toString(16).toUpperCase().padStart(2, '0');
+      const bHex = Number.parseInt(b, 10).toString(16).toUpperCase().padStart(2, '0');
+      return `  static const Color ${dartName} = Color(0x${alphaHex}${rHex}${gHex}${bHex});`;
+    }
+  }
+  if (typeof value === 'string' && /^(\d+)ms$/.test(value)) {
+    const ms = Number.parseInt(value, 10);
+    return [
+      `  static const Duration ${dartName} = Duration(milliseconds: ${ms});`,
+      `  static const int ${dartName}Ms = ${ms};`,
+    ].join('\n');
   }
   if (typeof value === 'string' && /^(\d+(?:\.\d+)?)px$/.test(value)) {
     return `  static const double ${dartName} = ${toDartDouble(value)};`;

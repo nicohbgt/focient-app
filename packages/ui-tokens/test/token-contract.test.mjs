@@ -8,6 +8,7 @@ import { colorTokens } from '../src/color-token.js';
 import { emptyTokens } from '../src/empty-token.js';
 import { errorTokens } from '../src/error-token.js';
 import { iconTokens } from '../src/icon-token.js';
+import { loadingTokens } from '../src/loading-token.js';
 import { shadowTokens } from '../src/shadow-token.js';
 import { spacingTokens } from '../src/spacing-token.js';
 import { typographyTokens } from '../src/typography-token.js';
@@ -338,4 +339,36 @@ test('empty state token artifacts preserve calm whitespace and semantic visual m
   // Body contrast on canvas (#64748B on #F8FAFC) >= 4.5:1 (AA compliant for calm body text)
   const bodyRatio = contrastRatio(emptyTokens['empty-text-body'], emptyTokens['empty-canvas-bg']);
   assert.ok(bodyRatio >= 4.5, `Body contrast was ${bodyRatio.toFixed(2)}:1; expected >= 4.5:1`);
+});
+
+test('loading and skeleton shimmer token artifacts preserve DTCG contracts and Flutter types', async () => {
+  const source = JSON.parse(await readFile(new URL('tokens/loading-token.json', packageUrl), 'utf8'));
+  const expected = flattenTokens(source.loading, 'loading');
+  const css = await readFile(new URL('src/loading-token.css', packageUrl), 'utf8');
+  const dart = await readFile(new URL('lib/loading_token.dart', packageUrl), 'utf8');
+  const cssTokens = Object.fromEntries(
+    [...css.matchAll(/--(loading-[a-z-]+): ([^;]+);/g)].map(([, name, value]) => [name, value])
+  );
+
+  assert.deepEqual(loadingTokens, expected);
+  assert.deepEqual(cssTokens, expected);
+
+  // Flutter Dart token class
+  assert.match(dart, /abstract final class FocientLoadingTokens/);
+  assert.match(dart, /static const Color skeletonBase = Color\(0xFFF1F5F9\);/);
+  assert.match(dart, /static const Color skeletonShimmer = Color\(0xA6FFFFFF\);/);
+  assert.match(dart, /static const double skeletonRadius = 4\.0;/);
+  assert.match(dart, /static const Color progressBarColor = Color\(0xFF2563EB\);/);
+  assert.match(dart, /static const double progressBarHeight = 3\.0;/);
+  assert.match(dart, /static const Color syncAccent = Color\(0xFF0D9488\);/);
+  assert.match(dart, /static const Color syncSurface = Color\(0xFFF0FDFA\);/);
+  assert.match(dart, /static const Color syncBorder = Color\(0xFFCCFBF1\);/);
+  assert.match(dart, /static const Color syncText = Color\(0xFF0F766E\);/);
+  assert.match(dart, /static const Duration durationShimmer = Duration\(milliseconds: 1600\);/);
+  assert.match(dart, /static const Duration durationSpin = Duration\(milliseconds: 700\);/);
+  assert.match(dart, /static const Duration durationSyncSpin = Duration\(milliseconds: 1500\);/);
+
+  // Shimmer duration is in the specified 1.5s - 2.0s range
+  const shimmerMs = Number.parseInt(loadingTokens['loading-duration-shimmer'], 10);
+  assert.ok(shimmerMs >= 1500 && shimmerMs <= 2000, `Shimmer duration ${shimmerMs}ms must be between 1500ms and 2000ms`);
 });

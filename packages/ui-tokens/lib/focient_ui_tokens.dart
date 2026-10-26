@@ -9,6 +9,7 @@ export 'empty_token.dart';
 export 'error_token.dart';
 export 'icon_token.dart';
 export 'layout_token.dart';
+export 'loading_token.dart';
 export 'shadow_token.dart';
 export 'spacing_token.dart';
 export 'typography_token.dart';

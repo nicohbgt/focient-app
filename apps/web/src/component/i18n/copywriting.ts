@@ -204,6 +204,13 @@ export interface FoCientCopywriting {
     restDayBody: string;
     restDayAction: string;
   };
+
+  // Loading States (Anti-Anxiety, Non-Intrusive, Zero Layout Shift)
+  loadingStates: {
+    syncingTimeline: string;
+    savingChanges: string;
+    optimizingSchedule: string;
+  };
 }
 
 export const idCopywriting: FoCientCopywriting = {
@@ -395,6 +402,12 @@ export const idCopywriting: FoCientCopywriting = {
     restDayBody: 'Tidak ada agenda yang dijadwalkan untuk sesi ini. Istirahat yang terencana adalah bagian penting dari produktivitas.',
     restDayAction: 'Atur Jadwal Hari Berikutnya',
   },
+
+  loadingStates: {
+    syncingTimeline: 'Menyesuaikan ritme linimasa...',
+    savingChanges: 'Menyimpan perubahan...',
+    optimizingSchedule: 'Mengoptimalkan jadwal harian...',
+  },
 };
 
 export const enCopywriting: FoCientCopywriting = {
@@ -585,6 +598,12 @@ export const enCopywriting: FoCientCopywriting = {
     restDayTitle: 'Time to Protect Your Energy Capacity',
     restDayBody: 'No agendas scheduled for this session. Planned rest is an essential pillar of true productivity.',
     restDayAction: "Plan Next Day's Schedule",
+  },
+
+  loadingStates: {
+    syncingTimeline: 'Adjusting timeline rhythm...',
+    savingChanges: 'Saving changes...',
+    optimizingSchedule: 'Optimizing daily schedule...',
   },
 };
 
