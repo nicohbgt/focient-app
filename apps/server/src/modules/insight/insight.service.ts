@@ -1,6 +1,6 @@
 import { prisma, TaskStatus } from '@focient/database';
-import { WeeklyReflectionDto, CapacityStatus } from '@focient/contracts';
-import { workloadEngine } from '../../engine/workload-engine.js';
+import { WeeklyReflectionDto, WeeklyInsightSummaryDto, CapacityStatus } from '@focient/contracts';
+import { workloadEngine } from '../../engine/workload.engine.js';
 
 export interface DailyInsightDto {
   date: string;
@@ -149,6 +149,152 @@ export class InsightService {
       guiltFreeBalanceScore,
       rescheduleCount: rescheduleLogs,
       topCategories,
+    };
+  }
+
+  /**
+   * Proses 5.0: Evaluation & Weekly Analytics
+   * Aggregates D5 (activity_logs) and D4 (user_capacities) across the 7-day period.
+   */
+  async getWeeklyInsightSummary(userId: string): Promise<WeeklyInsightSummaryDto> {
+    const today = new Date();
+    // 7 days window: today and previous 6 days
+    const dates: string[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setUTCDate(today.getUTCDate() - i);
+      dates.push(d.toISOString().split('T')[0]);
+    }
+
+    const startDateStr = dates[0];
+    const endDateStr = dates[dates.length - 1];
+
+    const windowStart = new Date(`${startDateStr}T00:00:00.000Z`);
+    const windowEnd = new Date(`${endDateStr}T23:59:59.999Z`);
+
+    // Fetch D5: activity_logs with task details
+    const activityLogs = await prisma.activityLog.findMany({
+      where: {
+        userId,
+        completedAt: { gte: windowStart, lte: windowEnd },
+      },
+      include: {
+        task: true,
+      },
+    });
+
+    // Fetch D4: user_capacities (WorkloadDaily)
+    const capacities = await prisma.workloadDaily.findMany({
+      where: {
+        userId,
+        date: { in: dates },
+      },
+    });
+
+    // Fetch all tasks active or targeted in the 7-day window
+    const windowTasks = await prisma.task.findMany({
+      where: {
+        userId,
+        OR: [
+          { targetDate: { gte: windowStart, lte: windowEnd } },
+          { scheduledStart: { gte: windowStart, lte: windowEnd } },
+          { completedAt: { gte: windowStart, lte: windowEnd } },
+        ],
+      },
+    });
+
+    const totalFocusMinutes = activityLogs.reduce((sum, log) => sum + log.actualDurationMinutes, 0);
+    const completedTasks = activityLogs.length;
+    const totalTasksCount = windowTasks.length;
+    const overallCompletionRate =
+      totalTasksCount > 0
+        ? Math.min(100, Math.round((completedTasks / totalTasksCount) * 100))
+        : completedTasks > 0
+        ? 100
+        : 0;
+
+    // Daily rhythms aggregation
+    const dailyRhythms = dates.map((dateStr) => {
+      const dayStart = new Date(`${dateStr}T00:00:00.000Z`);
+      const dayEnd = new Date(`${dateStr}T23:59:59.999Z`);
+
+      const dayLogs = activityLogs.filter((log) => {
+        const logTime = log.completedAt.getTime();
+        return logTime >= dayStart.getTime() && logTime <= dayEnd.getTime();
+      });
+
+      const dayTasks = windowTasks.filter((t) => {
+        const target = t.targetDate ? t.targetDate.toISOString().split('T')[0] : null;
+        const start = t.scheduledStart ? t.scheduledStart.toISOString().split('T')[0] : null;
+        return target === dateStr || start === dateStr;
+      });
+
+      const dayFocusMinutes = dayLogs.reduce((sum, l) => sum + l.actualDurationMinutes, 0);
+      const dayCompletedCount = dayLogs.length;
+      const dayTotal = Math.max(dayTasks.length, dayCompletedCount);
+      const dayCompletionRate =
+        dayTotal > 0 ? Math.min(100, Math.round((dayCompletedCount / dayTotal) * 100)) : 0;
+
+      return {
+        date: dateStr,
+        focusMinutes: dayFocusMinutes,
+        completedCount: dayCompletedCount,
+        completionRate: dayCompletionRate,
+      };
+    });
+
+    // Category Distribution breakdown
+    const categoryMinutesMap = new Map<string, number>();
+    for (const log of activityLogs) {
+      const cat = log.task?.category || 'Umum';
+      categoryMinutesMap.set(cat, (categoryMinutesMap.get(cat) || 0) + log.actualDurationMinutes);
+    }
+
+    const categoryDistribution = Array.from(categoryMinutesMap.entries())
+      .map(([category, minutes]) => ({
+        category,
+        minutes,
+        percentage:
+          totalFocusMinutes > 0 ? Math.round((minutes / totalFocusMinutes) * 100) : 0,
+      }))
+      .sort((a, b) => b.minutes - a.minutes);
+
+    // Guilt-Free Balance Score calculation:
+    // Base 80, +10 for completion rate > 65%, -5 per overloaded day recorded in D4
+    const overloadedDaysCount = capacities.filter((c) => c.isOverloaded).length;
+    let balanceScore = 80;
+    if (overallCompletionRate >= 65) balanceScore += 10;
+    if (totalFocusMinutes >= 180 && totalFocusMinutes <= 2400) balanceScore += 10;
+    balanceScore -= overloadedDaysCount * 5;
+    const guiltFreeBalanceScore = Math.max(50, Math.min(100, balanceScore));
+
+    // Formulate supportive, non-punitive reflection note
+    let reflectionNote =
+      'Ritme produktivitas mingguanmu seimbang dan terkendali. Tetap jaga konsistensi tanpa memaksakan diri.';
+    if (totalFocusMinutes === 0 && completedTasks === 0) {
+      reflectionNote =
+        'Minggu ini belum tercatat aktivitas fokus. Tidak apa-apa, kamu bisa memulai kembali dengan satu langkah kecil hari ini.';
+    } else if (overallCompletionRate >= 85) {
+      reflectionNote =
+        'Luar biasa! Penyelesaian tugasmu sangat tinggi minggu ini. Pertahankan ritme kerja yang tenang dan istirahat berkualitas.';
+    } else if (overloadedDaysCount > 2) {
+      reflectionNote =
+        'Beberapa hari tercatat mendekati kapasitas maksimal. Manfaatkan fitur adaptive reschedule untuk menjaga energi tetap prima.';
+    } else if (guiltFreeBalanceScore >= 80) {
+      reflectionNote =
+        'Keseimbangan waktu fokus dan jeda istirahatmu berjalan sangat baik. Pendekatan bebas rasa bersalah mendukung konsistensimu.';
+    }
+
+    return {
+      startDate: startDateStr,
+      endDate: endDateStr,
+      totalFocusMinutes,
+      completedTasks,
+      overallCompletionRate,
+      guiltFreeBalanceScore,
+      dailyRhythms,
+      categoryDistribution,
+      reflectionNote,
     };
   }
 }

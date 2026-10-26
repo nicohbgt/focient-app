@@ -136,10 +136,12 @@ export class AdaptiveRescheduleEngine {
     const prevDelayedEnd = new Date(delayedBlock.endTime);
     const newDelayedEnd = new Date(prevDelayedEnd.getTime() + delayMs);
 
-    // Compute day-end cutoff on the date of the delayed block
-    const [endH, endM] = dayEndHour.split(':').map(Number);
-    const dayEnd = new Date(prevDelayedEnd);
-    dayEnd.setHours(endH, endM, 0, 0);
+    // Compute day-end cutoff on the date of the delayed block using UTC
+    const dateStr = prevDelayedEnd.toISOString().split('T')[0];
+    const [endH, endM] = dayEndHour.split(':');
+    const dayEnd = new Date(
+      `${dateStr}T${endH.padStart(2, '0')}:${endM.padStart(2, '0')}:00.000Z`
+    );
 
     let overloadDetected = newDelayedEnd.getTime() > dayEnd.getTime();
     let lockedEncountered = false;

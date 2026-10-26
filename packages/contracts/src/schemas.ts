@@ -143,6 +143,7 @@ export const TaskFilterSchema = z.object({
  */
 export const OnboardingSetupSchema = z
   .object({
+    roleArchetype: z.string().min(1).optional().default('Software Engineer'),
     workHoursLimit: z
       .number({ required_error: MSG.workHoursLimit, invalid_type_error: MSG.workHoursLimit })
       .min(1, MSG.workHoursLimit)
@@ -176,6 +177,25 @@ export const OnboardingSetupSchema = z
       path: ['endWorkTime'],
     }
   );
+
+export const CompleteOnboardingSchema = OnboardingSetupSchema;
+
+// ==========================================
+// Category Schemas (D2: categories)
+// ==========================================
+export const CreateCategorySchema = z.object({
+  name: z.string().trim().min(1, 'Nama kategori wajib diisi').max(50),
+  colorToken: z.string().max(20).optional().default('blue'),
+  isDefault: z.boolean().optional().default(false),
+});
+
+// ==========================================
+// Task Completion & Activity Log Schema (D5)
+// ==========================================
+export const MarkTaskCompleteSchema = z.object({
+  completedAt: z.string().datetime({ offset: true }).optional(),
+  actualDurationMinutes: z.number().int().positive().optional(),
+});
 
 // ==========================================
 // Adaptive Scheduling Confirmation Schema
@@ -289,4 +309,17 @@ export const AutoScheduleRequestSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD'),
   preserveLocked: z.boolean().optional().default(true),
   preferredBufferMinutes: z.number().int().min(0).max(60).optional().default(10),
+});
+
+// ==========================================
+// Apply Reschedule Schemas (Proses 3.0 & D6)
+// ==========================================
+export const ApplyRescheduleSchema = z.object({
+  taskId: z.string().uuid('ID tugas tidak valid'),
+  suggestedStartTime: z.string().datetime({ offset: true }),
+  reasonMessage: z.string().max(255).optional(),
+});
+
+export const BatchApplyRescheduleSchema = z.object({
+  shifts: z.array(ApplyRescheduleSchema).min(1, 'Minimal satu pergeseran jadwal diperlukan'),
 });

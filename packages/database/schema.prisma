@@ -42,96 +42,167 @@ enum NotificationType {
   DAILY_SUMMARY
 }
 
+// D1: users
 model User {
-  id                   String           @id @default(uuid())
-  email                String           @unique
-  passwordHash         String
-  name                 String
-  timezone             String           @default("Asia/Jakarta")
-  workHourStart        String           @default("09:00")
-  workHourEnd          String           @default("17:00")
-  dailyCapacityMinutes Int              @default(480)
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
+  id                    String                @id @default(uuid())
+  email                 String                @unique
+  passwordHash          String
+  name                  String
+  roleArchetype         String?               @default("Software Engineer")
+  workHoursLimit        Float                 @default(8.0)
+  startWorkTime         String                @default("09:00")
+  endWorkTime           String                @default("17:00")
+  workHourStart         String                @default("09:00")
+  workHourEnd           String                @default("17:00")
+  dailyCapacityMinutes  Int                   @default(480)
+  timezone              String                @default("Asia/Jakarta")
+  isOnboardingCompleted Boolean               @default(false)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
 
-  tasks                Task[]
-  scheduleBlocks       ScheduleBlock[]
-  workloads            WorkloadDaily[]
-  rescheduleLogs       RescheduleLog[]
-  notifications        Notification[]
+  categories            Category[]
+  tasks                 Task[]
+  scheduleBlocks        ScheduleBlock[]
+  workloads             WorkloadDaily[]
+  activityLogs          ActivityLog[]
+  rescheduleAuditLogs   RescheduleAuditLog[]
+  rescheduleLogs        RescheduleLog[]
+  notifications         Notification[]
 
   @@map("users")
 }
 
-model Task {
-  id              String        @id @default(uuid())
-  userId          String
-  title           String
-  notes           String?
-  durationMinutes Int
-  priority        TaskPriority  @default(REGULAR)
-  status          TaskStatus    @default(TODO)
-  categoryId      String?
-  category        String?
-  deadline        DateTime?
-  scheduledStart  DateTime?
-  scheduledEnd    DateTime?
-  completedAt     DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+// D2: categories
+model Category {
+  id         String   @id @default(uuid())
+  userId     String
+  name       String
+  colorToken String   @default("blue")
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
 
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  scheduleBlocks  ScheduleBlock[]
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks      Task[]
+
+  @@index([userId])
+  @@map("categories")
+}
+
+// D3: tasks
+model Task {
+  id                  String                @id @default(uuid())
+  userId              String
+  categoryId          String?
+  category            String?
+  title               String
+  notes               String?
+  durationMinutes     Int
+  targetDate          DateTime?
+  startTime           DateTime?
+  scheduledStart      DateTime?
+  scheduledEnd        DateTime?
+  priority            TaskPriority          @default(REGULAR)
+  status              TaskStatus            @default(TODO)
+  deadline            DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryRef         Category?             @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  scheduleBlocks      ScheduleBlock[]
+  activityLogs        ActivityLog[]
+  rescheduleAuditLogs RescheduleAuditLog[]
 
   @@index([userId, status])
   @@index([userId, scheduledStart])
+  @@index([userId, targetDate])
   @@map("tasks")
 }
 
 model ScheduleBlock {
-  id         String            @id @default(uuid())
-  userId     String
-  taskId     String?
-  title      String
-  startTime  DateTime
-  endTime    DateTime
-  isLocked   Boolean           @default(false)
-  type       ScheduleBlockType @default(TASK)
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  id        String            @id @default(uuid())
+  userId    String
+  taskId    String?
+  title     String
+  startTime DateTime
+  endTime   DateTime
+  isLocked  Boolean           @default(false)
+  type      ScheduleBlockType @default(TASK)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 
-  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task       Task?             @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task      Task?             @relation(fields: [taskId], references: [id], onDelete: SetNull)
 
   @@index([userId, startTime, endTime])
   @@map("schedule_blocks")
 }
 
+// D4: user_capacities (WorkloadDaily)
 model WorkloadDaily {
-  id               String         @id @default(uuid())
-  userId           String
-  date             String         // YYYY-MM-DD
-  allocatedMinutes Int            @default(0)
-  capacityMinutes  Int            @default(480)
-  status           CapacityStatus @default(LIGHT)
-  updatedAt        DateTime       @updatedAt
+  id                 String         @id @default(uuid())
+  userId             String
+  date               String         // YYYY-MM-DD
+  targetDate         DateTime?
+  maxDailyMinutes    Int            @default(480)
+  allocatedMinutes   Int            @default(0)
+  capacityMinutes    Int            @default(480)
+  capacityPercentage Float          @default(0.0)
+  status             CapacityStatus @default(LIGHT)
+  isOverloaded       Boolean        @default(false)
+  updatedAt          DateTime       @updatedAt
 
-  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
-  @@map("workloads_daily")
+  @@map("user_capacities")
+}
+
+// D5: activity_logs
+model ActivityLog {
+  id                    String   @id @default(uuid())
+  taskId                String
+  userId                String
+  actualDurationMinutes Int
+  completedAt           DateTime @default(now())
+  createdAt             DateTime @default(now())
+
+  task                  Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, completedAt])
+  @@map("activity_logs")
+}
+
+// D6: reschedule_audit_logs
+model RescheduleAuditLog {
+  id                String    @id @default(uuid())
+  taskId            String
+  userId            String
+  previousStartTime DateTime?
+  newStartTime      DateTime?
+  reasonMessage     String?
+  appliedAt         DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+
+  task              Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, appliedAt])
+  @@map("reschedule_audit_logs")
 }
 
 model RescheduleLog {
-  id             String   @id @default(uuid())
-  userId         String
-  delayedTaskId  String
-  delayMinutes   Int
-  tasksShifted   Int      @default(0)
-  reason         String?
-  appliedAt      DateTime @default(now())
+  id            String   @id @default(uuid())
+  userId        String
+  delayedTaskId String
+  delayMinutes  Int
+  tasksShifted  Int      @default(0)
+  reason        String?
+  appliedAt     DateTime @default(now())
 
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("reschedule_logs")
 }

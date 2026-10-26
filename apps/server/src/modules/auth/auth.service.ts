@@ -1,12 +1,24 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '@focient/database';
-import { RegisterDto, LoginDto, AuthResponseDto, UserProfileDto } from '@focient/contracts';
+import { prisma, TaskPriority, TaskStatus, ScheduleBlockType, CapacityStatus, NotificationType } from '@focient/database';
+import {
+  RegisterDto,
+  LoginDto,
+  AuthResponseDto,
+  UserProfileDto,
+  CompleteOnboardingDto,
+} from '@focient/contracts';
 import { ConflictError, UnauthorizedError, NotFoundError } from '../../common/errors.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'focient_default_jwt_secret_change_in_prod';
 const JWT_EXPIRES_IN = '7d';
 
+/**
+ * FoCient Proses 1.0: Manajemen Akun & Onboarding
+ *
+ * Mengelola pendaftaran akun, otentikasi ganda (Email/Password & Google OAuth),
+ * serta pencatatan preferensi gaya kerja ke D1 (users), D2 (categories), dan D4 (user_capacities).
+ */
 export class AuthService {
   async register(data: RegisterDto): Promise<AuthResponseDto> {
     const existing = await prisma.user.findUnique({
@@ -20,13 +32,23 @@ export class AuthService {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(data.password, salt);
 
+    const workHoursLimit = data.workHoursLimit ?? 8.0;
+    const dailyCapacityMinutes = data.dailyCapacityMinutes ?? Math.round(workHoursLimit * 60);
+
     const user = await prisma.user.create({
       data: {
         email: data.email.toLowerCase(),
         passwordHash,
         name: data.name,
+        roleArchetype: data.roleArchetype ?? 'Software Engineer',
+        workHoursLimit,
+        startWorkTime: '09:00',
+        endWorkTime: '17:00',
+        workHourStart: '09:00',
+        workHourEnd: '17:00',
+        dailyCapacityMinutes,
         timezone: data.timezone ?? 'Asia/Jakarta',
-        dailyCapacityMinutes: data.dailyCapacityMinutes ?? 480,
+        isOnboardingCompleted: false,
       },
     });
 
@@ -81,8 +103,15 @@ export class AuthService {
           email,
           passwordHash,
           name,
-          timezone: 'Asia/Jakarta',
+          roleArchetype: 'Knowledge Worker',
+          workHoursLimit: 8.0,
+          startWorkTime: '09:00',
+          endWorkTime: '17:00',
+          workHourStart: '09:00',
+          workHourEnd: '17:00',
           dailyCapacityMinutes: 480,
+          timezone: 'Asia/Jakarta',
+          isOnboardingCompleted: false,
         },
       });
     }
@@ -92,8 +121,74 @@ export class AuthService {
   }
 
   /**
-   * Creates an instantaneous demo guest session pre-populated with realistic mock data.
-   * Enables zero-friction MVP testing without registration hurdles.
+   * Menyimpan data onboarding dan menginisiasi kategori bawaan ke D2 serta kuota ke D4
+   */
+  async completeOnboarding(userId: string, data: CompleteOnboardingDto): Promise<UserProfileDto> {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundError('Pengguna tidak ditemukan');
+    }
+
+    const dailyCapacityMinutes = Math.round(data.workHoursLimit * 60);
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        roleArchetype: data.roleArchetype,
+        workHoursLimit: data.workHoursLimit,
+        startWorkTime: data.startWorkTime,
+        endWorkTime: data.endWorkTime,
+        workHourStart: data.startWorkTime,
+        workHourEnd: data.endWorkTime,
+        dailyCapacityMinutes,
+        isOnboardingCompleted: true,
+      },
+    });
+
+    // Inisiasi daftar kategori default sesuai pilihan peran ke D2: categories
+    if (data.selectedCategories && data.selectedCategories.length > 0) {
+      for (const catName of data.selectedCategories) {
+        const existingCat = await prisma.category.findFirst({
+          where: { userId, name: catName },
+        });
+        if (!existingCat) {
+          await prisma.category.create({
+            data: {
+              userId,
+              name: catName,
+              colorToken: 'blue',
+              isDefault: true,
+            },
+          });
+        }
+      }
+    }
+
+    // Inisiasi D4: user_capacities untuk hari ini
+    const today = new Date().toISOString().split('T')[0];
+    await prisma.workloadDaily.upsert({
+      where: { userId_date: { userId, date: today } },
+      update: {
+        maxDailyMinutes: dailyCapacityMinutes,
+        capacityMinutes: dailyCapacityMinutes,
+      },
+      create: {
+        userId,
+        date: today,
+        maxDailyMinutes: dailyCapacityMinutes,
+        capacityMinutes: dailyCapacityMinutes,
+        allocatedMinutes: 0,
+        capacityPercentage: 0,
+        status: CapacityStatus.LIGHT,
+        isOverloaded: false,
+      },
+    });
+
+    return this.formatProfile(updatedUser);
+  }
+
+  /**
+   * Mode Tamu Instan (Demo / Guest Session) dengan mock data komprehensif
    */
   async createGuestSession(): Promise<AuthResponseDto> {
     const timestamp = Date.now();
@@ -108,14 +203,34 @@ export class AuthService {
         email: guestEmail,
         passwordHash,
         name: 'Pengguna Tamu (Demo)',
-        timezone: 'Asia/Jakarta',
+        roleArchetype: 'Software Engineer',
+        workHoursLimit: 8.0,
+        startWorkTime: '09:00',
+        endWorkTime: '17:00',
         workHourStart: '09:00',
         workHourEnd: '17:00',
         dailyCapacityMinutes: 480,
+        timezone: 'Asia/Jakarta',
+        isOnboardingCompleted: true,
       },
     });
 
-    // Pre-populate mock tasks & schedule blocks for instant zero-friction demo
+    // Inisiasi D2: categories default
+    const defaultCategories = ['Perencanaan', 'Pengembangan', 'Fokus Inti', 'Refleksi'];
+    const catMap = new Map<string, string>();
+    for (const cName of defaultCategories) {
+      const cat = await prisma.category.create({
+        data: {
+          userId: user.id,
+          name: cName,
+          colorToken: cName === 'Fokus Inti' ? 'purple' : 'blue',
+          isDefault: true,
+        },
+      });
+      catMap.set(cName, cat.id);
+    }
+
+    // Pre-populate mock tasks & schedule blocks
     const today = new Date().toISOString().split('T')[0];
 
     // Slot 1: 09:00 - 09:45 (45 min) - Top 3 focus (In Progress)
@@ -127,9 +242,12 @@ export class AuthService {
         title: 'Review Rencana Rilis MVP FoCient',
         notes: 'Verifikasi kesiapan 4 pilar MVP dan alur Guilt-Free Rescheduling.',
         durationMinutes: 45,
-        priority: 'TOP_3',
-        status: 'IN_PROGRESS',
+        priority: TaskPriority.TOP_3,
+        status: TaskStatus.IN_PROGRESS,
+        categoryId: catMap.get('Perencanaan'),
         category: 'Perencanaan',
+        targetDate: new Date(`${today}T00:00:00.000Z`),
+        startTime: start1,
         scheduledStart: start1,
         scheduledEnd: end1,
       },
@@ -141,7 +259,7 @@ export class AuthService {
         title: task1.title,
         startTime: start1,
         endTime: end1,
-        type: 'TASK',
+        type: ScheduleBlockType.TASK,
       },
     });
 
@@ -154,9 +272,12 @@ export class AuthService {
         title: 'Uji Coba 1-Click Guilt-Free Rescheduling',
         notes: 'Simulasikan perpanjangan tugas dan perhatikan downstream blocks bergeser lembut.',
         durationMinutes: 60,
-        priority: 'TOP_3',
-        status: 'TODO',
+        priority: TaskPriority.TOP_3,
+        status: TaskStatus.TODO,
+        categoryId: catMap.get('Pengembangan'),
         category: 'Pengembangan',
+        targetDate: new Date(`${today}T00:00:00.000Z`),
+        startTime: start2,
         scheduledStart: start2,
         scheduledEnd: end2,
       },
@@ -168,7 +289,7 @@ export class AuthService {
         title: task2.title,
         startTime: start2,
         endTime: end2,
-        type: 'TASK',
+        type: ScheduleBlockType.TASK,
       },
     });
 
@@ -181,9 +302,12 @@ export class AuthService {
         title: 'Pemeriksaan Kapasitas Harian & Top 3 Focus',
         notes: 'Pastikan isolasi fokus terjaga dan tidak terjadi cognitive overload.',
         durationMinutes: 60,
-        priority: 'TOP_3',
-        status: 'TODO',
-        category: 'Fokus',
+        priority: TaskPriority.TOP_3,
+        status: TaskStatus.TODO,
+        categoryId: catMap.get('Fokus Inti'),
+        category: 'Fokus Inti',
+        targetDate: new Date(`${today}T00:00:00.000Z`),
+        startTime: start3,
         scheduledStart: start3,
         scheduledEnd: end3,
       },
@@ -195,7 +319,7 @@ export class AuthService {
         title: task3.title,
         startTime: start3,
         endTime: end3,
-        type: 'TASK',
+        type: ScheduleBlockType.TASK,
       },
     });
 
@@ -207,9 +331,12 @@ export class AuthService {
         userId: user.id,
         title: 'Evaluasi Catatan Harian & Insights',
         durationMinutes: 45,
-        priority: 'REGULAR',
-        status: 'TODO',
+        priority: TaskPriority.REGULAR,
+        status: TaskStatus.TODO,
+        categoryId: catMap.get('Refleksi'),
         category: 'Refleksi',
+        targetDate: new Date(`${today}T00:00:00.000Z`),
+        startTime: start4,
         scheduledStart: start4,
         scheduledEnd: end4,
       },
@@ -221,18 +348,34 @@ export class AuthService {
         title: task4.title,
         startTime: start4,
         endTime: end4,
-        type: 'TASK',
+        type: ScheduleBlockType.TASK,
       },
     });
 
-    // Create initial welcome notification
+    // Inisiasi D4: user_capacities
+    const totalAllocated = 45 + 60 + 60 + 45; // 210 min
+    const percentage = Math.round((totalAllocated / 480) * 10000) / 100; // 43.75%
+    await prisma.workloadDaily.create({
+      data: {
+        userId: user.id,
+        date: today,
+        maxDailyMinutes: 480,
+        capacityMinutes: 480,
+        allocatedMinutes: totalAllocated,
+        capacityPercentage: percentage,
+        status: CapacityStatus.LIGHT,
+        isOverloaded: false,
+      },
+    });
+
+    // Notifikasi selamat datang
     await prisma.notification.create({
       data: {
         userId: user.id,
         title: 'Selamat datang di Mode Demo FoCient',
         message:
           'Nikmati pengalaman perencanaan adaptif tanpa rasa bersalah. Coba fitur Guilt-Free Rescheduling dan Top 3 Priorities!',
-        type: 'FOCUS_REMINDER',
+        type: NotificationType.FOCUS_REMINDER,
         isRead: false,
       },
     });
@@ -270,19 +413,31 @@ export class AuthService {
     email: string;
     name: string;
     timezone: string;
+    roleArchetype?: string | null;
+    workHoursLimit?: number | null;
+    startWorkTime?: string | null;
+    endWorkTime?: string | null;
     workHourStart: string;
     workHourEnd: string;
     dailyCapacityMinutes: number;
+    isOnboardingCompleted?: boolean | null;
     createdAt: Date;
   }): UserProfileDto {
+    const start = user.startWorkTime || user.workHourStart || '09:00';
+    const end = user.endWorkTime || user.workHourEnd || '17:00';
     return {
       id: user.id,
       email: user.email,
       name: user.name,
       timezone: user.timezone,
-      workHourStart: user.workHourStart,
-      workHourEnd: user.workHourEnd,
+      roleArchetype: user.roleArchetype || 'Software Engineer',
+      workHoursLimit: user.workHoursLimit || 8.0,
+      startWorkTime: start,
+      endWorkTime: end,
+      workHourStart: start,
+      workHourEnd: end,
       dailyCapacityMinutes: user.dailyCapacityMinutes,
+      isOnboardingCompleted: Boolean(user.isOnboardingCompleted),
       createdAt: user.createdAt.toISOString(),
     };
   }

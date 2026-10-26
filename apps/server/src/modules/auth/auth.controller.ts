@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { RegisterSchema, LoginSchema } from '@focient/contracts';
+import { RegisterSchema, LoginSchema, CompleteOnboardingSchema } from '@focient/contracts';
 import { validateBody } from '../../middleware/validate.middleware.js';
 import { authService } from './auth.service.js';
 import { authenticate, AuthenticatedRequest } from './auth.middleware.js';
@@ -35,6 +35,31 @@ authRouter.post('/google', async (req, res: Response, next) => {
   }
 });
 
+// Instant Guest / Demo Session for frictionless onboarding and testing
+authRouter.post(['/demo', '/guest'], async (_req, res: Response, next) => {
+  try {
+    const result = await authService.createGuestSession();
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Proses 1.0: Complete Onboarding & Save Work Capacity Preferences
+authRouter.post(
+  '/onboarding',
+  authenticate,
+  validateBody(CompleteOnboardingSchema),
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const profile = await authService.completeOnboarding(req.user!.id, req.body);
+      res.json(profile);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 authRouter.get('/me', authenticate, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const user = await authService.getProfile(req.user!.id);
@@ -43,3 +68,4 @@ authRouter.get('/me', authenticate, async (req: AuthenticatedRequest, res: Respo
     next(error);
   }
 });
+

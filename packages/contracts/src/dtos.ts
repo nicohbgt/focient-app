@@ -1,10 +1,11 @@
 /**
  * FoCient Shared Data Transfer Objects (DTOs)
  * Used across Frontend, Mobile, and Backend API integrations.
+ * Aligned with DFD Level 0, DFD Level 1, and FoCient Class Diagram.
  */
 
 // ==========================================
-// 1. Authentication & User DTOs
+// 1. Authentication & User DTOs (D1: users)
 // ==========================================
 export interface RegisterDto {
   email: string;
@@ -12,6 +13,8 @@ export interface RegisterDto {
   name: string;
   timezone?: string;
   dailyCapacityMinutes?: number;
+  roleArchetype?: string;
+  workHoursLimit?: number;
 }
 
 export interface LoginDto {
@@ -24,9 +27,14 @@ export interface UserProfileDto {
   email: string;
   name: string;
   timezone: string;
-  workHourStart: string; // e.g. "09:00"
-  workHourEnd: string;   // e.g. "17:00"
+  roleArchetype: string;
+  workHoursLimit: number;
+  startWorkTime: string; // e.g. "09:00"
+  endWorkTime: string;   // e.g. "17:00"
+  workHourStart: string; // backwards compatibility alias
+  workHourEnd: string;   // backwards compatibility alias
   dailyCapacityMinutes: number;
+  isOnboardingCompleted: boolean;
   createdAt: string;
 }
 
@@ -36,18 +44,30 @@ export interface AuthResponseDto {
 }
 
 // ==========================================
-// 2. Task Management DTOs
+// 2. Category DTOs (D2: categories)
 // ==========================================
-export type TaskPriority = 'TOP_3' | 'REGULAR' | 'NORMAL' | 'LOW';
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'NEEDS_ADJUSTMENT' | 'COMPLETED';
-
 export interface CategoryDto {
   id: string;
   userId?: string;
   name: string;
-  color?: string;
-  isActive: boolean;
+  colorToken: string;
+  isDefault: boolean;
+  color?: string; // backwards compatibility alias
+  isActive?: boolean;
+  createdAt?: string;
 }
+
+export interface CreateCategoryDto {
+  name: string;
+  colorToken?: string;
+  isDefault?: boolean;
+}
+
+// ==========================================
+// 3. Task Management DTOs (D3: tasks)
+// ==========================================
+export type TaskPriority = 'TOP_3' | 'REGULAR' | 'NORMAL' | 'LOW';
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'NEEDS_ADJUSTMENT' | 'COMPLETED';
 
 export interface CreateTaskDto {
   title: string;
@@ -56,6 +76,7 @@ export interface CreateTaskDto {
   categoryId?: string;
   priority?: TaskPriority;
   deadline?: string;
+  targetDate?: string;
   category?: string;
   startTime?: string;
   scheduledStart?: string;
@@ -70,23 +91,31 @@ export interface UpdateTaskDto {
   priority?: TaskPriority;
   status?: TaskStatus;
   deadline?: string;
+  targetDate?: string;
   category?: string;
   startTime?: string;
   scheduledStart?: string;
   completedAt?: string;
+  actualDurationMinutes?: number;
   swapWithTaskId?: string;
+}
+
+export interface MarkTaskCompleteDto {
+  completedAt?: string;
+  actualDurationMinutes?: number;
 }
 
 export interface TaskResponseDto {
   id: string;
   userId: string;
+  categoryId?: string;
+  category?: string;
   title: string;
   notes?: string;
   durationMinutes: number;
   priority: TaskPriority;
   status: TaskStatus;
-  categoryId?: string;
-  category?: string;
+  targetDate?: string;
   startTime?: string;
   endTime?: string;
   deadline?: string;
@@ -105,35 +134,76 @@ export interface TaskFilterDto {
 }
 
 // ==========================================
-// 2.1 Onboarding & Setup DTOs
+// 4. Onboarding & Setup DTOs (Proses 1.0)
 // ==========================================
-export interface OnboardingSetupDto {
-  workHoursLimit: number; // 1 to 16 hours (step 0.5)
-  startWorkTime: string;  // 24h format "HH:mm"
-  endWorkTime: string;    // 24h format "HH:mm"
-  selectedCategories: string[]; // 1 to 5 categories
+export interface CompleteOnboardingDto {
+  roleArchetype: string;
+  workHoursLimit: number; // 1 to 16 hours
+  startWorkTime: string;  // "HH:mm"
+  endWorkTime: string;    // "HH:mm"
+  selectedCategories: string[];
+}
+
+export type OnboardingSetupDto = CompleteOnboardingDto;
+
+// ==========================================
+// 5. Capacity & Workload DTOs (D4: user_capacities)
+// ==========================================
+export type CapacityStatus = 'LIGHT' | 'OPTIMAL' | 'NEAR_CAPACITY' | 'OVERLOAD';
+
+export interface CapacityProfileDto {
+  id?: string;
+  userId: string;
+  targetDate: string;
+  maxDailyMinutes: number;
+  allocatedMinutes: number;
+  capacityPercentage: number;
+  status: CapacityStatus;
+  isOverloaded: boolean;
+}
+
+export interface WorkloadSummaryDto {
+  date: string;
+  allocatedMinutes: number;
+  capacityMinutes: number;
+  percentage: number;
+  status: CapacityStatus;
+  taskCount: number;
+  completedCount: number;
+  isOverloaded: boolean;
 }
 
 // ==========================================
-// 2.2 Adaptive Scheduling Confirmation DTOs
+// 6. Productivity Tracking & Today Plan (Proses 4.0)
 // ==========================================
-export interface AdaptiveScheduleConfirmDto {
+export interface TodayPlanDto {
+  date: string;
+  timelineSchedule: TaskResponseDto[];
+  unscheduledTasks: TaskResponseDto[];
+  top3Priorities: TaskResponseDto[];
+  capacityProfile: CapacityProfileDto;
+  adaptiveBanner?: {
+    shouldAlert: boolean;
+    severity: 'INFO' | 'WARNING' | 'SUCCESS';
+    title: string;
+    message: string;
+  };
+}
+
+// ==========================================
+// 7. Activity Logs (D5: activity_logs)
+// ==========================================
+export interface ActivityLogDto {
+  id: string;
   taskId: string;
-  confirmedStartTime: string; // ISO 8601
-}
-
-/**
- * Calculates endTime automatically: endTime = startTime + durationMinutes.
- * FoCient principle: Independent time formatting without user input for endTime.
- */
-export function calculateEndTime(startTimeIso: string, durationMinutes: number): string {
-  const start = new Date(startTimeIso);
-  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
-  return end.toISOString();
+  userId: string;
+  actualDurationMinutes: number;
+  completedAt: string;
+  createdAt: string;
 }
 
 // ==========================================
-// 3. Schedule & Ripple Reschedule DTOs
+// 8. Adaptive Rescheduling & Audit Logs (D6: reschedule_audit_logs)
 // ==========================================
 export type ScheduleBlockType = 'TASK' | 'BUFFER' | 'BREAK' | 'FOCUS_SESSION';
 
@@ -178,24 +248,40 @@ export interface RippleRescheduleResponseDto {
   overloadDetected: boolean;
 }
 
-// ==========================================
-// 4. Capacity & Workload DTOs
-// ==========================================
-export type CapacityStatus = 'LIGHT' | 'OPTIMAL' | 'NEAR_CAPACITY' | 'OVERLOAD';
+export interface ApplyRescheduleDto {
+  taskId: string;
+  suggestedStartTime: string;
+  reasonMessage?: string;
+}
 
-export interface WorkloadSummaryDto {
-  date: string;
-  allocatedMinutes: number;
-  capacityMinutes: number;
-  percentage: number;
-  status: CapacityStatus;
-  taskCount: number;
-  completedCount: number;
-  isOverloaded: boolean;
+export interface BatchApplyRescheduleDto {
+  shifts: ApplyRescheduleDto[];
+}
+
+export interface RescheduleAuditLogDto {
+  id: string;
+  taskId: string;
+  userId: string;
+  previousStartTime?: string;
+  newStartTime?: string;
+  reasonMessage?: string;
+  appliedAt: string;
+  createdAt: string;
+}
+
+export interface AdaptiveScheduleConfirmDto {
+  taskId: string;
+  confirmedStartTime: string; // ISO 8601
+}
+
+export function calculateEndTime(startTimeIso: string, durationMinutes: number): string {
+  const start = new Date(startTimeIso);
+  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+  return end.toISOString();
 }
 
 // ==========================================
-// 5. Analytics & Insight DTOs
+// 9. Analytics & Weekly Insight (Proses 5.0)
 // ==========================================
 export interface WeeklyReflectionDto {
   startDate: string;
@@ -207,8 +293,29 @@ export interface WeeklyReflectionDto {
   topCategories: Array<{ category: string; minutes: number }>;
 }
 
+export interface WeeklyInsightSummaryDto {
+  startDate: string;
+  endDate: string;
+  totalFocusMinutes: number;
+  completedTasks: number;
+  overallCompletionRate: number;
+  guiltFreeBalanceScore: number;
+  dailyRhythms: Array<{
+    date: string;
+    focusMinutes: number;
+    completedCount: number;
+    completionRate: number;
+  }>;
+  categoryDistribution: Array<{
+    category: string;
+    minutes: number;
+    percentage: number;
+  }>;
+  reflectionNote: string;
+}
+
 // ==========================================
-// 6. External Calendar Integration DTOs
+// 10. External Calendar Integration DTOs
 // ==========================================
 export interface ExternalCalendarEventDto {
   externalId: string;

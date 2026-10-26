@@ -20,8 +20,23 @@ insightRouter.get('/daily', async (req: AuthenticatedRequest, res: Response, nex
 // GET /api/insights/weekly
 insightRouter.get('/weekly', async (req: AuthenticatedRequest, res: Response, next) => {
   try {
-    const reflection = await insightService.getWeeklyReflection(req.user!.id);
-    res.json(reflection);
+    if (req.query.type === 'reflection') {
+      const reflection = await insightService.getWeeklyReflection(req.user!.id);
+      res.json(reflection);
+      return;
+    }
+    const summary = await insightService.getWeeklyInsightSummary(req.user!.id);
+    res.json(summary);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/insights/weekly-summary (Proses 5.0)
+insightRouter.get('/weekly-summary', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const summary = await insightService.getWeeklyInsightSummary(req.user!.id);
+    res.json(summary);
   } catch (error) {
     next(error);
   }

@@ -1,24 +1,246 @@
-import { Router, Response } from 'express';
-import { prisma, ScheduleBlockType, TaskStatus } from '@focient/database';
+import { Router, Response, NextFunction } from 'express';
+import { prisma, ScheduleBlockType, TaskStatus, CapacityStatus } from '@focient/database';
 import {
   RippleRescheduleSchema,
   AutoScheduleRequestSchema,
+  ApplyRescheduleSchema,
+  BatchApplyRescheduleSchema,
   ScheduleBlockDto,
   TaskResponseDto,
+  TodayPlanDto,
+  CapacityProfileDto,
 } from '@focient/contracts';
 import { validateBody } from '../../middleware/validate.middleware.js';
 import { authenticate, AuthenticatedRequest } from '../auth/auth.middleware.js';
 import { adaptiveRescheduleEngine as rescheduleEngine } from '../../engine/adaptive-reschedule.engine.js';
 import { workloadEngine } from '../../engine/workload.engine.js';
 import { silentPlacementEngine as taskPlacementEngine } from '../../engine/silent-placement.engine.js';
+import { top3PrioritiesEngine } from '../../engine/top3-priorities.engine.js';
+import { formatTask } from '../task/task.controller.js';
 import { NotFoundError } from '../../common/errors.js';
 
 export const scheduleRouter = Router();
 
 scheduleRouter.use(authenticate);
 
+async function recalculateCapacity(userId: string, dateStr: string) {
+  const dayStart = new Date(`${dateStr}T00:00:00.000Z`);
+  const dayEnd = new Date(`${dateStr}T23:59:59.999Z`);
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const maxDailyMinutes = Math.round((user?.workHoursLimit ?? 8) * 60);
+
+  const dayTasks = await prisma.task.findMany({
+    where: {
+      userId,
+      status: { not: TaskStatus.COMPLETED },
+      OR: [
+        { targetDate: { gte: dayStart, lte: dayEnd } },
+        { scheduledStart: { gte: dayStart, lte: dayEnd } },
+        { startTime: { gte: dayStart, lte: dayEnd } },
+      ],
+    },
+  });
+
+  const allocatedMinutes = dayTasks.reduce((sum, t) => sum + t.durationMinutes, 0);
+  const workload = workloadEngine.calculateWorkload(
+    dateStr,
+    allocatedMinutes,
+    maxDailyMinutes,
+    dayTasks.length,
+    0
+  );
+
+  return prisma.workloadDaily.upsert({
+    where: { userId_date: { userId, date: dateStr } },
+    update: {
+      allocatedMinutes,
+      capacityPercentage: workload.percentage,
+      status: workload.status as CapacityStatus,
+      isOverloaded: workload.isOverloaded,
+      targetDate: dayStart,
+    },
+    create: {
+      userId,
+      date: dateStr,
+      targetDate: dayStart,
+      maxDailyMinutes,
+      capacityMinutes: maxDailyMinutes,
+      allocatedMinutes,
+      capacityPercentage: workload.percentage,
+      status: workload.status as CapacityStatus,
+      isOverloaded: workload.isOverloaded,
+    },
+  });
+}
+
+/**
+ * Proses 4.0: Aggregates Today Plan:
+ * - timelineSchedule (ordered tasks with start time)
+ * - unscheduledTasks (backlog without start time)
+ * - top3Priorities (Top 3 priorities selection)
+ * - capacityProfile (D4: user_capacities)
+ * - adaptiveBanner (overload or trigger warning)
+ */
+async function handleTodayPlan(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user!.id;
+    const dateStr = (req.query.date as string) || new Date().toISOString().split('T')[0];
+
+    const dayStart = new Date(`${dateStr}T00:00:00.000Z`);
+    const dayEnd = new Date(`${dateStr}T23:59:59.999Z`);
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const maxDailyMinutes = Math.round((user?.workHoursLimit ?? 8) * 60);
+
+    const tasks = await prisma.task.findMany({
+      where: {
+        userId,
+        OR: [
+          { targetDate: { gte: dayStart, lte: dayEnd } },
+          { scheduledStart: { gte: dayStart, lte: dayEnd } },
+          { startTime: { gte: dayStart, lte: dayEnd } },
+          { createdAt: { gte: dayStart, lte: dayEnd } },
+        ],
+      },
+      orderBy: [{ priority: 'asc' }, { createdAt: 'desc' }],
+    });
+
+    const formattedTasks = tasks.map(formatTask);
+
+    const timelineSchedule = formattedTasks
+      .filter((t) => Boolean(t.startTime || t.scheduledStart))
+      .sort((a, b) => {
+        const timeA = new Date(a.startTime || a.scheduledStart!).getTime();
+        const timeB = new Date(b.startTime || b.scheduledStart!).getTime();
+        return timeA - timeB;
+      });
+
+    const unscheduledTasks = formattedTasks.filter(
+      (t) => !t.startTime && !t.scheduledStart && t.status !== TaskStatus.COMPLETED
+    );
+
+    const top3Priorities = top3PrioritiesEngine.selectTop3(formattedTasks);
+
+    const activeTasks = tasks.filter((t) => t.status !== TaskStatus.COMPLETED);
+    const allocatedMinutes = activeTasks.reduce((sum, t) => sum + t.durationMinutes, 0);
+    const completedCount = tasks.filter((t) => t.status === TaskStatus.COMPLETED).length;
+
+    const workload = workloadEngine.calculateWorkload(
+      dateStr,
+      allocatedMinutes,
+      maxDailyMinutes,
+      tasks.length,
+      completedCount
+    );
+
+    const capacityRecord = await prisma.workloadDaily.upsert({
+      where: { userId_date: { userId, date: dateStr } },
+      update: {
+        allocatedMinutes,
+        capacityPercentage: workload.percentage,
+        status: workload.status as CapacityStatus,
+        isOverloaded: workload.isOverloaded,
+        targetDate: dayStart,
+      },
+      create: {
+        userId,
+        date: dateStr,
+        targetDate: dayStart,
+        maxDailyMinutes,
+        capacityMinutes: maxDailyMinutes,
+        allocatedMinutes,
+        capacityPercentage: workload.percentage,
+        status: workload.status as CapacityStatus,
+        isOverloaded: workload.isOverloaded,
+      },
+    });
+
+    const capacityProfile: CapacityProfileDto = {
+      id: capacityRecord.id,
+      userId,
+      targetDate: dateStr,
+      maxDailyMinutes,
+      allocatedMinutes,
+      capacityPercentage: workload.percentage,
+      status: workload.status,
+      isOverloaded: workload.isOverloaded,
+    };
+
+    const blocks = await prisma.scheduleBlock.findMany({
+      where: {
+        userId,
+        startTime: { gte: dayStart, lte: dayEnd },
+      },
+      orderBy: { startTime: 'asc' },
+    });
+
+    const blockDtos: ScheduleBlockDto[] = blocks.map((b) => ({
+      id: b.id,
+      userId: b.userId,
+      taskId: b.taskId ?? undefined,
+      title: b.title,
+      startTime: b.startTime.toISOString(),
+      endTime: b.endTime.toISOString(),
+      isLocked: b.isLocked,
+      type: b.type as ScheduleBlockDto['type'],
+    }));
+
+    const triggerAssessment = rescheduleEngine.evaluateRescheduleTriggers(
+      timelineSchedule,
+      blockDtos,
+      new Date(),
+      workload.percentage
+    );
+
+    let adaptiveBanner: TodayPlanDto['adaptiveBanner'] = {
+      shouldAlert: false,
+      severity: 'INFO',
+      title: 'Ritme Fokus Terjaga',
+      message: 'Jadwal kerjamu seimbang dan optimal.',
+    };
+
+    if (workload.isOverloaded) {
+      adaptiveBanner = {
+        shouldAlert: true,
+        severity: 'WARNING',
+        title: 'Kapasitas Hari Ini Hampir Penuh',
+        message:
+          'Beban kerja melebihi 90% kapasitas idealmu. Pertimbangkan untuk memindahkan tugas reguler ke esok hari demi menjaga kualitas fokus.',
+      };
+    } else if (triggerAssessment.needsAdjustment) {
+      adaptiveBanner = {
+        shouldAlert: true,
+        severity: 'WARNING',
+        title: 'Perlu Penyesuaian Jadwal',
+        message: triggerAssessment.message,
+      };
+    }
+
+    const response: TodayPlanDto = {
+      date: dateStr,
+      timelineSchedule,
+      unscheduledTasks,
+      top3Priorities,
+      capacityProfile,
+      adaptiveBanner,
+    };
+
+    res.json(response);
+  } catch (error) {
+    next(error);
+  }
+}
+
+// GET /api/schedule/today-plan
+scheduleRouter.get('/today-plan', handleTodayPlan);
+
 // GET /api/schedule?date=YYYY-MM-DD
 scheduleRouter.get('/', async (req: AuthenticatedRequest, res: Response, next) => {
+  if (req.baseUrl.includes('today-plan')) {
+    return handleTodayPlan(req, res, next);
+  }
+
   try {
     const userId = req.user!.id;
     const dateStr = (req.query.date as string) || new Date().toISOString().split('T')[0];
@@ -528,4 +750,228 @@ scheduleRouter.get('/capacity/daily', async (req: AuthenticatedRequest, res: Res
     next(error);
   }
 });
+
+// POST /api/schedule/apply-reschedule (Proses 3.0: Guilt-Free Adaptive Shift & D6 Audit Log)
+scheduleRouter.post(
+  '/apply-reschedule',
+  validateBody(ApplyRescheduleSchema),
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const userId = req.user!.id;
+      const { taskId, suggestedStartTime, reasonMessage } = req.body;
+
+      const task = await prisma.task.findFirst({
+        where: { id: taskId, userId },
+      });
+
+      if (!task) {
+        throw new NotFoundError('Tugas tidak ditemukan.');
+      }
+
+      const previousStartTime = task.startTime || task.scheduledStart;
+      const previousDateStr = previousStartTime
+        ? previousStartTime.toISOString().split('T')[0]
+        : task.targetDate?.toISOString().split('T')[0];
+
+      const newStartTime = new Date(suggestedStartTime);
+      const newEndTime = new Date(newStartTime.getTime() + task.durationMinutes * 60000);
+      const targetDateStr = suggestedStartTime.split('T')[0];
+      const newTargetDate = new Date(`${targetDateStr}T00:00:00.000Z`);
+
+      const result = await prisma.$transaction(async (tx) => {
+        const updatedTask = await tx.task.update({
+          where: { id: task.id },
+          data: {
+            startTime: newStartTime,
+            scheduledStart: newStartTime,
+            scheduledEnd: newEndTime,
+            targetDate: newTargetDate,
+            status: task.status === TaskStatus.NEEDS_ADJUSTMENT ? TaskStatus.TODO : task.status,
+          },
+        });
+
+        const existingBlock = await tx.scheduleBlock.findFirst({
+          where: { userId, taskId: task.id },
+        });
+
+        if (existingBlock) {
+          await tx.scheduleBlock.update({
+            where: { id: existingBlock.id },
+            data: {
+              startTime: newStartTime,
+              endTime: newEndTime,
+            },
+          });
+        } else {
+          await tx.scheduleBlock.create({
+            data: {
+              userId,
+              taskId: task.id,
+              title: task.title,
+              startTime: newStartTime,
+              endTime: newEndTime,
+              isLocked: false,
+              type: ScheduleBlockType.TASK,
+            },
+          });
+        }
+
+        const auditLog = await tx.rescheduleAuditLog.create({
+          data: {
+            taskId: task.id,
+            userId,
+            previousStartTime: previousStartTime ?? null,
+            newStartTime,
+            reasonMessage: reasonMessage || 'Penyesuaian adaptif waktu pengerjaan tugas.',
+            appliedAt: new Date(),
+          },
+        });
+
+        return { updatedTask, auditLog };
+      });
+
+      // Recalculate capacity on affected dates
+      await recalculateCapacity(userId, targetDateStr);
+      if (previousDateStr && previousDateStr !== targetDateStr) {
+        await recalculateCapacity(userId, previousDateStr);
+      }
+
+      res.json({
+        success: true,
+        message: 'Jadwal tugas berhasil disesuaikan dengan tenang.',
+        task: formatTask(result.updatedTask),
+        auditLog: {
+          id: result.auditLog.id,
+          taskId: result.auditLog.taskId,
+          userId: result.auditLog.userId,
+          previousStartTime: result.auditLog.previousStartTime?.toISOString(),
+          newStartTime: result.auditLog.newStartTime?.toISOString(),
+          reasonMessage: result.auditLog.reasonMessage ?? undefined,
+          appliedAt: result.auditLog.appliedAt.toISOString(),
+          createdAt: result.auditLog.createdAt.toISOString(),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// POST /api/schedule/batch-apply-reschedule (Proses 3.0: Ripple Shift Confirmation & D6 Batch Audit Logs)
+scheduleRouter.post(
+  '/batch-apply-reschedule',
+  validateBody(BatchApplyRescheduleSchema),
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const userId = req.user!.id;
+      const { shifts } = req.body;
+
+      const shiftedTaskIds = shifts.map((s: { taskId: string }) => s.taskId);
+      const tasks = await prisma.task.findMany({
+        where: { id: { in: shiftedTaskIds }, userId },
+      });
+      const taskMap = new Map(tasks.map((t) => [t.id, t]));
+
+      const affectedDates = new Set<string>();
+
+      const transactionResults = await prisma.$transaction(async (tx) => {
+        const updatedTasks = [];
+        const auditLogs = [];
+
+        for (const shift of shifts) {
+          const task = taskMap.get(shift.taskId);
+          if (!task) continue;
+
+          const previousStartTime = task.startTime || task.scheduledStart;
+          const prevDateStr = previousStartTime
+            ? previousStartTime.toISOString().split('T')[0]
+            : task.targetDate?.toISOString().split('T')[0];
+          if (prevDateStr) affectedDates.add(prevDateStr);
+
+          const newStartTime = new Date(shift.suggestedStartTime);
+          const newEndTime = new Date(newStartTime.getTime() + task.durationMinutes * 60000);
+          const targetDateStr = shift.suggestedStartTime.split('T')[0];
+          affectedDates.add(targetDateStr);
+
+          const newTargetDate = new Date(`${targetDateStr}T00:00:00.000Z`);
+
+          const updated = await tx.task.update({
+            where: { id: task.id },
+            data: {
+              startTime: newStartTime,
+              scheduledStart: newStartTime,
+              scheduledEnd: newEndTime,
+              targetDate: newTargetDate,
+              status: task.status === TaskStatus.NEEDS_ADJUSTMENT ? TaskStatus.TODO : task.status,
+            },
+          });
+          updatedTasks.push(updated);
+
+          const existingBlock = await tx.scheduleBlock.findFirst({
+            where: { userId, taskId: task.id },
+          });
+
+          if (existingBlock) {
+            await tx.scheduleBlock.update({
+              where: { id: existingBlock.id },
+              data: {
+                startTime: newStartTime,
+                endTime: newEndTime,
+              },
+            });
+          } else {
+            await tx.scheduleBlock.create({
+              data: {
+                userId,
+                taskId: task.id,
+                title: task.title,
+                startTime: newStartTime,
+                endTime: newEndTime,
+                isLocked: false,
+                type: ScheduleBlockType.TASK,
+              },
+            });
+          }
+
+          const audit = await tx.rescheduleAuditLog.create({
+            data: {
+              taskId: task.id,
+              userId,
+              previousStartTime: previousStartTime ?? null,
+              newStartTime,
+              reasonMessage: shift.reasonMessage || 'Penyesuaian jadwal beruntun (ripple reschedule).',
+              appliedAt: new Date(),
+            },
+          });
+          auditLogs.push(audit);
+        }
+
+        return { updatedTasks, auditLogs };
+      });
+
+      // Recalculate capacity on all affected dates
+      for (const dStr of affectedDates) {
+        await recalculateCapacity(userId, dStr);
+      }
+
+      res.json({
+        success: true,
+        message: `${transactionResults.updatedTasks.length} jadwal tugas berhasil disesuaikan secara adaptif.`,
+        tasks: transactionResults.updatedTasks.map(formatTask),
+        auditLogs: transactionResults.auditLogs.map((a) => ({
+          id: a.id,
+          taskId: a.taskId,
+          userId: a.userId,
+          previousStartTime: a.previousStartTime?.toISOString(),
+          newStartTime: a.newStartTime?.toISOString(),
+          reasonMessage: a.reasonMessage ?? undefined,
+          appliedAt: a.appliedAt.toISOString(),
+          createdAt: a.createdAt.toISOString(),
+        })),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
