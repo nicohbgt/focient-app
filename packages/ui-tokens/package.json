@@ -1,9 +1,14 @@
 {
-  "name": "@focient/ui-token",
+  "name": "@focient/ui-tokens",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "exports": {
+    "./colors.json": "./src/colors.json",
+    "./typography.json": "./src/typography.json",
+    "./spacing.json": "./src/spacing.json",
+    "./shadows.json": "./src/shadows.json",
+    "./motion.json": "./src/motion.json",
     "./color-token.css": "./src/color-token.css",
     "./color-token": {
       "types": "./src/color-token.d.ts",

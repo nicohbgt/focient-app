@@ -220,14 +220,14 @@ test('5. Lucide Icon System and Token Assets Verification', async () => {
     assert.ok(namedIconsTs.includes(`export const ${iconName}`), `named-icons.tsx must export ${iconName}`);
   }
 
-  // Verify SVG icon assets in ui-token package
-  const tokenIconsDir = new URL('../../../packages/ui-token/assets/icons/outline/', import.meta.url);
+  // Verify SVG icon assets in ui-tokens package
+  const tokenIconsDir = new URL('../../../packages/ui-tokens/assets/icons/outline/', import.meta.url);
   const sampleIcon = await readFile(new URL('clock.svg', tokenIconsDir), 'utf8');
   assert.ok(sampleIcon.includes('viewBox="0 0 24 24"'), 'Lucide clock.svg must have 24x24 viewBox');
   assert.ok(sampleIcon.includes('stroke="currentColor"'), 'Lucide clock.svg must use stroke="currentColor"');
   assert.ok(sampleIcon.includes('fill="none"'), 'Lucide clock.svg outline must use fill="none"');
 
-  const filledIconsDir = new URL('../../../packages/ui-token/assets/icons/filled/', import.meta.url);
+  const filledIconsDir = new URL('../../../packages/ui-tokens/assets/icons/filled/', import.meta.url);
   const sampleFilledIcon = await readFile(new URL('sparkles.svg', filledIconsDir), 'utf8');
   assert.ok(sampleFilledIcon.includes('viewBox="0 0 24 24"'), 'Lucide sparkles.svg must have 24x24 viewBox');
   assert.ok(sampleFilledIcon.includes('fill="currentColor"'), 'Filled sparkles.svg must have fill="currentColor"');

@@ -1,10 +1,17 @@
 import { Router, Response } from 'express';
 import { prisma, TaskPriority, TaskStatus } from '@focient/database';
-import { CreateTaskSchema, UpdateTaskSchema, TaskFilterSchema, TaskResponseDto } from '@focient/contracts';
+import {
+  CreateTaskSchema,
+  UpdateTaskSchema,
+  TaskFilterSchema,
+  TaskResponseDto,
+  VALIDATION_MESSAGES,
+} from '@focient/contracts';
 import { validateBody, validateQuery } from '../../middleware/validate.middleware.js';
 import { authenticate, AuthenticatedRequest } from '../auth/auth.middleware.js';
-import { NotFoundError } from '../../common/errors.js';
-import { top3PriorityEngine } from '../../engine/top-3-priority.js';
+import { NotFoundError, ValidationError } from '../../common/errors.js';
+import { top3PrioritiesEngine } from '../../engine/top3-priorities.engine.js';
+const top3PriorityEngine = top3PrioritiesEngine;
 
 export const taskRouter = Router();
 
@@ -64,6 +71,21 @@ taskRouter.post('/', validateBody(CreateTaskSchema), async (req: AuthenticatedRe
     const userId = req.user!.id;
     const data = req.body;
 
+    // Enforce Top-3 Priorities Rule (Max 3 active Top-3 focus tasks)
+    if (data.priority === 'TOP_3') {
+      const activeTop3Count = await prisma.task.count({
+        where: {
+          userId,
+          priority: TaskPriority.TOP_3,
+          status: { not: TaskStatus.COMPLETED },
+        },
+      });
+
+      if (!top3PriorityEngine.canAcceptTop3(activeTop3Count)) {
+        throw new ValidationError(VALIDATION_MESSAGES.id.taskTop3Quota);
+      }
+    }
+
     const task = await prisma.task.create({
       data: {
         userId,
@@ -114,6 +136,29 @@ taskRouter.patch('/:id', validateBody(UpdateTaskSchema), async (req: Authenticat
     }
 
     const data = req.body;
+
+    // Enforce Top-3 Priorities Rule on status or priority update
+    const isTargetingTop3 =
+      data.priority === 'TOP_3' || (data.priority === undefined && existing.priority === TaskPriority.TOP_3);
+    const isTargetingActive =
+      data.status !== undefined ? data.status !== TaskStatus.COMPLETED : existing.status !== TaskStatus.COMPLETED;
+    const wasAlreadyActiveTop3 = existing.priority === TaskPriority.TOP_3 && existing.status !== TaskStatus.COMPLETED;
+
+    if (isTargetingTop3 && isTargetingActive && !wasAlreadyActiveTop3) {
+      const activeTop3Count = await prisma.task.count({
+        where: {
+          userId,
+          priority: TaskPriority.TOP_3,
+          status: { not: TaskStatus.COMPLETED },
+          id: { not: req.params.id },
+        },
+      });
+
+      if (!top3PriorityEngine.canAcceptTop3(activeTop3Count)) {
+        throw new ValidationError(VALIDATION_MESSAGES.id.taskTop3Quota);
+      }
+    }
+
     const isNowCompleted = data.status === TaskStatus.COMPLETED && existing.status !== TaskStatus.COMPLETED;
 
     const updated = await prisma.task.update({

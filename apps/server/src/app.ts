@@ -4,6 +4,7 @@ import { errorHandler } from './middleware/error.middleware.js';
 import { authRouter } from './modules/auth/auth.controller.js';
 import { taskRouter } from './modules/task/task.controller.js';
 import { scheduleRouter } from './modules/schedule/schedule.controller.js';
+import { categoryRouter } from './modules/category/category.controller.js';
 import { notificationRouter } from './modules/notification/notification.controller.js';
 import { insightRouter } from './modules/insight/insight.controller.js';
 import { healthRouter } from './modules/health/health.controller.js';
@@ -21,10 +22,13 @@ export const createApp = (): Express => {
   // Monitoring & Health
   app.use(healthRouter);
 
-  // Application Domain API Routes
+  // Application Domain API Routes (Gateway Controllers matching Architecture Specification)
   app.use('/api/auth', authRouter);
   app.use('/api/tasks', taskRouter);
+  app.use('/api/categories', categoryRouter);
   app.use('/api/schedule', scheduleRouter);
+  app.use('/api/today-plan', scheduleRouter);
+  app.use('/api/timeline', scheduleRouter);
   app.use('/api/notifications', notificationRouter);
   app.use('/api/insights', insightRouter);
 

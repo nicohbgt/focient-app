@@ -130,7 +130,7 @@ test('typography artifacts preserve responsive scale, weights, and tabular-figur
   const dart = await readFile(new URL('lib/typography_token.dart', packageUrl), 'utf8');
 
   assert.deepEqual(typographyTokens, expected);
-  assert.match(css, /--typography-font-family-sans: "Inter", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;/);
+  assert.match(css, /--typography-font-family-sans: "Inter", "-apple-system", "BlinkMacSystemFont", sans-serif;/);
   assert.match(css, /--typography-feature-tabular-figures: "tnum";/);
   assert.match(css, /@media \(min-width: 64rem\)/);
   assert.match(dart, /static const String featureTabularFigures = 'tnum';/);

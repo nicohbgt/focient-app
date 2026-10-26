@@ -1,186 +1,134 @@
-# FoCient Development & Monorepo Architecture
+# FoCient (Focus & Efficient) — Tech Stack & Monorepo Architecture
 
-> **FoCient** — An intelligent daily focus management & guilt-free adaptive planning ecosystem built upon two core pillars: **Focus** (single-task cognitive clarity) and **Efficiency** (frictionless, guilt-free adaptive rescheduling).
+> **FoCient** (Focus & Efficient) — Arsitektur Monorepo (`focient-sourcecode`) berbasis **Turborepo & pnpm**, dengan target rilis multi-platform (Web Desktop, Android, iOS) dan Server Logic Engine dengan standar tipografi **100% Inter Font Family**.
 
 ---
 
-## 🏛️ Monorepo Domain Map
+## 1. Ringkasan Eksekutif & Filosofi Arsitektur
 
-The repository is organized directly around the **14 core FoCient Development Domains**:
+Arsitektur sistem FoCient dirancang untuk merealisasikan prinsip kerja **Focus and Efficient** serta pendekatan **Guilt-Free Productivity**:
+
+- **Pemisahan Logika Terpusat (Backend USP)**: Seluruh kalkulasi deterministik kapasitas beban kerja (*workload scoring*), penyusunan prioritas Top 3, penempatan slot linimasa pasif (*silent placement*), dan pergeseran jadwal adaptif (*guilt-free rescheduling*) diproses di sisi server agar klien Web dan Mobile selalu sinkron secara konsisten.
+- **Contract-First Development**: Seluruh definisi model data, antarmuka DTO (*Data Transfer Object*), dan enumerasi dikunci dalam pustaka bersama `@focient/contracts` sebelum implementasi antarmuka dilakukan.
+- **Performa & Rendah Beban Kognitif**: Mengutamakan antarmuka yang bersih (*decluttered*), rendering instan untuk kebutuhan publik/SEO via SSG/RSC, serta persistensi data lokal (*offline-first*) di perangkat seluler via Drift (SQLite).
+
+---
+
+## 2. Matriks Pemilihan Teknologi (Technology Stack)
+
+| Lapisan / Layer | Teknologi Utama | Pustaka & Perkakas Pendukung | Justifikasi & Peran Fungsional |
+| :--- | :--- | :--- | :--- |
+| **Web Client**<br>(Marketing & Core App) | **Next.js 14+**<br>(TypeScript, App Router) | • Tailwind CSS + shadcn/ui<br>• Zustand (UI State Lokal)<br>• TanStack Query (Server State)<br>• @hello-pangea/dnd (Timeline DND)<br>• Framer Motion (Mikro-interaksi) | Menggabungkan Landing Page / Company Profile (SSG/RSC yang cepat dan ramah SEO) serta Core Web App interaktif (`/today`, `/tasks`, `/insights`) dalam satu repositori menggunakan Route Groups. |
+| **Mobile Client**<br>(Android & iOS) | **Flutter 3.x**<br>(Dart) | • Riverpod (State Management)<br>• Drift (SQLite) (Offline Storage)<br>• reorderables (Drag-and-Drop Linimasa)<br>• flutter_local_notifications<br>• workmanager (Background Tasks)<br>• google_sign_in (Flutter SDK) | Satu basis kode untuk eksekusi native di Android dan iOS. Penyimpanan lokal Drift memungkinkan pembukaan linimasa harian secara instan tanpa hambatan koneksi internet (*offline-first*). |
+| **Backend & Logic Engine** | **Node.js (NestJS / Express)** | • Prisma ORM<br>• BullMQ (Job Queue)<br>• Class-Validator / Zod | Menjalankan REST API dan modul Core Rule-Based Engine (kalkulasi kapasitas, filter Top 3, dan penjadwalan adaptif) dengan latensi pemrosesan rendah. |
+| **Basis Data & Caching** | **PostgreSQL**<br>(Relational Primary) | • Redis (In-Memory Cache & Queue) | Menjamin integritas relasi entitas tugas, batasan jam kerja, log energi, dan riwayat pergeseran jadwal. Redis menangani caching rencana harian aktif dan antrean pemrosesan latar belakang (*silent processing*). |
+| **Autentikasi** | **Hybrid Auth**<br>(Google OAuth 2.0 + Manual Email) | • NextAuth.js / Supabase Auth<br>• google_sign_in (Flutter SDK)<br>• JWT Session Tokens | Integrasi Google Sign-In memberikan aktivasi cepat tanpa gesekan (*zero-friction*), sedangkan pendaftaran email/kata sandi manual mengakomodasi pengguna kustom. Profil disatukan via Account Linking. |
+| **Modul AI / Heuristik** | **Rule-Based Engine Core**<br>(Modular AI Extension) | • TypeScript Rule Engine (Inti Deterministik)<br>• LiteLLM / Gemini Flash API (Ekstensi teks empatik & parser non-kritis) | Logika utama bekerja 100% deterministik dan instan. Modul AI/LLM bertindak sebagai ekstensi asinkron untuk menyusun teks komunikasi empatik dan rekomendasi tugas tanpa memblokir alur utama sistem. |
+| **Infrastruktur & DevOps** | **Vercel & Cloud Containers** | • Docker & Docker Compose<br>• GitHub Actions (CI/CD Pipeline)<br>• Firebase Cloud Messaging (FCM)<br>• Sentry & PostHog | Hosting Next.js di Vercel, API backend di container cloud, push notifikasi adaptif via FCM, serta pelacakan performa dan analitik adopsi produk terpadu. |
+
+---
+
+## 3. Struktur Monorepo (`focient-sourcecode`)
 
 ```
-FoCient Development
+focient-sourcecode/
+├── .github/
+│   └── workflows/              # CI/CD: lint, test, build per paket
+├── apps/
+│   ├── web/                    # Next.js App Router (Marketing + Web App)
+│   │   ├── src/
+│   │   │   ├── app/
+│   │   │   │   ├── (marketing)/# Landing Page & Company Profile (SSG/RSC)
+│   │   │   │   ├── (auth)/     # Login, Register, Google Callback
+│   │   │   │   └── (app)/      # Protected Core App: /onboarding, /today, /tasks, /insights
+│   │   │   ├── components/     # UI Primitives & Organisms (100% Inter font family)
+│   │   │   ├── hooks/          # TanStack Query Hooks & State Store
+│   │   │   └── lib/            # HTTP Fetcher & Auth Client
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   ├── mobile/                 # Flutter Application (Android & iOS)
+│   │   ├── lib/
+│   │   │   ├── core/           # Inter Theme, token visual, HTTP network client
+│   │   │   ├── data/           # Drift (SQLite) local DB & DTO mappers
+│   │   │   ├── presentation/   # Riverpod providers & Screens (Onboarding, Today, Tasks)
+│   │   │   └── main.dart
+│   │   └── pubspec.yaml
+│   │
+│   └── server/                 # API Server & Backend Logic Engine (NestJS / Express)
+│       ├── src/
+│       │   ├── modules/        # Auth (Google/Email), Tasks, Timeline, Categories, Insights
+│       │   ├── engine/         # Logika Deterministik Inti FoCient
+│       │   │   ├── workload.engine.ts
+│       │   │   ├── silent-placement.engine.ts
+│       │   │   ├── top3-priorities.engine.ts
+│       │   │   └── adaptive-reschedule.engine.ts
+│       │   ├── extensions/     # Modul AI / LLM Asinkron Opsional
+│       │   └── main.ts
+│       ├── package.json
+│       └── tsconfig.json
 │
-├── 1. Frontend / Client
-│   ├── apps/web                        # React 18 + TypeScript web client
-│   ├── apps/mobile                     # Flutter 3.x mobile client (Android / iOS)
-│   └── packages/ui-token               # Shared DTCG design tokens (Web CSS & Flutter Dart)
+├── packages/
+│   ├── contracts/              # Shared DTOs, Enums, & Model Definitions (TypeScript)
+│   │   ├── src/
+│   │   │   ├── dtos.ts         # Kontrak data terpusat (Task, User, Schedule)
+│   │   │   └── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   ├── database/               # PostgreSQL Migrations & Skema Data
+│   │   ├── migrations/         # Skrip DDL SQL
+│   │   ├── schema.prisma       # Definisi skema relasional
+│   │   └── package.json
+│   │
+│   └── ui-tokens/              # Design Tokens Ekstraksi Figma Dev Mode
+│       ├── src/
+│       │   ├── colors.json     # Deep Cobalt, Soft Teal, Warm Amber, Cool Slate
+│       │   ├── typography.json # 100% Inter Font Family & Tabular Figure Tokens
+│       │   ├── spacing.json    # 4-point / 8-point grid tokens
+│       │   ├── shadows.json    # 2-Layer Drop Shadow tokens
+│       │   └── motion.json     # Easing curve & 5-tier duration tokens (100ms - 400ms)
+│       └── package.json
 │
-├── 2. Backend / Server
-│   └── apps/server                     # Node.js + Express REST API application
-│
-├── 3. Database
-│   └── packages/database               # Prisma ORM, PostgreSQL schema, migrations, seeds
-│
-├── 4. API & Integration
-│   └── packages/contracts              # Shared DTOs, API routes, external calendar interfaces
-│
-├── 5. Authentication & Authorization
-│   ├── apps/server/src/modules/auth    # JWT issuance, verification, bcrypt password hashing
-│   └── apps/server/src/modules/auth/auth.middleware.ts # Bearer token auth guard
-│
-├── 6. Business Logic (Engines)
-│   ├── apps/server/src/engine/task-placement-engine # Intelligent non-fragmenting slot placement
-│   ├── apps/server/src/engine/reschedule-engine.ts  # Ripple reschedule downstream auto-shift
-│   ├── apps/server/src/engine/workload-engine.ts    # Daily capacity & guilt-free overload thresholds
-│   └── apps/server/src/engine/top-3-priority.ts     # Single-task focus isolation algorithm
-│
-├── 7. State Management
-│   ├── apps/web/src/hooks/useTaskStore.ts           # Web task backlog & focus store
-│   ├── apps/web/src/hooks/useCapacityStore.ts       # Workload allocation & alert trigger state
-│   ├── apps/web/src/hooks/useThemeStore.ts          # Light / Dark mode persistence
-│   └── apps/mobile/lib/data/task_state.dart         # Flutter reactive task & capacity notifier
-│
-├── 8. Validation & Error Handling
-│   ├── packages/contracts/src/schemas.ts            # Zod runtime payload validation
-│   ├── apps/server/src/common/errors.ts             # AppError & HTTP domain exception hierarchy
-│   ├── apps/server/src/middleware/validate.middleware.ts # Zod request validation middleware
-│   └── apps/server/src/middleware/error.middleware.ts    # Global centralized error handler
-│
-├── 9. Notification / Reminder
-│   └── apps/server/src/modules/notification        # Gentle focus reminders & non-punitive alerts
-│
-├── 10. Analytics & Data Processing
-│   └── apps/server/src/modules/insight             # Weekly reflection, focus minutes, pacing balance
-│
-├── 11. Testing
-│   ├── packages/ui-token/test/token-contract.test.mjs # Design token & WCAG AAA contract tests
-│   └── .github/workflows/ci.yml                    # Automated CI test & typecheck pipeline
-│
-├── 12. Security
-│   ├── apps/server/src/middleware/security.middleware.ts # Helmet headers, strict CORS, Rate limiting
-│   └── packages/contracts/src/schemas.ts           # Input sanitization against injection
-│
-├── 13. Deployment & Infrastructure
-│   ├── docker-compose.yml                          # Multi-service composition (Postgres, Server, Web)
-│   ├── apps/server/Dockerfile                      # Multi-stage container for Node backend
-│   ├── apps/web/Dockerfile                         # Multi-stage container with Nginx runtime
-│   └── .env.example                                # Master environment variable template
-│
-└── 14. Monitoring & Maintenance
-    ├── apps/server/src/common/logger.ts            # Structured JSON logger with request context
-    └── apps/server/src/modules/health/health.controller.ts # Liveness (/health) & Readiness (/ready)
+├── pnpm-workspace.yaml
+├── package.json                # Root Workspace Orchestrator
+├── turbo.json                  # Turborepo Build Pipelines
+└── README.md
 ```
 
 ---
 
-## 📦 Detailed Domain Specifications
+## 4. Standar Desain Token & Konvensi Tipografi (100% Inter)
 
-### 1. Frontend / Client
-- **Web App (`apps/web`)**:
-  - React 18, TypeScript, and modern bundler configuration.
-  - Primitive components: `<Button/>`, `<InputField/>`, `<Checkbox/>`, `<Badge/>`.
-  - Organism components: `<TaskCard/>`, `<DailyCapacityMeter/>`, `<RescheduleAlert/>`.
-- **Mobile App (`apps/mobile`)**:
-  - Flutter application with native Material 3 widgets implementing identical visual and motion specs.
-- **Design Tokens (`packages/ui-token`)**:
-  - W3C DTCG canonical tokens generating `:root` and `:root[data-theme="dark"]` CSS, and Flutter `Color`, `BoxShadow`, `Duration`, and `Cubic` easing curves.
+### A. Fondasi Tipografi Tunggal (Single Typeface System)
+- **Font Family**: `Inter, -apple-system, BlinkMacSystemFont, sans-serif`.
+- **Pembatasan Bobot Huruf (Strict 3-Tier Weight)**:
+  - **Regular (400)**: Teks badan (*body copy*), deskripsi tugas, catatan panduan empatik.
+  - **Medium (500)**: Label tombol sekunder/tertier, input form, tab navigation, metadata waktu, status badge.
+  - **SemiBold (600)**: Seluruh tingkat judul (Display, H1, H2, H3), tombol aksi utama (CTA), metrik analitik penting.
+  - *Catatan*: Bobot ExtraBold (800) dan Black (900) dilarang digunakan untuk menjaga persona *anti-toxic productivity*.
 
-### 2. Backend / Server
-- **Server App (`apps/server`)**:
-  - Express.js API server modularized into `auth`, `task`, `schedule`, `notification`, and `insight` routes.
-  - Graceful shutdown handling (`SIGTERM`, `SIGINT`) with database disconnection.
+### B. Matriks Skala Tipografi Multi-Platform (Inter Type Scale)
+| Token Semantik | Bobot | Mobile (Size / Line Height) | Web Desktop (Size / Line Height) | Tracking | Penggunaan Komponen FoCient |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `type.display` | SemiBold (600) | 32px / 40px (2.00rem) | 40px / 48px (2.50rem) | -0.02em | Onboarding hero, banner sambutan, ringkasan capaian besar. |
+| `type.heading.h1` | SemiBold (600) | 24px / 32px (1.50rem) | 28px / 36px (1.75rem) | -0.015em | Judul layar utama (Today Plan, Task Management, Insights). |
+| `type.heading.h2` | SemiBold (600) | 20px / 28px (1.25rem) | 22px / 30px (1.375rem) | -0.01em | Header seksi (Top 3 Priorities, Timeline Schedule, Workload Score). |
+| `type.heading.h3` | SemiBold (600) | 16px / 24px (1.00rem) | 18px / 26px (1.125rem) | 0em | Judul kartu tugas (Task Card), header dialog modal Adaptive Reschedule. |
+| `type.body.lg` | Regular (400) | 16px / 24px (1.00rem) | 16px / 26px (1.00rem) | 0em | Pesan panduan guilt-free, deskripsi rekomendasi jadwal, catatan refleksi mingguan. |
+| `type.body.md` | Regular (400) | 14px / 20px (0.875rem) | 14px / 22px (0.875rem) | 0em | Teks isi default, form input, daftar sub-task, catatan aktivitas harian. |
+| `type.label.md` | Medium (500) | 14px / 20px (0.875rem) | 14px / 20px (0.875rem) | +0.01em | Teks tombol CTA, tab navigasi, chip filter kategori tugas. |
+| `type.caption` | Reg / Med (500) | 12px / 16px (0.75rem) | 12px / 18px (0.75rem) | +0.01em | Penanda jam linimasa, alokasi durasi tugas, energy capacity tag. |
+| `type.micro` | SemiBold (600) | 11px / 14px (0.6875rem) | 11px / 16px (0.6875rem) | +0.05em | Label status kapsul (WORKLOAD RATIO, ENERGY LEVEL, ACTIVE FOCUS). |
 
-### 3. Database
-- **Database (`packages/database`)**:
-  - PostgreSQL schema with Prisma ORM: `User`, `Task`, `ScheduleBlock`, `WorkloadDaily`, `RescheduleLog`, `Notification`.
-  - Realistic seed script (`seeds/seed.ts`) providing initial Top-3 tasks and demo user.
+### C. Angka Numerik & Waktu Dinamis (Tabular Figures)
+Setiap komponen yang menampilkan nilai angka, timer fokus, linimasa jam, dan persentase kapasitas energi wajib mengaktifkan fitur OpenType `tnum` (`font-variant-numeric: tabular-nums` atau `FontFeature.tabularFigures()`):
+- Mencegah pergeseran tata letak horizontal (*layout jitter*) saat nilai angka berganti secara dinamis.
+- Menjamin baris slot linimasa jam dan durasi tugas tetap lurus secara visual.
 
-### 4. API & Integration
-- **Contracts (`packages/contracts`)**:
-  - Single source of truth for DTOs and API route constants (`API_ROUTES`).
-  - Google Calendar / Apple Calendar integration models for bi-directional synchronization.
-
-### 5. Authentication & Authorization
-- **Auth Module (`apps/server/src/modules/auth`)**:
-  - Salted `bcryptjs` password hashing.
-  - Signed JWT bearer authentication with automatic request context injection (`req.user.id`).
-
-### 6. Business Logic
-- **Placement Engine**: Scans open work-hour slots without fragmenting rest buffers.
-- **Ripple Reschedule Engine**: Shifts downstream tasks along the Y-axis when predecessor tasks extend.
-- **Workload Engine**: Classifies daily workload (`LIGHT` <50%, `OPTIMAL` 50–75%, `NEAR_CAPACITY` 76–90%, `OVERLOAD` >90%).
-- **Top-3 Priority Engine**: Algorithmic isolation and ranking of high-leverage focus items.
-
-### 7. State Management
-- **Web Store Hooks (`apps/web/src/hooks`)**:
-  - `useTaskStore`: Backlog and focus state.
-  - `useCapacityStore`: Daily workload and trigger thresholds.
-  - `useThemeStore`: Persistent Dark/Light mode theme switching.
-- **Mobile State (`apps/mobile/lib/data/task_state.dart`)**:
-  - Reactive `ChangeNotifier` task store with capacity calculations.
-
-### 8. Validation & Error Handling
-- **Zod Schemas**: Strict schema validation on all request boundaries.
-- **Error Hierarchy**: `AppError`, `ValidationError`, `NotFoundError`, `ConflictError`, `UnauthorizedError`.
-- Centralized error-handling middleware logging structured error payloads.
-
-### 9. Notification / Reminder
-- Empathetic notifications avoiding punitive language (strictly forbidding *"Terlambat"* or *"Gagal"*).
-- Timed focus session reminders and gentle capacity rebalancing suggestions.
-
-### 10. Analytics & Data Processing
-- **Insight Module**: Weekly reflection metrics aggregating focus minutes, task completion velocity, and a **Guilt-Free Balance Score** (0–100).
-
-### 11. Testing
-- Automated token contract test suite checking staleness, values, and WCAG AAA ($\ge 7:1$) contrast across platforms.
-- Automated CI pipeline via GitHub Actions.
-
-### 12. Security
-- Helmet security headers, CORS origin whitelisting, IP-based API rate limiting (`express-rate-limit`), and parameter sanitization.
-
-### 13. Deployment & Infrastructure
-- Docker Compose configuration orchestrating PostgreSQL, Backend, and Frontend.
-- Multi-stage Dockerfiles optimized for lightweight production artifacts.
-
-### 14. Monitoring & Maintenance
-- `/health` liveness probe and `/ready` readiness probe executing live database health checks.
-- Structured JSON logging with timestamp and error context.
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js $\ge 20$
-- PostgreSQL $\ge 15$ (or Docker)
-- Flutter SDK $\ge 3.10$ (for mobile)
-
-### Quick Setup
-
-1. **Install dependencies:**
-   ```sh
-   npm install
-   ```
-
-2. **Configure environment:**
-   ```sh
-   cp .env.example .env
-   ```
-
-3. **Verify design tokens & tests:**
-   ```sh
-   npm run generate:tokens
-   npm run test:tokens
-   ```
-
-4. **Run typechecks:**
-   ```sh
-   npm run typecheck:contracts
-   npm run typecheck:web
-   ```
-
-5. **Start multi-container development environment:**
-   ```sh
-   docker-compose up -d
-   ```
+### D. Warna Semantik & Guardrail Reschedule
+- **Pilar Focus (Primary)**: Deep Cobalt Blue (`#2563EB`) — Mengunci atensi pada tugas prioritas aktif.
+- **Pilar Efficient (Secondary)**: Soft Balance Teal (`#0D9488`) — Alur penyesuaian adaptif dan meteran kapasitas yang menenangkan.
+- **Pilar Accent**: Deep Violet (`#7C3AED`) — Penanda kategori proyek dan analitik wawasan mingguan.
+- **Kanvas & Struktur (Neutral)**: Cool Slate (`#F8FAFC` untuk latar belakang, `#FFFFFF` untuk kartu, `#0F172A` untuk teks utama).
+- **Reschedule Guardrail**: Larangan keras memakai warna Danger (merah) untuk tugas tertunda; dialihkan secara adaptif ke token **Warning Amber** (`#D97706` / `#FFFBEB`) dengan pesan yang solutif.

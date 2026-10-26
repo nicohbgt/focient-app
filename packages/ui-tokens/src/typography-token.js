@@ -3,16 +3,14 @@ export const typographyTokens = Object.freeze(
   {
   "fontFamily": [
     "Inter",
-    "Plus Jakarta Sans",
-    "ui-sans-serif",
-    "system-ui",
+    "-apple-system",
+    "BlinkMacSystemFont",
     "sans-serif"
   ],
   "fontWeight": {
     "regular": 400,
     "medium": 500,
-    "semibold": 600,
-    "bold": 700
+    "semibold": 600
   },
   "tabularFigures": "tnum",
   "mobile": {
@@ -20,7 +18,7 @@ export const typographyTokens = Object.freeze(
       "fontSize": "32px",
       "lineHeight": "40px",
       "letterSpacing": "-0.02em",
-      "fontWeight": 700
+      "fontWeight": 600
     },
     "h1": {
       "fontSize": "24px",
@@ -52,6 +50,12 @@ export const typographyTokens = Object.freeze(
       "letterSpacing": "0em",
       "fontWeight": 400
     },
+    "label-md": {
+      "fontSize": "14px",
+      "lineHeight": "20px",
+      "letterSpacing": "0.01em",
+      "fontWeight": 500
+    },
     "caption": {
       "fontSize": "12px",
       "lineHeight": "16px",
@@ -61,26 +65,26 @@ export const typographyTokens = Object.freeze(
     "micro": {
       "fontSize": "11px",
       "lineHeight": "14px",
-      "letterSpacing": "0.03em",
-      "fontWeight": 500
+      "letterSpacing": "0.05em",
+      "fontWeight": 600
     }
   },
   "desktop": {
     "display": {
-      "fontSize": "44px",
-      "lineHeight": "52px",
+      "fontSize": "40px",
+      "lineHeight": "48px",
       "letterSpacing": "-0.02em",
-      "fontWeight": 700
+      "fontWeight": 600
     },
     "h1": {
-      "fontSize": "32px",
-      "lineHeight": "40px",
+      "fontSize": "28px",
+      "lineHeight": "36px",
       "letterSpacing": "-0.015em",
       "fontWeight": 600
     },
     "h2": {
-      "fontSize": "24px",
-      "lineHeight": "32px",
+      "fontSize": "22px",
+      "lineHeight": "30px",
       "letterSpacing": "-0.01em",
       "fontWeight": 600
     },
@@ -91,28 +95,34 @@ export const typographyTokens = Object.freeze(
       "fontWeight": 600
     },
     "body-lg": {
-      "fontSize": "18px",
-      "lineHeight": "28px",
+      "fontSize": "16px",
+      "lineHeight": "26px",
       "letterSpacing": "0em",
       "fontWeight": 400
     },
     "body-md": {
-      "fontSize": "16px",
-      "lineHeight": "24px",
+      "fontSize": "14px",
+      "lineHeight": "22px",
       "letterSpacing": "0em",
       "fontWeight": 400
     },
-    "caption": {
+    "label-md": {
       "fontSize": "14px",
       "lineHeight": "20px",
       "letterSpacing": "0.01em",
       "fontWeight": 500
     },
-    "micro": {
+    "caption": {
       "fontSize": "12px",
-      "lineHeight": "16px",
-      "letterSpacing": "0.03em",
+      "lineHeight": "18px",
+      "letterSpacing": "0.01em",
       "fontWeight": 500
+    },
+    "micro": {
+      "fontSize": "11px",
+      "lineHeight": "16px",
+      "letterSpacing": "0.05em",
+      "fontWeight": 600
     }
   }
 },

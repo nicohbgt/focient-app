@@ -8,7 +8,7 @@ on:
 
 jobs:
   validate:
-    name: Lint, Test & Typecheck
+    name: Lint, Test & Typecheck Per Package
     runs-on: ubuntu-latest
 
     steps:
@@ -30,12 +30,22 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Verify Design Tokens (Staleness & Contract)
+      - name: Verify Design Tokens (100% Inter & WCAG AAA)
         run: |
           npm run generate:tokens
           npm run test:tokens
 
-      - name: Typecheck Contracts & Web
+      - name: Typecheck Contracts & Server
         run: |
           npm run typecheck:contracts
+          npm run typecheck:server
+
+      - name: Test & Typecheck Web
+        run: |
+          npm run test:web
           npm run typecheck:web
+
+      - name: Test Mobile Client (Flutter)
+        run: |
+          cd apps/mobile
+          flutter test

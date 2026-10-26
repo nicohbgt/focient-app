@@ -1,0 +1,49 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "animation": {
+    "duration": {
+      "fast": {
+        "$type": "duration",
+        "$value": "150ms",
+        "$description": "Tanggap, mikro, elastis (tactile feedback). Target Tailwind: duration-150. Hover & active state tombol, pemulihan cincin fokus, centang checkbox, dan toggle switch."
+      },
+      "normal": {
+        "$type": "duration",
+        "$value": "200ms",
+        "$description": "Seimbang, lincah (component transition). Target Tailwind: duration-200. Elevasi kartu linimasa (card hover), buka/tutup menu dropdown, kemunculan tooltip, dan tab filter."
+      },
+      "moderate": {
+        "$type": "duration",
+        "$value": "250ms",
+        "$description": "Halus, struktural (layout & flow shift). Target Tailwind: duration-250. Pergeseran blok jadwal otomatis (ripple reschedule), reposisi kartu linimasa, indikator geser tab."
+      },
+      "slow": {
+        "$type": "duration",
+        "$value": "300ms",
+        "$description": "Terarah, berbobot (surface & modal overlay). Target Tailwind: duration-300. Dialog Adaptive Reschedule Modal, lembar geser Bottom Sheet seluler, dan pemudaran lapisan gelap Backdrop Scrim."
+      },
+      "deliberate": {
+        "$type": "duration",
+        "$value": "400ms",
+        "$description": "Bertahap, ekspansif (data expansion & alert). Target Tailwind: duration-400. Buka/tutup vertikal detail tugas (accordion expand), pengisian bilah kapasitas (capacity meter fill), System Banner."
+      }
+    },
+    "ease": {
+      "fluid": {
+        "$type": "cubicBezier",
+        "$value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "$description": "Fluid Ease (Default) - Digunakan untuk transisi umum dua arah, perubahan warna/border, dan hover."
+      },
+      "decelerate": {
+        "$type": "cubicBezier",
+        "$value": "cubic-bezier(0.0, 0, 0.2, 1)",
+        "$description": "Decelerate / Enter Ease - Digunakan saat elemen baru memasuki layar (entry) agar mendarat secara tenang."
+      },
+      "accelerate": {
+        "$type": "cubicBezier",
+        "$value": "cubic-bezier(0.4, 0, 1, 1)",
+        "$description": "Accelerate / Exit Ease - Digunakan saat elemen keluar atau menghilang dari layar (exit/dismiss)."
+      }
+    }
+  }
+}

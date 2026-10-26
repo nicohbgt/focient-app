@@ -1,13 +1,29 @@
 import { TaskResponseDto } from '@focient/contracts';
 
+export const MAX_TOP_3_TASKS = 3;
+
 /**
  * FoCient Top-3 Priority Engine
  *
  * Implements the single-task focus principle:
- * Isolates and ranks the top 3 highest-leverage tasks from the user's backlog,
- * shielding the user from cognitive overload.
+ * 1. Isolates and ranks the top 3 highest-leverage tasks from the user's backlog.
+ * 2. Shields the user from cognitive overload by enforcing a strict active quota of 3.
+ * 3. Provides calm, guilt-free ranking based on deadline proximity and scheduling status.
  */
 export class Top3PriorityEngine {
+  readonly maxTop3Quota = MAX_TOP_3_TASKS;
+
+  /**
+   * Validates whether a new active TOP_3 task can be added given the current active count.
+   * Enforces the hard rule: Maximum 3 active Top-3 priorities simultaneously.
+   */
+  canAcceptTop3(currentActiveTop3Count: number): boolean {
+    return currentActiveTop3Count < this.maxTop3Quota;
+  }
+
+  /**
+   * Selects and orders the top 3 focus tasks from an active task list.
+   */
   selectTop3(tasks: TaskResponseDto[]): TaskResponseDto[] {
     const activeTasks = tasks.filter((t) => t.status !== 'COMPLETED');
 
@@ -43,8 +59,9 @@ export class Top3PriorityEngine {
 
     scored.sort((a, b) => b.score - a.score);
 
-    return scored.slice(0, 3).map((item) => item.task);
+    return scored.slice(0, this.maxTop3Quota).map((item) => item.task);
   }
 }
 
 export const top3PriorityEngine = new Top3PriorityEngine();
+

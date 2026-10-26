@@ -1,5 +1,5 @@
 name: focient_mobile
-description: A new Flutter application for FoCient.
+description: FoCient Mobile Client (Android & iOS) - Focus & Efficient with Guilt-Free Productivity
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -10,8 +10,18 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_riverpod: ^2.5.1
+  drift: ^2.18.0
+  sqlite3_flutter_libs: ^0.5.24
+  path_provider: ^2.1.3
+  path: ^1.9.0
+  reorderables: ^0.6.0
+  flutter_local_notifications: ^17.2.2
+  workmanager: ^0.5.2
+  google_sign_in: ^6.2.1
+  http: ^1.2.2
   focient_ui_tokens:
-    path: ../../packages/ui-token
+    path: ../../packages/ui-tokens
 
 dev_dependencies:
   flutter_test:

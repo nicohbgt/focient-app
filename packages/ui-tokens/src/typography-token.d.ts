@@ -1,5 +1,5 @@
 /** GENERATED FILE. Source: ../tokens/typography-token.json */
-export type TypographyStyleName = 'display' | 'h1' | 'h2' | 'h3' | 'body-lg' | 'body-md' | 'caption' | 'micro';
+export type TypographyStyleName = 'display' | 'h1' | 'h2' | 'h3' | 'body-lg' | 'body-md' | 'label-md' | 'caption' | 'micro';
 export type TypographyBreakpoint = 'mobile' | 'desktop';
 export interface TypographyStyle {
   readonly fontSize: string;

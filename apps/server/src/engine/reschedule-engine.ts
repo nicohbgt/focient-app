@@ -13,6 +13,7 @@ import {
  *
  * Guilt-Free Planning:
  * Adjustments happen quietly without error modals or guilt-inducing messages.
+ * Downstream tasks shift fluidly; if day-end is exceeded, provides calm recommendations.
  */
 export class RescheduleEngine {
   calculateRippleShift(
@@ -27,7 +28,7 @@ export class RescheduleEngine {
     if (delayedBlockIndex === -1) {
       return {
         success: false,
-        message: 'Tugas yang dijadwalkan ulang tidak ditemukan di linimasa',
+        message: 'Tugas yang dijadwalkan ulang tidak ditemukan di linimasa.',
         shiftedTasks: [],
         requiresConfirmation: false,
         overloadDetected: false,
@@ -37,19 +38,40 @@ export class RescheduleEngine {
     const delayedBlock = existingBlocks[delayedBlockIndex];
     const delayMs = delayMinutes * 60 * 1000;
 
-    // Downstream blocks that start at or after the delayed task's scheduled end
-    const delayedEndMs = new Date(delayedBlock.endTime).getTime();
+    const prevDelayedStart = new Date(delayedBlock.startTime);
+    const prevDelayedEnd = new Date(delayedBlock.endTime);
+    const newDelayedEnd = new Date(prevDelayedEnd.getTime() + delayMs);
+
+    // Compute day-end cutoff on the date of the delayed block
+    const [endH, endM] = dayEndHour.split(':').map(Number);
+    const dayEnd = new Date(prevDelayedEnd);
+    dayEnd.setHours(endH, endM, 0, 0);
+
+    let overloadDetected = newDelayedEnd.getTime() > dayEnd.getTime();
+    let lockedEncountered = false;
+
+    // Include the delayed block's updated duration in shifted tasks
+    const shiftedTasks: ShiftedTaskResultDto[] = [
+      {
+        taskId: delayedBlock.taskId ?? delayedBlock.id,
+        taskTitle: delayedBlock.title,
+        previousStartTime: prevDelayedStart.toISOString(),
+        newStartTime: prevDelayedStart.toISOString(),
+        newEndTime: newDelayedEnd.toISOString(),
+      },
+    ];
+
+    // Downstream blocks that start at or after the delayed task's original scheduled end
     const downstreamBlocks = existingBlocks
-      .filter((b, idx) => idx !== delayedBlockIndex && new Date(b.startTime).getTime() >= delayedEndMs)
+      .filter((b, idx) => idx !== delayedBlockIndex && new Date(b.startTime).getTime() >= prevDelayedEnd.getTime())
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
-    const shiftedTasks: ShiftedTaskResultDto[] = [];
     let currentShiftMs = delayMs;
-    let overloadDetected = false;
 
     for (const block of downstreamBlocks) {
       if (block.isLocked) {
         // Stop shifting through locked calendar events; flag for user confirmation
+        lockedEncountered = true;
         break;
       }
 
@@ -58,11 +80,6 @@ export class RescheduleEngine {
 
       const newStart = new Date(prevStart.getTime() + currentShiftMs);
       const newEnd = new Date(prevEnd.getTime() + currentShiftMs);
-
-      // Check against work day end
-      const [endH, endM] = dayEndHour.split(':').map(Number);
-      const dayEnd = new Date(newEnd);
-      dayEnd.setHours(endH, endM, 0, 0);
 
       if (newEnd.getTime() > dayEnd.getTime()) {
         overloadDetected = true;
@@ -77,14 +94,24 @@ export class RescheduleEngine {
       });
     }
 
+    let message = 'Penyesuaian jadwal adaptif berhasil diterapkan.';
+    if (overloadDetected) {
+      message =
+        'Jadwal telah digeser otomatis. Sebagian fokus melewati jam kerja idealmu — kamu dapat mengalihkan sisa tugas ke esok hari dengan santai.';
+    } else if (lockedEncountered) {
+      message =
+        'Penyesuaian berhenti sebelum agenda terkunci. Kamu dapat menyesuaikan sisa waktu secara fleksibel.';
+    }
+
     return {
       success: true,
-      message: 'Penyesuaian jadwal adaptif berhasil dihitung.',
+      message,
       shiftedTasks,
-      requiresConfirmation: overloadDetected,
+      requiresConfirmation: lockedEncountered || overloadDetected,
       overloadDetected,
     };
   }
 }
 
 export const rescheduleEngine = new RescheduleEngine();
+

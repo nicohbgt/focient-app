@@ -24,6 +24,17 @@ authRouter.post('/login', validateBody(LoginSchema), async (req, res: Response, 
   }
 });
 
+// Hybrid Auth: Google OAuth 2.0 Sign-In
+authRouter.post('/google', async (req, res: Response, next) => {
+  try {
+    const token = req.body.token || req.body.idToken || 'mock_google_token';
+    const result = await authService.googleSignIn(token);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 authRouter.get('/me', authenticate, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const user = await authService.getProfile(req.user!.id);
