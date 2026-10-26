@@ -6,18 +6,27 @@ export interface OverloadAlertInfo {
   title: string;
   message: string;
   recommendedAction: 'REBALANCE' | 'LOCK_TOP_3' | 'NONE';
+  isAmberBanner: boolean;
 }
 
 /**
- * FoCient Workload & Daily Capacity Engine
+ * FoCient Algoritma 1: Workload & Daily Capacity Engine
  *
  * Implements deterministic guilt-free workload balancing:
- * - Light: < 50%
- * - Optimal: 50% - 75%
- * - Near Capacity: 76% - 90%
- * - Overload: > 90% (triggers empathetic suggestion banner without punitive red)
+ * 1. maxDailyMinutes = workHoursLimit * 60
+ * 2. allocatedMinutes(D) = sum_{t in Tasks(D), t.status != 'COMPLETED'} t.durationMinutes
+ * 3. capacityPercentage(D) = round(allocatedMinutes(D) / maxDailyMinutes * 100, 2)
+ *
+ * Classification:
+ * - LIGHT: < 50% (Beban kerja santai, banyak ruang luang)
+ * - OPTIMAL: 50% - 75% (Ritme produktif, seimbang, berkelanjutan)
+ * - NEAR_CAPACITY: 76% - 90% (Hari padat; kunci 3 prioritas utama)
+ * - OVERLOAD: > 90% (Melebihi ambang batas; memicu isOverloaded = true & Amber Banner)
  */
 export class WorkloadEngine {
+  /**
+   * Computes daily workload metrics according to the mathematical formula.
+   */
   calculateWorkload(
     date: string,
     allocatedMinutes: number,
@@ -26,7 +35,9 @@ export class WorkloadEngine {
     completedCount = 0
   ): WorkloadSummaryDto {
     const safeCapacity = Math.max(1, capacityMinutes);
-    const percentage = Math.round((allocatedMinutes / safeCapacity) * 100);
+    // capacityPercentage(D) = round(allocatedMinutes(D) / maxDailyMinutes * 100, 2)
+    const rawPercentage = (allocatedMinutes / safeCapacity) * 100;
+    const percentage = Math.round(rawPercentage * 100) / 100;
 
     let status: CapacityStatus = 'LIGHT';
     if (percentage < 50) {
@@ -39,6 +50,8 @@ export class WorkloadEngine {
       status = 'OVERLOAD';
     }
 
+    const isOverloaded = status === 'OVERLOAD';
+
     return {
       date,
       allocatedMinutes,
@@ -47,17 +60,20 @@ export class WorkloadEngine {
       status,
       taskCount,
       completedCount,
+      isOverloaded,
     };
   }
 
   /**
    * Generates empathetic, guilt-free advisory alerts based on current daily workload.
+   * Visual non-punitive approach: warm amber banner when overloaded instead of aggressive red.
    */
   getOverloadAlert(summary: WorkloadSummaryDto): OverloadAlertInfo {
     switch (summary.status) {
       case 'OVERLOAD':
         return {
           shouldAlert: true,
+          isAmberBanner: true,
           severity: 'WARNING',
           title: 'Kapasitas Harian Terlampaui',
           message:
@@ -67,6 +83,7 @@ export class WorkloadEngine {
       case 'NEAR_CAPACITY':
         return {
           shouldAlert: true,
+          isAmberBanner: false,
           severity: 'INFO',
           title: 'Mendekati Kapasitas Penuh',
           message:
@@ -76,20 +93,22 @@ export class WorkloadEngine {
       case 'OPTIMAL':
         return {
           shouldAlert: false,
+          isAmberBanner: false,
           severity: 'SUCCESS',
           title: 'Ritme Fokus Seimbang',
           message:
-            'Beban kerjamu berada di titik optimal. Produktivitas tinggi tanpa risiko kelelahan kognitif.',
+            'Ritme kerja produktif, seimbang, dan berkelanjutan.',
           recommendedAction: 'NONE',
         };
       case 'LIGHT':
       default:
         return {
           shouldAlert: false,
+          isAmberBanner: false,
           severity: 'INFO',
           title: 'Kapasitas Lapang',
           message:
-            'Masih ada ruang lapang untuk eksplorasi fokus atau istirahat berkualitas.',
+            'Beban kerja santai dan menyisakan banyak ruang luang untuk eksplorasi atau istirahat berkualitas.',
           recommendedAction: 'NONE',
         };
     }

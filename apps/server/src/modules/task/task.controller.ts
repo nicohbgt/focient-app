@@ -71,18 +71,29 @@ taskRouter.post('/', validateBody(CreateTaskSchema), async (req: AuthenticatedRe
     const userId = req.user!.id;
     const data = req.body;
 
-    // Enforce Top-3 Priorities Rule (Max 3 active Top-3 focus tasks)
+    // Enforce Top-3 Priorities Rule with optional swap mechanism
     if (data.priority === 'TOP_3') {
-      const activeTop3Count = await prisma.task.count({
-        where: {
-          userId,
-          priority: TaskPriority.TOP_3,
-          status: { not: TaskStatus.COMPLETED },
-        },
-      });
+      if (data.swapWithTaskId) {
+        await prisma.task.updateMany({
+          where: { id: data.swapWithTaskId, userId },
+          data: { priority: TaskPriority.REGULAR },
+        });
+      } else {
+        const activeTop3Tasks = await prisma.task.findMany({
+          where: {
+            userId,
+            priority: TaskPriority.TOP_3,
+            status: { not: TaskStatus.COMPLETED },
+          },
+          select: { id: true, title: true, durationMinutes: true, category: true },
+        });
 
-      if (!top3PriorityEngine.canAcceptTop3(activeTop3Count)) {
-        throw new ValidationError(VALIDATION_MESSAGES.id.taskTop3Quota);
+        if (activeTop3Tasks.length >= 3) {
+          throw new ValidationError(VALIDATION_MESSAGES.id.taskTop3Quota, {
+            canSwap: true,
+            activeTop3Tasks,
+          });
+        }
       }
     }
 
@@ -137,7 +148,7 @@ taskRouter.patch('/:id', validateBody(UpdateTaskSchema), async (req: Authenticat
 
     const data = req.body;
 
-    // Enforce Top-3 Priorities Rule on status or priority update
+    // Enforce Top-3 Priorities Rule on status or priority update with optional swap
     const isTargetingTop3 =
       data.priority === 'TOP_3' || (data.priority === undefined && existing.priority === TaskPriority.TOP_3);
     const isTargetingActive =
@@ -145,17 +156,28 @@ taskRouter.patch('/:id', validateBody(UpdateTaskSchema), async (req: Authenticat
     const wasAlreadyActiveTop3 = existing.priority === TaskPriority.TOP_3 && existing.status !== TaskStatus.COMPLETED;
 
     if (isTargetingTop3 && isTargetingActive && !wasAlreadyActiveTop3) {
-      const activeTop3Count = await prisma.task.count({
-        where: {
-          userId,
-          priority: TaskPriority.TOP_3,
-          status: { not: TaskStatus.COMPLETED },
-          id: { not: req.params.id },
-        },
-      });
+      if (data.swapWithTaskId) {
+        await prisma.task.updateMany({
+          where: { id: data.swapWithTaskId, userId },
+          data: { priority: TaskPriority.REGULAR },
+        });
+      } else {
+        const activeTop3Tasks = await prisma.task.findMany({
+          where: {
+            userId,
+            priority: TaskPriority.TOP_3,
+            status: { not: TaskStatus.COMPLETED },
+            id: { not: req.params.id },
+          },
+          select: { id: true, title: true, durationMinutes: true, category: true },
+        });
 
-      if (!top3PriorityEngine.canAcceptTop3(activeTop3Count)) {
-        throw new ValidationError(VALIDATION_MESSAGES.id.taskTop3Quota);
+        if (activeTop3Tasks.length >= 3) {
+          throw new ValidationError(VALIDATION_MESSAGES.id.taskTop3Quota, {
+            canSwap: true,
+            activeTop3Tasks,
+          });
+        }
       }
     }
 

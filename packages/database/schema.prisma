@@ -17,6 +17,7 @@ enum TaskPriority {
 enum TaskStatus {
   TODO
   IN_PROGRESS
+  NEEDS_ADJUSTMENT
   COMPLETED
 }
 

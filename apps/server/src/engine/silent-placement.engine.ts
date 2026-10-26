@@ -18,16 +18,29 @@ export interface BatchPlacementResult {
   totalPlacedMinutes: number;
 }
 
+export interface PlacementSlotResult {
+  placed: boolean;
+  slot: { start: Date; end: Date } | null;
+  reason?: 'SUCCESS' | 'CAPACITY_EXCEEDED';
+}
+
 /**
- * FoCient Silent Placement Engine
+ * FoCient Algoritma 2: Silent Placement Engine (Penempatan Waktu Pasif)
  *
- * Implements the Guilt-Free Daily Plan Auto-Placement:
- * Scans open time slots between existing calendar events and locked commitments
- * to find optimal contiguous slots for unscheduled tasks within daily working hours.
+ * Implements First-Fit Search to eliminate friction when creating tasks via Quick Add:
+ * 1. Jam Kerja Aktif: Rentang startWorkTime hingga endWorkTime (default 09:00 - 17:00).
+ * 2. Jeda Kognitif: bufferMinutes = 10 di antara dua tugas terjadwal.
+ * 3. Prosedur Celah:
+ *    - Celah Awal: startWorkTime s/d tugas pertama
+ *    - Celah Antar-Tugas: (endTime_i + bufferMinutes) s/d startTime_{i+1}
+ *    - Celah Akhir: (endTime_last + bufferMinutes) s/d endWorkTime
+ * 4. Fallback: Tugas disimpan di Unscheduled Tasks (startTime = null) & memicu peringatan kapasitas.
  */
 export class SilentPlacementEngine {
+  readonly defaultBufferMinutes = 10;
+
   /**
-   * Finds the next available non-fragmenting slot for a single task.
+   * First-Fit Search for a single task within active working hours.
    */
   findNextAvailableSlot(
     task: { durationMinutes: number },
@@ -38,14 +51,15 @@ export class SilentPlacementEngine {
     bufferMinutes = 10,
     minStartTimeMs?: number
   ): { start: Date; end: Date } | null {
-    const [startH, startM] = workHourStart.split(':').map(Number);
-    const [endH, endM] = workHourEnd.split(':').map(Number);
+    const [startH, startM] = workHourStart.split(':');
+    const [endH, endM] = workHourEnd.split(':');
 
-    const dayStart = new Date(`${date}T00:00:00`);
-    dayStart.setHours(startH, startM, 0, 0);
-
-    const dayEnd = new Date(`${date}T00:00:00`);
-    dayEnd.setHours(endH, endM, 0, 0);
+    const dayStart = new Date(
+      `${date}T${startH.padStart(2, '0')}:${startM.padStart(2, '0')}:00.000Z`
+    );
+    const dayEnd = new Date(
+      `${date}T${endH.padStart(2, '0')}:${endM.padStart(2, '0')}:00.000Z`
+    );
 
     const taskDurationMs = task.durationMinutes * 60 * 1000;
     const bufferMs = bufferMinutes * 60 * 1000;
@@ -62,14 +76,11 @@ export class SilentPlacementEngine {
     let cursor = dayStart.getTime();
 
     // Guilt-Free: Avoid placing new tasks in the past for today's plan
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
-      now.getDate()
-    ).padStart(2, '0')}`;
-
+    const todayStr = new Date().toISOString().split('T')[0];
     if (date === todayStr) {
-      const remainder = now.getMinutes() % 5;
-      const roundedNowMs = now.getTime() + (remainder > 0 ? (5 - remainder) * 60 * 1000 : 0);
+      const nowMs = Date.now();
+      const remainder = new Date().getUTCMinutes() % 5;
+      const roundedNowMs = nowMs + (remainder > 0 ? (5 - remainder) * 60 * 1000 : 0);
       cursor = Math.max(cursor, roundedNowMs);
     }
 
@@ -77,12 +88,14 @@ export class SilentPlacementEngine {
       cursor = Math.max(cursor, minStartTimeMs);
     }
 
+    // 1. Celah Awal & Celah Antar-Tugas
     for (const block of sorted) {
       const blockStart = new Date(block.startTime).getTime();
       const blockEnd = new Date(block.endTime).getTime();
 
-      // If the block ended before our cursor, keep advancing
+      // If the block ended before or at our cursor, ensure cursor respects buffer after this block
       if (blockEnd <= cursor) {
+        cursor = Math.max(cursor, blockEnd + bufferMs);
         continue;
       }
 
@@ -94,20 +107,21 @@ export class SilentPlacementEngine {
         }
       }
 
-      // Advance cursor past the block with buffer
+      // Advance cursor past the block with 10-minute cognitive buffer
       cursor = Math.max(cursor, blockEnd + bufferMs);
     }
 
-    // Check slot after all blocks before day end
+    // 2. Celah Akhir: Setelah tugas terakhir hingga batas jam selesai kerja (endWorkTime)
     if (cursor + taskDurationMs <= dayEnd.getTime()) {
       return { start: new Date(cursor), end: new Date(cursor + taskDurationMs) };
     }
 
-    return null; // Day capacity is full for this task
+    // Skenario Fallback: Tidak ada celah yang cukup -> Tetap di Unscheduled Tasks
+    return null;
   }
 
   /**
-   * Sequentially places multiple tasks into available slots,
+   * Sequentially places multiple tasks into available first-fit slots,
    * prioritizing Top-3 focus tasks and approaching deadlines.
    */
   batchPlaceTasks(
@@ -119,7 +133,7 @@ export class SilentPlacementEngine {
     const {
       workHourStart = '09:00',
       workHourEnd = '17:00',
-      bufferMinutes = 10,
+      bufferMinutes = this.defaultBufferMinutes,
       minStartTimeMs,
     } = options;
 

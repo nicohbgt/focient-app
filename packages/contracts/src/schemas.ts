@@ -76,7 +76,7 @@ export const LoginSchema = z.object({
 // ==========================================
 export const TaskPriorityEnum = z.enum(['TOP_3', 'REGULAR', 'NORMAL', 'LOW']);
 export const StrictTaskPriorityEnum = z.enum(['TOP_3', 'REGULAR']);
-export const TaskStatusEnum = z.enum(['TODO', 'IN_PROGRESS', 'COMPLETED']);
+export const TaskStatusEnum = z.enum(['TODO', 'IN_PROGRESS', 'NEEDS_ADJUSTMENT', 'COMPLETED']);
 
 export const TIME_24H_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
@@ -116,11 +116,13 @@ export const CreateTaskSchema = z.object({
     .string()
     .datetime({ offset: true, message: MSG.taskStartTime })
     .optional(),
+  swapWithTaskId: z.string().uuid().optional(),
 });
 
 export const UpdateTaskSchema = CreateTaskSchema.partial().extend({
   status: TaskStatusEnum.optional(),
   completedAt: z.string().datetime({ offset: true }).optional(),
+  swapWithTaskId: z.string().uuid().optional(),
 });
 
 export const TaskFilterSchema = z.object({

@@ -39,7 +39,7 @@ export interface AuthResponseDto {
 // 2. Task Management DTOs
 // ==========================================
 export type TaskPriority = 'TOP_3' | 'REGULAR' | 'NORMAL' | 'LOW';
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'COMPLETED';
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'NEEDS_ADJUSTMENT' | 'COMPLETED';
 
 export interface CategoryDto {
   id: string;
@@ -59,6 +59,7 @@ export interface CreateTaskDto {
   category?: string;
   startTime?: string;
   scheduledStart?: string;
+  swapWithTaskId?: string;
 }
 
 export interface UpdateTaskDto {
@@ -73,6 +74,7 @@ export interface UpdateTaskDto {
   startTime?: string;
   scheduledStart?: string;
   completedAt?: string;
+  swapWithTaskId?: string;
 }
 
 export interface TaskResponseDto {
@@ -171,6 +173,7 @@ export interface RippleRescheduleResponseDto {
   success: boolean;
   message: string;
   shiftedTasks: ShiftedTaskResultDto[];
+  deferredTasks?: ShiftedTaskResultDto[];
   requiresConfirmation: boolean;
   overloadDetected: boolean;
 }
@@ -188,6 +191,7 @@ export interface WorkloadSummaryDto {
   status: CapacityStatus;
   taskCount: number;
   completedCount: number;
+  isOverloaded: boolean;
 }
 
 // ==========================================

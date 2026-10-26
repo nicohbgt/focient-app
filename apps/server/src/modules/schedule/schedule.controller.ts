@@ -293,6 +293,90 @@ scheduleRouter.post(
   }
 );
 
+// GET /api/schedule/triggers
+scheduleRouter.get('/triggers', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const userId = req.user!.id;
+    const dateStr = (req.query.date as string) || new Date().toISOString().split('T')[0];
+
+    const dayStart = new Date(`${dateStr}T00:00:00.000Z`);
+    const dayEnd = new Date(`${dateStr}T23:59:59.999Z`);
+
+    const [tasks, blocks, user] = await Promise.all([
+      prisma.task.findMany({
+        where: {
+          userId,
+          scheduledStart: { gte: dayStart, lte: dayEnd },
+        },
+      }),
+      prisma.scheduleBlock.findMany({
+        where: {
+          userId,
+          startTime: { gte: dayStart, lte: dayEnd },
+        },
+        orderBy: { startTime: 'asc' },
+      }),
+      prisma.user.findUnique({ where: { id: userId } }),
+    ]);
+
+    const taskDtos: TaskResponseDto[] = tasks.map((t) => ({
+      id: t.id,
+      userId: t.userId,
+      title: t.title,
+      notes: t.notes ?? undefined,
+      durationMinutes: t.durationMinutes,
+      priority: t.priority as TaskResponseDto['priority'],
+      status: t.status as TaskResponseDto['status'],
+      deadline: t.deadline?.toISOString(),
+      category: t.category ?? undefined,
+      scheduledStart: t.scheduledStart?.toISOString(),
+      scheduledEnd: t.scheduledEnd?.toISOString(),
+      completedAt: t.completedAt?.toISOString(),
+      createdAt: t.createdAt.toISOString(),
+      updatedAt: t.updatedAt.toISOString(),
+    }));
+
+    const blockDtos: ScheduleBlockDto[] = blocks.map((b) => ({
+      id: b.id,
+      userId: b.userId,
+      taskId: b.taskId ?? undefined,
+      title: b.title,
+      startTime: b.startTime.toISOString(),
+      endTime: b.endTime.toISOString(),
+      isLocked: b.isLocked,
+      type: b.type as ScheduleBlockDto['type'],
+    }));
+
+    const capacityMinutes = user?.dailyCapacityMinutes ?? 480;
+    const allocatedMinutes = tasks.reduce((sum, t) => sum + t.durationMinutes, 0);
+    const workloadPercentage = Math.round((allocatedMinutes / Math.max(1, capacityMinutes)) * 100);
+
+    const assessment = rescheduleEngine.evaluateRescheduleTriggers(
+      taskDtos,
+      blockDtos,
+      new Date(),
+      workloadPercentage
+    );
+
+    // If there are half-duration breached tasks still in TODO, update status to NEEDS_ADJUSTMENT
+    if (assessment.breachedTaskIds.length > 0) {
+      await prisma.task.updateMany({
+        where: {
+          id: { in: assessment.breachedTaskIds },
+          status: TaskStatus.TODO,
+        },
+        data: {
+          status: TaskStatus.NEEDS_ADJUSTMENT,
+        },
+      });
+    }
+
+    res.json(assessment);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // POST /api/schedule/ripple-reschedule
 scheduleRouter.post(
   '/ripple-reschedule',
@@ -305,18 +389,29 @@ scheduleRouter.post(
       const user = await prisma.user.findUnique({ where: { id: userId } });
       const dayEndHour = user?.workHourEnd ?? '17:00';
 
-      // Load all blocks for today
+      // Load all blocks and tasks for today
       const today = new Date().toISOString().split('T')[0];
-      const blocks = await prisma.scheduleBlock.findMany({
-        where: {
-          userId,
-          startTime: {
-            gte: new Date(`${today}T00:00:00.000Z`),
-            lte: new Date(`${today}T23:59:59.999Z`),
+      const [blocks, tasks] = await Promise.all([
+        prisma.scheduleBlock.findMany({
+          where: {
+            userId,
+            startTime: {
+              gte: new Date(`${today}T00:00:00.000Z`),
+              lte: new Date(`${today}T23:59:59.999Z`),
+            },
           },
-        },
-        orderBy: { startTime: 'asc' },
-      });
+          orderBy: { startTime: 'asc' },
+        }),
+        prisma.task.findMany({
+          where: {
+            userId,
+            scheduledStart: {
+              gte: new Date(`${today}T00:00:00.000Z`),
+              lte: new Date(`${today}T23:59:59.999Z`),
+            },
+          },
+        }),
+      ]);
 
       const blockDtos: ScheduleBlockDto[] = blocks.map((b) => ({
         id: b.id,
@@ -329,7 +424,18 @@ scheduleRouter.post(
         type: b.type as ScheduleBlockType,
       }));
 
-      const result = rescheduleEngine.calculateRippleShift(data, blockDtos, dayEndHour);
+      const taskDtos: TaskResponseDto[] = tasks.map((t) => ({
+        id: t.id,
+        userId: t.userId,
+        title: t.title,
+        durationMinutes: t.durationMinutes,
+        priority: t.priority as TaskResponseDto['priority'],
+        status: t.status as TaskResponseDto['status'],
+        createdAt: t.createdAt.toISOString(),
+        updatedAt: t.updatedAt.toISOString(),
+      }));
+
+      const result = rescheduleEngine.calculateRippleShift(data, blockDtos, dayEndHour, taskDtos);
 
       // Persist shifts in a transaction
       if (result.success && result.shiftedTasks.length > 0) {
@@ -349,6 +455,18 @@ scheduleRouter.post(
                 scheduledEnd: new Date(shift.newEndTime),
               },
             });
+          }
+
+          // If regular tasks were deferred to next day, unassign or mark as NEEDS_ADJUSTMENT
+          if (result.deferredTasks && result.deferredTasks.length > 0) {
+            for (const deferred of result.deferredTasks) {
+              await tx.task.update({
+                where: { id: deferred.taskId },
+                data: {
+                  status: TaskStatus.NEEDS_ADJUSTMENT,
+                },
+              });
+            }
           }
 
           await tx.rescheduleLog.create({
