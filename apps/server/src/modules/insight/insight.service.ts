@@ -1,5 +1,10 @@
 import { prisma, TaskStatus } from '@focient/database';
-import { WeeklyReflectionDto, WeeklyInsightSummaryDto, CapacityStatus } from '@focient/contracts';
+import {
+  WeeklyReflectionDto,
+  WeeklyInsightSummaryDto,
+  CapacityStatus,
+  SuccessMetricsDto,
+} from '@focient/contracts';
 import { workloadEngine } from '../../engine/workload.engine.js';
 
 export interface DailyInsightDto {
@@ -295,6 +300,43 @@ export class InsightService {
       dailyRhythms,
       categoryDistribution,
       reflectionNote,
+    };
+  }
+
+  /**
+   * Evaluates the 3 MVP Success Metrics defined in FoCient PRD:
+   * 1. Activation: Time to first plan (seconds) & activation state.
+   * 2. Execution (Core): Task completion rate & consistent plan days.
+   * 3. Efficiency: Reduction of manual rescheduling effort & saved minutes.
+   */
+  async getSuccessMetrics(userId: string): Promise<SuccessMetricsDto> {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const [totalTasks, completedTasks, rescheduleAuditCount] = await Promise.all([
+      prisma.task.count({ where: { userId } }),
+      prisma.task.count({ where: { userId, status: TaskStatus.COMPLETED } }),
+      prisma.rescheduleAuditLog.count({ where: { userId } }),
+    ]);
+
+    const taskCompletionRate =
+      totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    // Estimate ~15 minutes saved per automatic ripple adjustment
+    const rescheduleTimeSavedMinutes = rescheduleAuditCount * 15;
+
+    return {
+      activation: {
+        timeToFirstPlanSeconds: user?.timeToFirstPlanSeconds ?? null,
+        isActivated: Boolean(user?.isOnboardingCompleted || user?.timeToFirstPlanSeconds),
+      },
+      execution: {
+        taskCompletionRate,
+        consistentPlanDays: user?.consistentPlanDays ?? 0,
+        activeStreak: Math.max(1, user?.consistentPlanDays ?? 0),
+      },
+      efficiency: {
+        rescheduleTimeSavedMinutes,
+        manualAdjustmentsReducedCount: rescheduleAuditCount,
+      },
     };
   }
 }

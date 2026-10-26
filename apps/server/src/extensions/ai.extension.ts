@@ -20,6 +20,8 @@ export interface AiEmpatheticMessageRequest {
     capacityPercentage?: number;
     completedTop3Count?: number;
     userName?: string;
+    motivationType?: 'IDENTITY_DRIVEN' | 'ACHIEVEMENT_DRIVEN' | 'DISCIPLINE_DRIVEN' | 'SOCIAL_DRIVEN';
+    energyLevel?: 'LOW' | 'MEDIUM' | 'HIGH';
   };
 }
 

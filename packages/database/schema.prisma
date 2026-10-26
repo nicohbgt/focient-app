@@ -42,23 +42,43 @@ enum NotificationType {
   DAILY_SUMMARY
 }
 
+enum MotivationType {
+  IDENTITY_DRIVEN
+  ACHIEVEMENT_DRIVEN
+  DISCIPLINE_DRIVEN
+  SOCIAL_DRIVEN
+}
+
+enum EnergyLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
 // D1: users
 model User {
-  id                    String                @id @default(uuid())
-  email                 String                @unique
-  passwordHash          String
-  name                  String
-  roleArchetype         String?               @default("Software Engineer")
-  workHoursLimit        Float                 @default(8.0)
-  startWorkTime         String                @default("09:00")
-  endWorkTime           String                @default("17:00")
-  workHourStart         String                @default("09:00")
-  workHourEnd           String                @default("17:00")
-  dailyCapacityMinutes  Int                   @default(480)
-  timezone              String                @default("Asia/Jakarta")
-  isOnboardingCompleted Boolean               @default(false)
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  id                            String                @id @default(uuid())
+  email                         String                @unique
+  passwordHash                  String
+  name                          String
+  roleArchetype                 String?               @default("Software Engineer")
+  workHoursLimit                Float                 @default(8.0)
+  startWorkTime                 String                @default("09:00")
+  endWorkTime                   String                @default("17:00")
+  workHourStart                 String                @default("09:00")
+  workHourEnd                   String                @default("17:00")
+  dailyCapacityMinutes          Int                   @default(480)
+  timezone                      String                @default("Asia/Jakarta")
+  isOnboardingCompleted         Boolean               @default(false)
+  visualGoals                   String?
+  motivationType                MotivationType?       @default(ACHIEVEMENT_DRIVEN)
+  workStyle                     String?               @default("Hybrid System: Structure + Flexibility")
+  timeToFirstPlanSeconds        Int?
+  consistentPlanDays            Int                   @default(0)
+  rescheduleTimeSavedMinutes    Int                   @default(0)
+  manualAdjustmentsReducedCount Int                   @default(0)
+  createdAt                     DateTime              @default(now())
+  updatedAt                     DateTime              @updatedAt
 
   categories            Category[]
   tasks                 Task[]
@@ -102,6 +122,7 @@ model Task {
   scheduledStart      DateTime?
   scheduledEnd        DateTime?
   priority            TaskPriority          @default(REGULAR)
+  energyLevel         EnergyLevel?          @default(MEDIUM)
   status              TaskStatus            @default(TODO)
   deadline            DateTime?
   completedAt         DateTime?
@@ -161,15 +182,18 @@ model WorkloadDaily {
 
 // D5: activity_logs
 model ActivityLog {
-  id                    String   @id @default(uuid())
+  id                    String       @id @default(uuid())
   taskId                String
   userId                String
   actualDurationMinutes Int
-  completedAt           DateTime @default(now())
-  createdAt             DateTime @default(now())
+  energyLevel           EnergyLevel?
+  moodRating            Int?
+  reflectionNotes       String?
+  completedAt           DateTime     @default(now())
+  createdAt             DateTime     @default(now())
 
-  task                  Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task                  Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user                  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, completedAt])
   @@map("activity_logs")

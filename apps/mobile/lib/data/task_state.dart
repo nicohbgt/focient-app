@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 
 enum TaskStatusEnum { todo, inProgress, completed }
 enum TaskPriorityEnum { top3, normal, low }
+enum EnergyLevelEnum { low, medium, high }
+enum MotivationTypeEnum { identityDriven, achievementDriven, disciplineDriven, socialDriven }
 
 class MobileTask {
   final String id;
@@ -9,6 +11,7 @@ class MobileTask {
   final String? notes;
   final int durationMinutes;
   final TaskPriorityEnum priority;
+  final EnergyLevelEnum energyLevel;
   final TaskStatusEnum status;
   final DateTime? scheduledStart;
 
@@ -18,6 +21,7 @@ class MobileTask {
     this.notes,
     required this.durationMinutes,
     this.priority = TaskPriorityEnum.normal,
+    this.energyLevel = EnergyLevelEnum.medium,
     this.status = TaskStatusEnum.todo,
     this.scheduledStart,
   });
@@ -29,6 +33,7 @@ class MobileTask {
     String? notes,
     int? durationMinutes,
     TaskPriorityEnum? priority,
+    EnergyLevelEnum? energyLevel,
     TaskStatusEnum? status,
     DateTime? scheduledStart,
   }) {
@@ -38,6 +43,7 @@ class MobileTask {
       notes: notes ?? this.notes,
       durationMinutes: durationMinutes ?? this.durationMinutes,
       priority: priority ?? this.priority,
+      energyLevel: energyLevel ?? this.energyLevel,
       status: status ?? this.status,
       scheduledStart: scheduledStart ?? this.scheduledStart,
     );

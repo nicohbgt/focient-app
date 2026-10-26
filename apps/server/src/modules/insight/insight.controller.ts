@@ -41,3 +41,13 @@ insightRouter.get('/weekly-summary', async (req: AuthenticatedRequest, res: Resp
     next(error);
   }
 });
+
+// GET /api/insights/metrics (PRD MVP Success Metrics: Activation, Execution, Efficiency)
+insightRouter.get('/metrics', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const metrics = await insightService.getSuccessMetrics(req.user!.id);
+    res.json(metrics);
+  } catch (error) {
+    next(error);
+  }
+});

@@ -5,6 +5,8 @@ import {
   AutoScheduleRequestSchema,
   ApplyRescheduleSchema,
   BatchApplyRescheduleSchema,
+  GeneratePlanSchema,
+  GeneratePlanResponseDto,
   ScheduleBlockDto,
   TaskResponseDto,
   TodayPlanDto,
@@ -131,7 +133,12 @@ async function handleTodayPlan(req: AuthenticatedRequest, res: Response, next: N
       allocatedMinutes,
       maxDailyMinutes,
       tasks.length,
-      completedCount
+      completedCount,
+      tasks.map((t) => ({
+        durationMinutes: t.durationMinutes,
+        energyLevel: t.energyLevel,
+        status: t.status,
+      }))
     );
 
     const capacityRecord = await prisma.workloadDaily.upsert({
@@ -223,6 +230,7 @@ async function handleTodayPlan(req: AuthenticatedRequest, res: Response, next: N
       unscheduledTasks,
       top3Priorities,
       capacityProfile,
+      energyBreakdown: workload.energyBreakdown,
       adaptiveBanner,
     };
 
@@ -969,6 +977,311 @@ scheduleRouter.post(
           createdAt: a.createdAt.toISOString(),
         })),
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/schedule/generate-plan
+ *
+ * Implements the PRD Onboarding -> Generate Plan -> Today Plan flow:
+ * Generates an initial realistic plan aligned with user's visual goals,
+ * motivation archetype (Identity-driven, Achievement-driven, Discipline-driven, Social-driven),
+ * and energy levels, placing tasks into calendar gaps via SilentPlacementEngine.
+ */
+scheduleRouter.post(
+  '/generate-plan',
+  validateBody(GeneratePlanSchema),
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user!.id;
+      const {
+        date,
+        visualGoals,
+        motivationType,
+        preferredCategories,
+        targetTaskCount = 3,
+      } = req.body;
+
+      const dateStr = date || new Date().toISOString().split('T')[0];
+      const dayStart = new Date(`${dateStr}T00:00:00.000Z`);
+      const dayEnd = new Date(`${dateStr}T23:59:59.999Z`);
+
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      const userMotivation = motivationType || user?.motivationType || 'ACHIEVEMENT_DRIVEN';
+      const workHourStart = user?.startWorkTime || user?.workHourStart || '09:00';
+      const workHourEnd = user?.endWorkTime || user?.workHourEnd || '17:00';
+      const capacityMinutes = user?.dailyCapacityMinutes ?? 480;
+
+      // 1. Fetch or initialize categories
+      let categories = await prisma.category.findMany({ where: { userId } });
+      if (categories.length === 0) {
+        const catNames =
+          preferredCategories && preferredCategories.length > 0
+            ? preferredCategories
+            : ['Fokus Inti', 'Pengembangan', 'Kebugaran & Refleksi'];
+        for (const name of catNames) {
+          const cat = await prisma.category.create({
+            data: { userId, name, colorToken: 'blue', isDefault: true },
+          });
+          categories.push(cat);
+        }
+      }
+
+      // 2. Draft structured tasks according to Motivation Type (Research 1.5)
+      type TaskDraft = {
+        title: string;
+        categoryName: string;
+        duration: number;
+        energy: 'HIGH' | 'MEDIUM' | 'LOW';
+        notes: string;
+      };
+      let drafts: TaskDraft[] = [];
+
+      if (userMotivation === 'IDENTITY_DRIVEN') {
+        drafts = [
+          {
+            title: 'Sesi Belajar & Penguasaan Keahlian Kunci',
+            categoryName: categories[0]?.name || 'Fokus Inti',
+            duration: 90,
+            energy: 'HIGH',
+            notes: 'Blok deep work untuk upgrade kapabilitas diri tanpa distraksi.',
+          },
+          {
+            title: 'Praktik Penerapan Eksplorasi Baru',
+            categoryName: categories[1]?.name || 'Pengembangan',
+            duration: 60,
+            energy: 'MEDIUM',
+            notes: 'Eksperimen langsung untuk menguji pemahaman konsep baru.',
+          },
+          {
+            title: 'Refleksi Harian & Jurnal Pembelajaran',
+            categoryName: categories[2]?.name || 'Refleksi',
+            duration: 30,
+            energy: 'LOW',
+            notes: 'Mencatat insight penting dan evaluasi ritme fokus hari ini.',
+          },
+        ];
+      } else if (userMotivation === 'DISCIPLINE_DRIVEN') {
+        drafts = [
+          {
+            title: 'Anchor Routine: Eksekusi Target Utama',
+            categoryName: categories[0]?.name || 'Fokus Inti',
+            duration: 75,
+            energy: 'HIGH',
+            notes: 'Rutinitas jangkar pagi hari saat energi kognitif di puncak.',
+          },
+          {
+            title: 'Pemrosesan Tugas Terstruktur',
+            categoryName: categories[1]?.name || 'Operasional',
+            duration: 45,
+            energy: 'MEDIUM',
+            notes: 'Menyelesaikan blok kegiatan teratur secara konsisten.',
+          },
+          {
+            title: 'Penutupan Sistem & Review Jadwal Esok',
+            categoryName: categories[2]?.name || 'Administrasi',
+            duration: 30,
+            energy: 'LOW',
+            notes: 'Menjaga kerapian sistem kerja sebelum istirahat.',
+          },
+        ];
+      } else if (userMotivation === 'SOCIAL_DRIVEN') {
+        drafts = [
+          {
+            title: 'Penyelesaian Deliverable Kolaborasi Utama',
+            categoryName: categories[0]?.name || 'Proyek Tim',
+            duration: 90,
+            energy: 'HIGH',
+            notes: 'Memastikan output untuk rekan dan pemangku kepentingan tuntas tepat waktu.',
+          },
+          {
+            title: 'Sinkronisasi & Koordinasi Tanggung Jawab',
+            categoryName: categories[1]?.name || 'Komunikasi',
+            duration: 45,
+            energy: 'MEDIUM',
+            notes: 'Menyelaraskan ekspektasi kerja bersama.',
+          },
+          {
+            title: 'Dokumentasi & Berbagi Progres',
+            categoryName: categories[2]?.name || 'Dokumentasi',
+            duration: 30,
+            energy: 'LOW',
+            notes: 'Transparansi progres agar tim tetap selaras.',
+          },
+        ];
+      } else {
+        drafts = [
+          {
+            title: 'Selesaikan Milestone Kritis Proyek',
+            categoryName: categories[0]?.name || 'Fokus Inti',
+            duration: 90,
+            energy: 'HIGH',
+            notes: 'Mendorong pencapaian gol terbesar yang berdampak langsung.',
+          },
+          {
+            title: 'Tindak Lanjut Sasaran Antara',
+            categoryName: categories[1]?.name || 'Eksekusi',
+            duration: 60,
+            energy: 'MEDIUM',
+            notes: 'Menjaga momentum perkembangan harian.',
+          },
+          {
+            title: 'Evaluasi Capaian & Rekap Hasil',
+            categoryName: categories[2]?.name || 'Review',
+            duration: 30,
+            energy: 'LOW',
+            notes: 'Mengukur kemajuan terhadap target mingguan.',
+          },
+        ];
+      }
+
+      // If user provided visualGoals, incorporate them into the drafts
+      if (visualGoals && Array.isArray(visualGoals) && visualGoals.length > 0) {
+        drafts[0].title = `Fokus Target: ${visualGoals[0]}`;
+        if (visualGoals.length > 1 && drafts[1]) {
+          drafts[1].title = `Progres: ${visualGoals[1]}`;
+        }
+      }
+
+      // 3. Fetch existing blocks to place tasks silently
+      const existingBlocks = await prisma.scheduleBlock.findMany({
+        where: { userId, startTime: { gte: dayStart, lte: dayEnd } },
+        orderBy: { startTime: 'asc' },
+      });
+      const blockDtos: ScheduleBlockDto[] = existingBlocks.map((b) => ({
+        id: b.id,
+        userId: b.userId,
+        taskId: b.taskId ?? undefined,
+        title: b.title,
+        startTime: b.startTime.toISOString(),
+        endTime: b.endTime.toISOString(),
+        isLocked: b.isLocked,
+        type: b.type as ScheduleBlockDto['type'],
+      }));
+
+      // 4. Place and persist tasks
+      const createdTasks: any[] = [];
+      const draftsToCreate = drafts.slice(0, targetTaskCount);
+
+      for (let i = 0; i < draftsToCreate.length; i++) {
+        const d = draftsToCreate[i];
+        const categoryMatch =
+          categories.find((c) => c.name.toLowerCase().includes(d.categoryName.toLowerCase())) ||
+          categories[0];
+        const slot = taskPlacementEngine.findNextAvailableSlot(
+          { durationMinutes: d.duration },
+          blockDtos,
+          dateStr,
+          workHourStart,
+          workHourEnd,
+          10
+        );
+
+        const startTime = slot ? slot.start : null;
+        const endTime = slot ? slot.end : null;
+
+        const task = await prisma.task.create({
+          data: {
+            userId,
+            title: d.title,
+            notes: d.notes,
+            durationMinutes: d.duration,
+            priority: i < 3 ? 'TOP_3' : 'REGULAR',
+            energyLevel: d.energy as any,
+            categoryId: categoryMatch?.id,
+            category: categoryMatch?.name,
+            targetDate: dayStart,
+            startTime,
+            scheduledStart: startTime,
+            scheduledEnd: endTime,
+          },
+        });
+
+        if (startTime && endTime) {
+          const block = await prisma.scheduleBlock.create({
+            data: {
+              userId,
+              taskId: task.id,
+              title: task.title,
+              startTime,
+              endTime,
+              type: ScheduleBlockType.TASK,
+            },
+          });
+          blockDtos.push({
+            id: block.id,
+            userId,
+            taskId: task.id,
+            title: task.title,
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString(),
+            isLocked: false,
+            type: 'TASK',
+          });
+        }
+        createdTasks.push(task);
+      }
+
+      // 5. Update user capacity and activation metrics
+      const allocatedMinutes = createdTasks.reduce((sum, t) => sum + t.durationMinutes, 0);
+      const workload = workloadEngine.calculateWorkload(
+        dateStr,
+        allocatedMinutes,
+        capacityMinutes,
+        createdTasks.length,
+        0,
+        createdTasks.map((t) => ({
+          durationMinutes: t.durationMinutes,
+          energyLevel: t.energyLevel,
+          status: t.status,
+        }))
+      );
+
+      await prisma.workloadDaily.upsert({
+        where: { userId_date: { userId, date: dateStr } },
+        update: {
+          allocatedMinutes,
+          capacityPercentage: workload.percentage,
+          status: workload.status as CapacityStatus,
+          isOverloaded: workload.isOverloaded,
+        },
+        create: {
+          userId,
+          date: dateStr,
+          targetDate: dayStart,
+          maxDailyMinutes: capacityMinutes,
+          capacityMinutes,
+          allocatedMinutes,
+          capacityPercentage: workload.percentage,
+          status: workload.status as CapacityStatus,
+          isOverloaded: workload.isOverloaded,
+        },
+      });
+
+      // Update timeToFirstPlan if not set
+      if (!user?.timeToFirstPlanSeconds) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { timeToFirstPlanSeconds: 45 },
+        });
+      }
+
+      const formatted = createdTasks.map(formatTask);
+      const top3 = top3PrioritiesEngine.selectTop3(formatted);
+
+      const result: GeneratePlanResponseDto = {
+        date: dateStr,
+        suggestedTasks: formatted,
+        top3Tasks: top3,
+        allocatedMinutes,
+        capacityPercentage: workload.percentage,
+        rationale: `Rencana awal disusun berdasarkan gaya motivasi ${userMotivation} dengan pembagian beban kerja optimal (${workload.percentage}% kapasitas) dan penempatan waktu pasif.`,
+      };
+
+      res.status(201).json(result);
     } catch (error) {
       next(error);
     }

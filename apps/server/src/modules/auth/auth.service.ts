@@ -131,6 +131,12 @@ export class AuthService {
 
     const dailyCapacityMinutes = Math.round(data.workHoursLimit * 60);
 
+    const visualGoalsStr = data.visualGoals
+      ? Array.isArray(data.visualGoals)
+        ? JSON.stringify(data.visualGoals)
+        : data.visualGoals
+      : undefined;
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -142,6 +148,10 @@ export class AuthService {
         workHourEnd: data.endWorkTime,
         dailyCapacityMinutes,
         isOnboardingCompleted: true,
+        visualGoals: visualGoalsStr,
+        motivationType: (data.motivationType as any) ?? 'ACHIEVEMENT_DRIVEN',
+        workStyle: data.workStyle ?? 'Hybrid System: Structure + Flexibility',
+        timeToFirstPlanSeconds: data.timeToFirstPlanSeconds,
       },
     });
 
@@ -421,10 +431,26 @@ export class AuthService {
     workHourEnd: string;
     dailyCapacityMinutes: number;
     isOnboardingCompleted?: boolean | null;
+    visualGoals?: string | null;
+    motivationType?: string | null;
+    workStyle?: string | null;
+    timeToFirstPlanSeconds?: number | null;
+    consistentPlanDays?: number | null;
+    rescheduleTimeSavedMinutes?: number | null;
+    manualAdjustmentsReducedCount?: number | null;
     createdAt: Date;
   }): UserProfileDto {
     const start = user.startWorkTime || user.workHourStart || '09:00';
     const end = user.endWorkTime || user.workHourEnd || '17:00';
+    let parsedVisualGoals: string[] | string | undefined = undefined;
+    if (user.visualGoals) {
+      try {
+        parsedVisualGoals = JSON.parse(user.visualGoals);
+      } catch {
+        parsedVisualGoals = user.visualGoals;
+      }
+    }
+
     return {
       id: user.id,
       email: user.email,
@@ -438,6 +464,13 @@ export class AuthService {
       workHourEnd: end,
       dailyCapacityMinutes: user.dailyCapacityMinutes,
       isOnboardingCompleted: Boolean(user.isOnboardingCompleted),
+      visualGoals: parsedVisualGoals,
+      motivationType: (user.motivationType as any) || 'ACHIEVEMENT_DRIVEN',
+      workStyle: user.workStyle || 'Hybrid System: Structure + Flexibility',
+      timeToFirstPlanSeconds: user.timeToFirstPlanSeconds ?? undefined,
+      consistentPlanDays: user.consistentPlanDays ?? 0,
+      rescheduleTimeSavedMinutes: user.rescheduleTimeSavedMinutes ?? 0,
+      manualAdjustmentsReducedCount: user.manualAdjustmentsReducedCount ?? 0,
       createdAt: user.createdAt.toISOString(),
     };
   }

@@ -78,6 +78,21 @@ export const TaskPriorityEnum = z.enum(['TOP_3', 'REGULAR', 'NORMAL', 'LOW']);
 export const StrictTaskPriorityEnum = z.enum(['TOP_3', 'REGULAR']);
 export const TaskStatusEnum = z.enum(['TODO', 'IN_PROGRESS', 'NEEDS_ADJUSTMENT', 'COMPLETED']);
 
+/**
+ * FoCient Behavior & Psychological Dimension Enums
+ * Sourced from User Research Insight (CoTech / Nico Wiranata) & PRD
+ * - MotivationType: Identity-driven, Achievement-driven, Discipline-driven, Social-driven
+ * - EnergyLevel: Mood & Energy as execution determinants (Low, Medium, High)
+ */
+export const MotivationTypeEnum = z.enum([
+  'IDENTITY_DRIVEN',
+  'ACHIEVEMENT_DRIVEN',
+  'DISCIPLINE_DRIVEN',
+  'SOCIAL_DRIVEN',
+]);
+
+export const EnergyLevelEnum = z.enum(['LOW', 'MEDIUM', 'HIGH']);
+
 export const TIME_24H_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 /**
@@ -88,6 +103,7 @@ export const TIME_24H_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
  * - categoryId: valid UUID
  * - startTime: optional ISO 8601
  * - priority: TOP_3 | REGULAR (default REGULAR)
+ * - energyLevel: LOW | MEDIUM | HIGH (default MEDIUM)
  */
 export const CreateTaskSchema = z.object({
   title: z
@@ -107,6 +123,7 @@ export const CreateTaskSchema = z.object({
     .optional(),
   category: z.string().max(50).optional(),
   priority: TaskPriorityEnum.optional().default('REGULAR'),
+  energyLevel: EnergyLevelEnum.optional().default('MEDIUM'),
   deadline: z.string().datetime({ offset: true }).optional(),
   startTime: z
     .string()
@@ -163,6 +180,11 @@ export const OnboardingSetupSchema = z
       .array(z.string().min(1))
       .min(1, MSG.selectedCategoriesMin)
       .max(5, MSG.selectedCategoriesMax),
+    // Behavioral & Psychological Alignment (PRD & User Research)
+    visualGoals: z.union([z.array(z.string().min(1)), z.string()]).optional(),
+    motivationType: MotivationTypeEnum.optional().default('ACHIEVEMENT_DRIVEN'),
+    workStyle: z.string().optional().default('Hybrid System: Structure + Flexibility'),
+    timeToFirstPlanSeconds: z.number().int().positive().optional(),
   })
   .refine(
     (data) => {
@@ -195,6 +217,20 @@ export const CreateCategorySchema = z.object({
 export const MarkTaskCompleteSchema = z.object({
   completedAt: z.string().datetime({ offset: true }).optional(),
   actualDurationMinutes: z.number().int().positive().optional(),
+  energyLevelAtCompletion: EnergyLevelEnum.optional(),
+  moodRating: z.number().int().min(1).max(5).optional(),
+  reflectionNotes: z.string().max(500).optional(),
+});
+
+// ==========================================
+// Generate Plan Schema (Onboarding -> Generate Plan -> Today Plan Flow)
+// ==========================================
+export const GeneratePlanSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD').optional(),
+  visualGoals: z.array(z.string()).optional(),
+  motivationType: MotivationTypeEnum.optional(),
+  preferredCategories: z.array(z.string()).optional(),
+  targetTaskCount: z.number().int().min(1).max(6).optional().default(3),
 });
 
 // ==========================================

@@ -22,6 +22,14 @@ export interface LoginDto {
   password: string;
 }
 
+export type MotivationType =
+  | 'IDENTITY_DRIVEN'
+  | 'ACHIEVEMENT_DRIVEN'
+  | 'DISCIPLINE_DRIVEN'
+  | 'SOCIAL_DRIVEN';
+
+export type EnergyLevel = 'LOW' | 'MEDIUM' | 'HIGH';
+
 export interface UserProfileDto {
   id: string;
   email: string;
@@ -35,6 +43,13 @@ export interface UserProfileDto {
   workHourEnd: string;   // backwards compatibility alias
   dailyCapacityMinutes: number;
   isOnboardingCompleted: boolean;
+  visualGoals?: string[] | string;
+  motivationType?: MotivationType;
+  workStyle?: string;
+  timeToFirstPlanSeconds?: number;
+  consistentPlanDays?: number;
+  rescheduleTimeSavedMinutes?: number;
+  manualAdjustmentsReducedCount?: number;
   createdAt: string;
 }
 
@@ -75,6 +90,7 @@ export interface CreateTaskDto {
   durationMinutes: number;
   categoryId?: string;
   priority?: TaskPriority;
+  energyLevel?: EnergyLevel;
   deadline?: string;
   targetDate?: string;
   category?: string;
@@ -89,6 +105,7 @@ export interface UpdateTaskDto {
   durationMinutes?: number;
   categoryId?: string;
   priority?: TaskPriority;
+  energyLevel?: EnergyLevel;
   status?: TaskStatus;
   deadline?: string;
   targetDate?: string;
@@ -97,12 +114,18 @@ export interface UpdateTaskDto {
   scheduledStart?: string;
   completedAt?: string;
   actualDurationMinutes?: number;
+  energyLevelAtCompletion?: EnergyLevel;
+  moodRating?: number;
+  reflectionNotes?: string;
   swapWithTaskId?: string;
 }
 
 export interface MarkTaskCompleteDto {
   completedAt?: string;
   actualDurationMinutes?: number;
+  energyLevelAtCompletion?: EnergyLevel;
+  moodRating?: number;
+  reflectionNotes?: string;
 }
 
 export interface TaskResponseDto {
@@ -114,6 +137,7 @@ export interface TaskResponseDto {
   notes?: string;
   durationMinutes: number;
   priority: TaskPriority;
+  energyLevel?: EnergyLevel;
   status: TaskStatus;
   targetDate?: string;
   startTime?: string;
@@ -142,6 +166,10 @@ export interface CompleteOnboardingDto {
   startWorkTime: string;  // "HH:mm"
   endWorkTime: string;    // "HH:mm"
   selectedCategories: string[];
+  visualGoals?: string[] | string;
+  motivationType?: MotivationType;
+  workStyle?: string;
+  timeToFirstPlanSeconds?: number;
 }
 
 export type OnboardingSetupDto = CompleteOnboardingDto;
@@ -150,6 +178,15 @@ export type OnboardingSetupDto = CompleteOnboardingDto;
 // 5. Capacity & Workload DTOs (D4: user_capacities)
 // ==========================================
 export type CapacityStatus = 'LIGHT' | 'OPTIMAL' | 'NEAR_CAPACITY' | 'OVERLOAD';
+
+export interface EnergyDistributionDto {
+  lowMinutes: number;
+  mediumMinutes: number;
+  highMinutes: number;
+  highEnergyCount: number;
+  isHighEnergyOverload: boolean;
+  energyAdvice?: string;
+}
 
 export interface CapacityProfileDto {
   id?: string;
@@ -171,6 +208,7 @@ export interface WorkloadSummaryDto {
   taskCount: number;
   completedCount: number;
   isOverloaded: boolean;
+  energyBreakdown?: EnergyDistributionDto;
 }
 
 // ==========================================
@@ -182,12 +220,44 @@ export interface TodayPlanDto {
   unscheduledTasks: TaskResponseDto[];
   top3Priorities: TaskResponseDto[];
   capacityProfile: CapacityProfileDto;
+  energyBreakdown?: EnergyDistributionDto;
   adaptiveBanner?: {
     shouldAlert: boolean;
     severity: 'INFO' | 'WARNING' | 'SUCCESS';
     title: string;
     message: string;
   };
+}
+
+// ==========================================
+// 6.1 MVP Success & Behavioral Metrics (PRD Aligned)
+// ==========================================
+export interface SuccessMetricsDto {
+  activation: {
+    timeToFirstPlanSeconds: number | null;
+    isActivated: boolean;
+  };
+  execution: {
+    taskCompletionRate: number;
+    consistentPlanDays: number;
+    activeStreak: number;
+  };
+  efficiency: {
+    rescheduleTimeSavedMinutes: number;
+    manualAdjustmentsReducedCount: number;
+  };
+}
+
+// ==========================================
+// 6.2 Initial Plan Generation (Onboarding -> Generate Plan)
+// ==========================================
+export interface GeneratePlanResponseDto {
+  date: string;
+  suggestedTasks: TaskResponseDto[];
+  top3Tasks: TaskResponseDto[];
+  allocatedMinutes: number;
+  capacityPercentage: number;
+  rationale: string;
 }
 
 // ==========================================

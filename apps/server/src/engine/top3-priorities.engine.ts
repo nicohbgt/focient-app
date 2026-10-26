@@ -77,6 +77,18 @@ export class Top3PrioritiesEngine {
       if (aIsDeep && !bIsDeep) return -1;
       if (!aIsDeep && bIsDeep) return 1;
 
+      // Precedence 2.5: Mood & Energy Level (High > Medium > Low per Section 1.2 User Research)
+      const energyWeight = (level?: string) => {
+        if (level === 'HIGH') return 3;
+        if (level === 'LOW') return 1;
+        return 2; // Default MEDIUM
+      };
+      const aEnergy = energyWeight(a.energyLevel);
+      const bEnergy = energyWeight(b.energyLevel);
+      if (aEnergy !== bEnergy) {
+        return bEnergy - aEnergy;
+      }
+
       // Precedence 3: Durasi Pengerjaan Terbesar (High Energy)
       if (a.durationMinutes !== b.durationMinutes) {
         return b.durationMinutes - a.durationMinutes;

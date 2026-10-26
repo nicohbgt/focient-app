@@ -220,6 +220,7 @@ taskRouter.post('/', validateBody(CreateTaskSchema), async (req: AuthenticatedRe
         notes: data.notes,
         durationMinutes: data.durationMinutes,
         priority: (data.priority as TaskPriority) ?? TaskPriority.REGULAR,
+        energyLevel: (data.energyLevel as any) ?? 'MEDIUM',
         categoryId: data.categoryId,
         category: data.category,
         targetDate: dayStart,
@@ -335,6 +336,9 @@ taskRouter.post(
           taskId: task.id,
           userId,
           actualDurationMinutes: actualDuration,
+          energyLevel: (data.energyLevelAtCompletion as any) || task.energyLevel || undefined,
+          moodRating: data.moodRating,
+          reflectionNotes: data.reflectionNotes,
           completedAt: completedAtDate,
         },
       });
@@ -463,6 +467,7 @@ taskRouter.patch('/:id', validateBody(UpdateTaskSchema), async (req: Authenticat
         ...(data.status !== undefined ? { status: data.status as TaskStatus } : {}),
         ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
         ...(data.category !== undefined ? { category: data.category } : {}),
+        ...(data.energyLevel !== undefined ? { energyLevel: data.energyLevel as any } : {}),
         ...(data.deadline !== undefined ? { deadline: data.deadline ? new Date(data.deadline) : null } : {}),
         ...(data.targetDate !== undefined ? { targetDate: data.targetDate ? new Date(data.targetDate) : null } : {}),
         ...(data.startTime !== undefined ? { startTime: data.startTime ? new Date(data.startTime) : null } : {}),
@@ -478,6 +483,9 @@ taskRouter.patch('/:id', validateBody(UpdateTaskSchema), async (req: Authenticat
           taskId: updated.id,
           userId,
           actualDurationMinutes: data.actualDurationMinutes ?? updated.durationMinutes,
+          energyLevel: (data.energyLevelAtCompletion as any) || updated.energyLevel || undefined,
+          moodRating: data.moodRating,
+          reflectionNotes: data.reflectionNotes,
           completedAt: new Date(),
         },
       });
@@ -518,6 +526,7 @@ export function formatTask(task: {
   notes: string | null;
   durationMinutes: number;
   priority: string;
+  energyLevel?: string | null;
   status: string;
   targetDate?: Date | null;
   startTime?: Date | null;
@@ -539,6 +548,7 @@ export function formatTask(task: {
     notes: task.notes ?? undefined,
     durationMinutes: task.durationMinutes,
     priority: task.priority as TaskResponseDto['priority'],
+    energyLevel: (task.energyLevel as TaskResponseDto['energyLevel']) ?? 'MEDIUM',
     status: task.status as TaskResponseDto['status'],
     targetDate: task.targetDate ? task.targetDate.toISOString().split('T')[0] : undefined,
     startTime: start ? start.toISOString() : undefined,

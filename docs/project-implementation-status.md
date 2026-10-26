@@ -1,0 +1,215 @@
+# FoCient Monorepo — Implementation Status Audit
+
+**Audit date:** 26 October 2026  
+**Scope:** Repository source, package configuration, automated checks, and delivery configuration available in this checkout.  
+**Method:** Source-code inspection plus local test/type-check/build commands. This is a code-status assessment, not a product or security certification.
+
+## 1. Executive summary
+
+FoCient has a **substantial backend domain prototype**: authentication, task/category persistence, workload calculation, Top 3 selection, automatic placement, adaptive rescheduling, daily-plan aggregation, notifications, and insight calculations are implemented as TypeScript source. The deterministic engines are particularly well covered by unit tests.
+
+The repository is **not yet an end-to-end runnable, deployable MVP**. Both product clients currently render a placeholder screen, the web build is not installable from the checked-out dependencies, the production Dockerfiles cannot build the applications they describe, and integrations advertised in the README (Google OAuth verification, Redis/BullMQ, FCM, external calendars, and operational telemetry) are incomplete or simulated.
+
+### Objective readiness snapshot
+
+| Area | Status | Evidence-based assessment |
+| --- | --- | --- |
+| Monorepo organisation | Partial | Four intended workspaces exist, but package-manager and package-name conventions conflict. |
+| Shared contracts and validation | Partial | Zod schemas and TypeScript DTOs exist; several recently added fields have no persistence or server implementation. |
+| Database model | Partial | Prisma schema covers core entities; there are no committed migrations and some DTO fields are absent from the schema. |
+| Backend business logic | Mostly implemented | Core engines, controllers, and 34 server tests exist; API/database integration tests are absent. |
+| Web product | Not implemented | The only route is a placeholder; component library and API hooks are unused by an application page. |
+| Mobile product | Not implemented | The Flutter entry point is a placeholder; state uses sample data and the generated Drift source is absent. |
+| Design system | Mostly implemented | Cross-platform tokens, generated artifacts, and 11 token tests pass. |
+| CI/CD and containers | Blocked | Root Turbo build fails; Dockerfiles reference a non-existent package and do not produce runtime app artifacts. |
+| Production integrations | Not implemented / simulated | Cache, queue, FCM, AI, and Google login contain stubs or non-production behaviour. |
+
+## 2. Repository map and responsibilities
+
+```text
+focient-app/
+├── apps/
+│   ├── server/       Express REST API and deterministic scheduling engines
+│   ├── web/          Next.js 14 client, component library, API/query hooks
+│   └── mobile/       Flutter client, presentation widgets, local-data scaffolding
+├── packages/
+│   ├── contracts/    Shared DTOs, Zod validation, API route constants
+│   ├── database/     Prisma schema, client singleton, development seed
+│   └── ui-tokens/    Design-token sources and generated web/Flutter outputs
+├── docker-compose.yml
+├── turbo.json
+└── .github/workflows/ci.yml
+```
+
+### Runtime shape intended by the source
+
+```text
+Web client ─┐
+            ├── HTTP + Bearer JWT ──> Express API ──> Prisma ──> PostgreSQL
+Mobile app ─┘                              │
+                                             ├── scheduling engines
+                                             ├── notifications / insights
+                                             └── intended Redis, queue, AI, FCM extensions
+```
+
+The arrows after the API are only fully real for Prisma and the deterministic engines. Redis, background work, FCM, and AI are not connected to production providers.
+
+## 3. What is already implemented
+
+### 3.1 Shared domain contracts — `packages/contracts`
+
+- TypeScript DTOs model users, categories, tasks, capacity, schedule blocks, rescheduling, activity logs, and weekly insights.
+- Zod validates registration/login, task input, onboarding, categories, task completion, auto-placement, and reschedule requests.
+- Task validation includes title/duration limits, ISO timestamps, Top 3 quota helpers, same-day checks, and supportive Indonesian/English validation wording.
+- A shared `API_ROUTES` object is used by existing web hooks.
+
+**Current limitation:** DTOs and schemas declare newer fields such as energy level, onboarding motivations/goals, success metrics, and generated plans, but the Prisma schema and controllers do not yet persist or serve most of them. Accepting a field in a request is not equivalent to implementing it.
+
+### 3.2 Database layer — `packages/database`
+
+The Prisma schema defines the core relational model:
+
+- `User`, `Category`, `Task`, and `ScheduleBlock`.
+- Daily workload/capacity, activity logs, reschedule audit/log records, and notifications.
+- Ownership relations and useful user/date/status indexes.
+- A Prisma client singleton and a development demo seed are present.
+
+This supports the current API’s core task-and-schedule workflow. There is no `migrations/` directory in the checkout, so an environment cannot be reproduced safely through versioned migrations. The package exposes `db:push`, which is suitable for prototyping but not controlled production schema evolution.
+
+### 3.3 Server API and deterministic logic — `apps/server`
+
+The Express application mounts protected API modules, has Helmet/CORS/rate-limiting, Zod request validation, centralized error mapping, graceful Prisma shutdown, and liveness/readiness endpoints.
+
+Implemented API areas include:
+
+| Domain | Implemented operations |
+| --- | --- |
+| Auth | Email registration/login, JWT issuance, guest/demo session, onboarding, profile lookup, nominal Google sign-in endpoint |
+| Tasks | List/filter, Top 3 selection, create with capacity calculation and placement, lookup, completion, update, deletion |
+| Categories | List/default seeding, create, delete |
+| Schedule | Today plan, blocks, auto-placement, trigger review, ripple proposal/application, daily capacity, batch rescheduling |
+| Notifications | List and mark read |
+| Insights | Daily, weekly reflection, weekly summary |
+| Health | `/health` and database-backed `/ready` |
+
+The business engines are real source code, not UI-only claims:
+
+- `workload.engine.ts`: calculates daily allocation percentage and capacity bands.
+- `top3-priorities.engine.ts`: limits active Top 3 work and selects/rotates focus candidates.
+- `silent-placement.engine.ts`: finds first-fit working-hour gaps with buffers.
+- `adaptive-reschedule.engine.ts`: detects lateness/collisions/overload and computes non-punitive ripple shifts.
+
+### 3.4 UI tokens and reusable components — `packages/ui-tokens`, `apps/web/src/components`, `apps/mobile/lib/presentation`
+
+- Token source files define colour, dark colour, type, spacing, layout, radius, animation, shadows, and icons.
+- Generated CSS/JS/Dart artifacts and SVG assets are checked against the canonical source.
+- Web primitives and composite widgets exist: buttons, inputs, checkboxes, navigation, task cards/forms, capacity meter, reschedule alert, modals, toasts, and a showcase.
+- Flutter counterparts exist for many primitives and high-level widgets, plus Indonesian/English copywriting and theme support.
+
+These are a **component/design-system implementation**, not a connected product workflow.
+
+### 3.5 Tests that pass in this checkout
+
+| Command | Result | Coverage nature |
+| --- | --- | --- |
+| `npm run test:tokens` | Pass — 11 tests | Generated token fidelity, contrast, typography, icons, motion, shadows |
+| `npm run test:server` | Pass — 34 tests | Deterministic engines, validation/system-flow calculations |
+| `npm run test:web` | Pass — 27 tests | Static copy, component presence/CSS rules, contract validation |
+| `npm run typecheck:contracts` | Pass | Shared TypeScript contracts |
+| `npm run typecheck:server` | Pass | Server TypeScript source |
+| `npm run typecheck:web` | Pass | Web TypeScript source |
+
+Passing checks are valuable, but they do not start a database, call HTTP endpoints, render the client routes, or build container images. They should therefore be read as **unit/contract confidence**, not end-to-end release evidence.
+
+## 4. What remains missing or incomplete
+
+### 4.1 Product clients are shells, not usable applications — critical
+
+- `apps/web/src/app/page.tsx` renders only “Backend & Core Business Engine Active. UI/UX screen development pending.” There are no implemented app routes for login, onboarding, today, tasks, or insights.
+- `apps/mobile/lib/main.dart` renders the equivalent placeholder message. The Riverpod provider supplies four hard-coded sample tasks rather than synchronizing server or local data.
+- Existing web React Query hooks and UI components are not composed into a user journey; mobile widgets are similarly not connected from the app root.
+
+**Needed:** implement the real screens and route guards, compose the existing components, connect mutations/queries to the API, add loading/empty/error/auth-expired states, and test the complete user journey.
+
+### 4.2 Web package and deployment are blocked — critical
+
+- `npm run build` at the root fails because `package.json` has no `packageManager` or `devEngines.packageManager`, which Turbo requires in this setup.
+- `npm run build --prefix apps/web` fails because `next` is not present in the installed executable path. The repository combines npm workspaces, `package-lock.json`, and a `pnpm-workspace.yaml`; one package-manager workflow must be selected and made reproducible.
+- Both Dockerfiles copy `packages/ui-token/package.json`, but the real directory/package is `packages/ui-tokens`.
+- The web Dockerfile does not run `next build`; it copies TypeScript/React source to Nginx’s static directory, which cannot run a Next application.
+- `apps/web/src/app/layout.tsx` imports `../../components/components.css`, a path that does not exist. The valid component CSS is under `src/components` (and duplicated under `src/component`).
+
+**Needed:** normalize package naming, lock one package manager, make a clean install work, fix source imports, build Next output correctly (either a Next runtime or intentional static export), repair Dockerfiles, and make the root build green.
+
+### 4.3 Authentication and secret handling are unsafe for production — critical
+
+- The Google sign-in endpoint merely decodes an input JWT; it does not validate its signature, issuer, audience, expiry, or nonce. It falls back to `mock_google_token` and creates/uses a fixed email if no valid payload can be decoded.
+- JWT has a hard-coded development fallback secret. `docker-compose.yml` also contains a hard-coded production-labelled secret.
+- Session tokens are stored in browser `localStorage`, increasing impact from an XSS vulnerability; there is no refresh/revocation/session lifecycle.
+
+**Needed:** implement provider-side OpenID Connect token verification, reject missing/invalid tokens, require secrets at startup, move production secrets to a secret manager, establish a documented session strategy, and add auth abuse/integration tests.
+
+### 4.4 “Production integrations” are currently simulations — high
+
+- `common/redis.ts` is an in-process `Map`, not Redis, and appears unused by request processing.
+- `common/queue.ts` is an in-memory array that waits 50 ms and performs no job handler work; it is not BullMQ and has no retry/persistence/worker process.
+- Notification dispatch returns a simulated successful FCM response; no `firebase-admin`, credentials, device-token persistence, or provider send exists.
+- The AI extension can call a provider, but is unused by controllers and uses a LiteLLM/Gemini request shape that needs provider-specific validation and observability.
+- Calendar DTOs exist, but there is no calendar authorization, sync, webhook, or conflict-import implementation.
+
+**Needed:** either remove these claims from the release scope or implement and test each provider-backed integration with failure/retry/idempotency behaviour.
+
+### 4.5 Data lifecycle and contract drift — high
+
+- No committed Prisma migrations are present.
+- `energyLevel`, onboarding `visualGoals`/`motivationType`/`workStyle`, reflection fields, and success-metric fields appear in contracts but not in the Prisma model or service persistence.
+- A `GeneratePlanSchema` and response DTO exist without a server route/implementation.
+- The mobile enum omits server status `NEEDS_ADJUSTMENT` and priority `REGULAR`; its mapper also drops many task fields. That makes a faithful cross-client state representation impossible today.
+- The database seed invokes `ts-node/esm`, but `ts-node` is not declared in the database package dependencies.
+- The task deletion handler removes records but does not send a success response, so a client request can remain unresolved.
+
+**Needed:** define a source-of-truth feature matrix, migrate schema and services in lockstep, generate/version the database schema, and add contract compatibility tests across server/web/mobile.
+
+### 4.6 Test strategy is incomplete — high
+
+- Server tests test engines and data transformations without a real PostgreSQL/Prisma HTTP request lifecycle.
+- Web tests mostly inspect source/static implementation rules; no browser rendering, accessibility, user-event, or API-mocked integration test exists.
+- Flutter test verification did not produce a result in the available execution window. Independently, the source references `local_database.g.dart`, but this generated file is absent and `drift_dev`/`build_runner` are not declared, so the offline data layer is not reproducibly buildable.
+- No coverage thresholds, lint script, dependency/security scanning, container build validation, or deployed smoke test appears in CI.
+
+**Needed:** add ephemeral PostgreSQL/Redis integration tests, API route tests, Playwright/Cypress browser flows, Flutter analyzer/widget tests and code generation, plus CI jobs for clean install, build, container build, and migration verification.
+
+### 4.7 Codebase maintainability — medium
+
+- `apps/web/src/component/` and `apps/web/src/components/` are duplicated. This creates divergence risk and already contributes to an incorrect stylesheet import.
+- Documentation describes NestJS, NextAuth/Supabase, BullMQ, Redis, Vercel, FCM, Sentry, and PostHog as stack elements, but the executable code is Express plus in-memory/simulated substitutes. The README should state aspiration versus current state.
+- No API specification (OpenAPI), architecture decision records, setup runbook, or environment-specific deployment instructions are committed.
+- Some day calculations use UTC date construction while user profiles have a timezone. This needs deliberate timezone semantics before real users schedule across offsets or DST.
+
+## 5. Delivery blockers versus improvements
+
+| Priority | Work item | Why it matters | Completion evidence |
+| --- | --- | --- | --- |
+| P0 | Repair workspace, clean install, root build, Next build, and both Dockerfiles | The project cannot currently produce a verified deployable artifact. | Clean clone: install, `npm run build`, and container builds pass. |
+| P0 | Build the web and mobile primary flows | Current clients cannot use the backend. | A user can register/demo, onboard, create/complete tasks, see Today, reschedule, and inspect insights. |
+| P0 | Replace insecure Google/JWT defaults and externalize secrets | Current auth is not safe to expose. | Valid provider tokens pass; forged/expired tokens fail; startup rejects missing production secrets. |
+| P1 | Version Prisma migrations and align schema/contracts | Prevents lost data and silently dropped fields. | Fresh database migrates and all implemented fields round-trip. |
+| P1 | Add real API/database and browser/mobile tests | Unit tests alone cannot prove product behavior. | CI starts dependencies and executes representative user flows. |
+| P1 | Decide/implement Redis, jobs, FCM, calendar scope | Avoids shipping simulated capabilities as real functionality. | Provider-backed acceptance tests and operational failure handling. |
+| P2 | Consolidate duplicate web component directories and add OpenAPI/runbooks | Reduces maintenance and onboarding cost. | One canonical component tree; generated/maintained API docs and setup guide. |
+| P2 | Add observability, backup, data-retention, accessibility, and timezone hardening | Required for reliable operation beyond an MVP demo. | Telemetry/error dashboards, a11y checks, timezone test matrix, documented SLOs. |
+
+## 6. Suggested implementation sequence
+
+1. **Make the repository reproducible:** select npm or pnpm, repair names/imports/Dockerfiles, add the Turbo package-manager field, and make clean CI install/build pass.
+2. **Close the data contract:** choose which new behavioural fields are in MVP, add migrations and persistence, remove deferred contract surface, and fix mobile enum/mapper parity.
+3. **Deliver one vertical slice:** guest or email login → onboarding → create task → Today Plan → complete/reschedule → insights in web; use the same contracts on mobile.
+4. **Secure and verify:** implement OAuth verification, secret management, integration tests with PostgreSQL, and browser/mobile tests.
+5. **Add optional integrations only after the vertical slice is stable:** Redis/BullMQ, FCM, calendar, AI, analytics, and error monitoring.
+
+## 7. Audit limits and working-tree note
+
+- Docker could not be invoked in this environment, so image failure is established by source inspection (and should be confirmed in CI once Docker is available).
+- Flutter test did not complete within the available command window; it is therefore marked unverified rather than failed. The missing generated Drift part and generator dependencies are concrete source-level blockers to investigate.
+- Uncommitted changes existed outside this audit document in the contracts/database source area. This audit did not modify those files.
+- This document records the checked-out state on the audit date. Update the tables as P0/P1 work lands so it becomes the project’s ongoing delivery dashboard.
