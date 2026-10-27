@@ -191,6 +191,24 @@ const domains = [
     removePrefixForDart: true,
     dartLine: (name, value, domain) => createDartLoadingLine(name, value, domain),
   },
+  {
+    name: 'success-token',
+    sourceGroup: 'success',
+    prefix: 'success',
+    javaScriptExport: 'successTokens',
+    typeName: 'SuccessTokenName',
+    dartFile: 'success_token.dart',
+    dartClass: 'FocientSuccessTokens',
+    dartImports: ["import 'package:flutter/widgets.dart';"],
+    dartDocumentation: [
+      '/// Shared semantic success state tokens for FoCient Flutter applications.',
+      '///',
+      '/// Supports calm affirmation, task completion micro-interactions, and reversibility buffers.',
+    ],
+    cssValue: (value) => value,
+    removePrefixForDart: true,
+    dartLine: (name, value, domain) => createDartSuccessLine(name, value, domain),
+  },
 ];
 
 function flattenTokens(node, prefix, path = [], tokens = {}, nameForPath = (segments) => `${prefix}-${segments.join('-')}`) {
@@ -363,6 +381,33 @@ function createDartLoadingLine(name, value, domain) {
     return `  static const double ${dartName} = ${toDartDouble(value)};`;
   }
   if (typeof value === 'number') {
+    return Number.isInteger(value)
+      ? `  static const int ${dartName} = ${value};`
+      : `  static const double ${dartName} = ${value};`;
+  }
+  return `  static const String ${dartName} = '${value}';`;
+}
+
+function createDartSuccessLine(name, value, domain) {
+  const dartName = toDartName(name, domain.removePrefixForDart);
+  if (typeof value === 'string' && value.startsWith('#')) {
+    return `  static const Color ${dartName} = Color(0xFF${value.slice(1)});`;
+  }
+  if (typeof value === 'string' && /^(\d+)ms$/.test(value)) {
+    const ms = Number.parseInt(value, 10);
+    return [
+      `  static const Duration ${dartName} = Duration(milliseconds: ${ms});`,
+      `  static const int ${dartName}Ms = ${ms};`,
+    ].join('\n');
+  }
+  if (typeof value === 'string' && /^(\d+(?:\.\d+)?)px$/.test(value)) {
+    return `  static const double ${dartName} = ${toDartDouble(value)};`;
+  }
+  if (typeof value === 'number') {
+    const isFloatingMetric = dartName.toLowerCase().includes('scale') || dartName.toLowerCase().includes('opacity');
+    if (isFloatingMetric) {
+      return `  static const double ${dartName} = ${Number.isInteger(value) ? `${value}.0` : String(value)};`;
+    }
     return Number.isInteger(value)
       ? `  static const int ${dartName} = ${value};`
       : `  static const double ${dartName} = ${value};`;

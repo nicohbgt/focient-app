@@ -54,6 +54,7 @@ import {
   CapacityMeterSkeleton,
   AdaptiveSyncBadge,
   TopProgressBar,
+  DailySuccessBanner,
 } from './organism/index.js';
 import {
   Icon,
@@ -176,6 +177,12 @@ export const ComponentShowcaseInner: React.FC = () => {
   const [simulatedCardLoading, setSimulatedCardLoading] = useState(false);
   const [simulatedCapacityLoading, setSimulatedCapacityLoading] = useState(false);
 
+  // Success State interactive playground
+  const [successBtnLoading, setSuccessBtnLoading] = useState(false);
+  const [successBtnDone, setSuccessBtnDone] = useState(false);
+  const [demoTaskCompleted, setDemoTaskCompleted] = useState(false);
+  const [dailyBannerDismissed, setDailyBannerDismissed] = useState(false);
+
   // Toasts
   const [toasts, setToasts] = useState<ToastMessage[]>([
     {
@@ -219,6 +226,41 @@ export const ComponentShowcaseInner: React.FC = () => {
         () => triggerMicroActionFail()
       );
     }, 600);
+  };
+
+  const handleSimulateButtonSave = () => {
+    setSuccessBtnLoading(true);
+    setSuccessBtnDone(false);
+    setTimeout(() => {
+      setSuccessBtnLoading(false);
+      setSuccessBtnDone(true);
+      addToast(
+        copywriting.successStates.savedSuccess,
+        copywriting.successStates.undoAction,
+        'success',
+        () => {
+          setSuccessBtnDone(false);
+          addToast('Perubahan dibatalkan');
+        }
+      );
+      setTimeout(() => {
+        setSuccessBtnDone(false);
+      }, 2500);
+    }, 700);
+  };
+
+  const handleToggleDemoTask = (checked: boolean) => {
+    setDemoTaskCompleted(checked);
+    if (checked) {
+      addToast(
+        copywriting.successStates.taskCompletedUndo('Sesi Fokus Mendalam FoCient'),
+        copywriting.successStates.undoAction,
+        'success',
+        () => {
+          setDemoTaskCompleted(false);
+        }
+      );
+    }
   };
 
   const removeToast = (id: string) => {
@@ -1568,6 +1610,149 @@ export const ComponentShowcaseInner: React.FC = () => {
                     totalCapacityMinutes={360}
                   />
                 )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Section 13: Success State System (Calm Affirmation & Reversibility Buffer) */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '20px' }}>🌱</span>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#065F46' }}>
+                Section 13: Success State System (Calm Affirmation & Reversibility Buffer)
+              </h3>
+            </div>
+            <p style={{ margin: 0, color: '#64748B', fontSize: '14px' }}>
+              4 UI Levels • Anti-Hyper-Gamified (No screen-blocking confetti) • Emerald Tokens (#059669) • Reversibility Buffer (&quot;Urungkan&quot;)
+            </p>
+          </div>
+
+          {/* Level 3: Module & Inline Success Card (Daily Rhythm Completed Banner) */}
+          <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Level 3 • Module &amp; Inline Success Card
+                </span>
+                <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                  Banner Capaian Target Harian (Top 3 Priorities Tuntas)
+                </h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Muncul di atas linimasa Today Plan saat 3 prioritas inti berhasil diselesaikan secara seimbang tanpa beban berlebih.
+                </p>
+              </div>
+
+              {dailyBannerDismissed && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setDailyBannerDismissed(false)}
+                >
+                  Tampilkan Kembali Banner Capaian
+                </Button>
+              )}
+            </div>
+
+            {!dailyBannerDismissed && (
+              <DailySuccessBanner
+                onDismiss={() => setDailyBannerDismissed(true)}
+                action={
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    style={{ color: '#065F46', fontWeight: 600, padding: '0 8px' }}
+                    onClick={() => addToast('Membuka ringkasan capaian fokus')}
+                  >
+                    Tinjau Ringkasan Hari Ini →
+                  </Button>
+                }
+              />
+            )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+            {/* Level 1: Micro-Interactive Checkmark Pop Scale */}
+            <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Level 1 • Micro-Interactive Checkmark
+                </span>
+                <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                  Pop Scale 0.7 → 1.0 (150ms Decelerate) + Strikethrough #94A3B8
+                </h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Klik checkbox untuk mencoba mikro-animasi letupan halus, label coret, transisi opasitas 0.6, dan toast &quot;Urungkan&quot;.
+                </p>
+              </div>
+
+              <div style={{ padding: '8px 0' }}>
+                <TaskCard
+                  id="demo-success-task-1"
+                  title="Sesi Fokus Mendalam FoCient"
+                  duration="45m"
+                  timeSlot="09:00 - 09:45"
+                  projectCategory="Arsitektur"
+                  projectColor="emerald"
+                  completed={demoTaskCompleted}
+                  onToggleComplete={(_, checked) => handleToggleDemoTask(checked)}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Checkbox
+                  checked={demoTaskCompleted}
+                  variant="success"
+                  label={demoTaskCompleted ? 'Status: Tugas Selesai (Opacity 0.6)' : 'Status: Tugas Aktif'}
+                  strikethroughOnChecked={true}
+                  onChange={(checked) => handleToggleDemoTask(checked)}
+                />
+              </div>
+            </div>
+
+            {/* Level 2 & 4: Transient Toast with Undo + Button Success Transformation */}
+            <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Level 2 &amp; 4 • Transient Toast &amp; Button Feedback
+                </span>
+                <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                  Transformasi Tombol 600ms &amp; Toast Reversibilitas (4 Detik)
+                </h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Simulasikan proses simpan: Tombol bertransisi dari loading ke status Tersimpan (#059669), diikuti Toast sukses berlatar #ECFDF5 dengan buffer &quot;Urungkan&quot;.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <Button
+                  loading={successBtnLoading}
+                  success={successBtnDone}
+                  successLabel={copywriting.successStates.savedSuccess}
+                  onClick={handleSimulateButtonSave}
+                >
+                  Simpan Jadwal Linimasa
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={() => {
+                    addToast(
+                      copywriting.successStates.scheduleUpdated,
+                      copywriting.successStates.undoAction,
+                      'success',
+                      () => addToast('Penyesuaian jadwal dibatalkan')
+                    );
+                  }}
+                >
+                  Picu Toast Sukses + Urungkan
+                </Button>
+              </div>
+
+              <div style={{ padding: '12px', backgroundColor: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '8px', fontSize: '12.5px', color: '#065F46' }}>
+                <strong>Prinsip Anti-Hyper-Gamified:</strong> Tidak ada konfeti satu layar penuh, suara dering keras, atau popup mengganggu. Penegasan sukses berlangsung tenang dan selalu dapat diurungkan (reversibel).
               </div>
             </div>
           </div>

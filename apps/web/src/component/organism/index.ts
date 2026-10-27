@@ -15,3 +15,4 @@ export * from './TaskCardSkeleton.js';
 export * from './CapacityMeterSkeleton.js';
 export * from './AdaptiveSyncBadge.js';
 export * from './TopProgressBar.js';
+export * from './DailySuccessBanner.js';

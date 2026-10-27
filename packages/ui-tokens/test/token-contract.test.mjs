@@ -11,6 +11,7 @@ import { iconTokens } from '../src/icon-token.js';
 import { loadingTokens } from '../src/loading-token.js';
 import { shadowTokens } from '../src/shadow-token.js';
 import { spacingTokens } from '../src/spacing-token.js';
+import { successTokens } from '../src/success-token.js';
 import { typographyTokens } from '../src/typography-token.js';
 
 const packageUrl = new URL('../', import.meta.url);
@@ -371,4 +372,53 @@ test('loading and skeleton shimmer token artifacts preserve DTCG contracts and F
   // Shimmer duration is in the specified 1.5s - 2.0s range
   const shimmerMs = Number.parseInt(loadingTokens['loading-duration-shimmer'], 10);
   assert.ok(shimmerMs >= 1500 && shimmerMs <= 2000, `Shimmer duration ${shimmerMs}ms must be between 1500ms and 2000ms`);
+});
+
+test('success state token artifacts preserve calm affirmation, reversibility buffer, and WCAG AAA compliance', async () => {
+  const source = JSON.parse(await readFile(new URL('tokens/success-token.json', packageUrl), 'utf8'));
+  const expected = flattenTokens(source.success, 'success');
+  const css = await readFile(new URL('src/success-token.css', packageUrl), 'utf8');
+  const dart = await readFile(new URL('lib/success_token.dart', packageUrl), 'utf8');
+  const cssTokens = Object.fromEntries(
+    [...css.matchAll(/--(success-[a-z-]+): ([^;]+);/g)].map(([, name, value]) => [name, value])
+  );
+
+  assert.deepEqual(successTokens, expected);
+  assert.deepEqual(cssTokens, Object.fromEntries(
+    Object.entries(expected).map(([k, v]) => [k, String(v)])
+  ));
+
+  // Flutter Dart token class
+  assert.match(dart, /abstract final class FocientSuccessTokens/);
+  assert.match(dart, /static const Color surfaceSubtle = Color\(0xFFECFDF5\);/);
+  assert.match(dart, /static const Color borderSubtle = Color\(0xFFA7F3D0\);/);
+  assert.match(dart, /static const Color actionBase = Color\(0xFF059669\);/);
+  assert.match(dart, /static const Color textBold = Color\(0xFF065F46\);/);
+  assert.match(dart, /static const Color taskStrikethrough = Color\(0xFF94A3B8\);/);
+  assert.match(dart, /static const double taskCompletedOpacity = 0\.6;/);
+  assert.match(dart, /static const double popScaleStart = 0\.7;/);
+  assert.match(dart, /static const double popScaleEnd = 1\.0;/);
+  assert.match(dart, /static const Duration popDuration = Duration\(milliseconds: 150\);/);
+  assert.match(dart, /static const int popDurationMs = 150;/);
+  assert.match(dart, /static const Duration toastDuration = Duration\(milliseconds: 4000\);/);
+  assert.match(dart, /static const int toastDurationMs = 4000;/);
+  assert.match(dart, /static const Duration buttonTransitionDuration = Duration\(milliseconds: 600\);/);
+  assert.match(dart, /static const int buttonTransitionDurationMs = 600;/);
+
+  // Success bold text on subtle surface (#065F46 on #ECFDF5) passes WCAG AAA (>= 7:1)
+  const successTextRatio = contrastRatio(successTokens['success-text-bold'], successTokens['success-surface-subtle']);
+  assert.ok(successTextRatio >= 7.0, `Success text contrast was ${successTextRatio.toFixed(2)}:1; expected >= 7:1 (AAA)`);
+
+  // Success bold text on white surface also passes WCAG AAA (>= 7:1)
+  const whiteTextRatio = contrastRatio(successTokens['success-text-bold'], '#FFFFFF');
+  assert.ok(whiteTextRatio >= 7.0, `Success text on white was ${whiteTextRatio.toFixed(2)}:1; expected >= 7:1 (AAA)`);
+
+  // Pop animation is exactly 150ms (--duration-fast)
+  assert.equal(successTokens['success-pop-duration'], '150ms');
+
+  // Toast duration is exactly 4000ms
+  assert.equal(successTokens['success-toast-duration'], '4000ms');
+
+  // Button feedback transition duration is 600ms
+  assert.equal(successTokens['success-button-transition-duration'], '600ms');
 });

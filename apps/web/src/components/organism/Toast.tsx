@@ -26,7 +26,8 @@ export interface ToastProps {
 export const Toast: React.FC<ToastProps> = ({ toast, onDismiss, className = '' }) => {
   const { copywriting } = useFoCientI18n();
   const isDanger = toast.variant === 'danger';
-  const defaultDuration = isDanger ? 7000 : toast.actionLabel ? 6000 : 4000;
+  const isSuccess = toast.variant === 'success';
+  const defaultDuration = isDanger ? 7000 : 4000;
   const duration = toast.duration ?? defaultDuration;
 
   const [remainingTime, setRemainingTime] = useState(duration);
@@ -54,11 +55,20 @@ export const Toast: React.FC<ToastProps> = ({ toast, onDismiss, className = '' }
     setIsPaused(false);
   };
 
+  const actionLabel = toast.actionLabel || (toast.onAction ? (isSuccess ? copywriting.successStates.undoAction : copywriting.actions.undo) : undefined);
+
   return (
     <div
       role="status"
       aria-live={isDanger ? 'assertive' : 'polite'}
-      className={['focient-toast', isDanger ? 'focient-toast--danger' : '', className].filter(Boolean).join(' ')}
+      className={[
+        'focient-toast',
+        isDanger ? 'focient-toast--danger' : '',
+        isSuccess ? 'focient-toast--success' : '',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -68,10 +78,15 @@ export const Toast: React.FC<ToastProps> = ({ toast, onDismiss, className = '' }
             <AlertCircleIcon size="xs" />
           </span>
         )}
+        {isSuccess && (
+          <span style={{ color: 'var(--success-action-base, #059669)', display: 'inline-flex', flexShrink: 0, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}>
+            <CheckCircleIcon size="sm" />
+          </span>
+        )}
         <span>{toast.message}</span>
       </div>
 
-      {toast.actionLabel && (
+      {actionLabel && (
         <button
           type="button"
           className="focient-toast-action-btn"
@@ -80,7 +95,7 @@ export const Toast: React.FC<ToastProps> = ({ toast, onDismiss, className = '' }
             onDismiss(toast.id);
           }}
         >
-          {toast.actionLabel || copywriting.actions.undo}
+          {actionLabel}
         </button>
       )}
 

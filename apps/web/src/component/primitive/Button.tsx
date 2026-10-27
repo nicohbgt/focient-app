@@ -1,10 +1,13 @@
 import React from 'react';
+import { CheckIcon } from '../icons/index.js';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'outline' | 'destructive' | 'subtle-primary' | 'subtle-secondary';
   size?: 'lg' | 'md' | 'sm';
   loading?: boolean;
   shake?: boolean;
+  success?: boolean;
+  successLabel?: string;
   fullWidth?: boolean;
   leadingIcon?: React.ReactNode;
   trailingIcon?: React.ReactNode;
@@ -29,6 +32,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       size = 'md',
       loading = false,
       shake = false,
+      success = false,
+      successLabel,
       fullWidth = false,
       leadingIcon,
       trailingIcon,
@@ -46,6 +51,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       fullWidth ? 'focient-btn--full' : '',
       loading ? 'focient-btn--loading' : '',
       shake ? 'focient-btn--shake' : '',
+      success ? 'focient-btn--success' : '',
       className,
     ]
       .filter(Boolean)
@@ -61,6 +67,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {loading ? (
           <span className="focient-btn-spinner" aria-hidden="true" />
+        ) : success ? (
+          <>
+            <span className="focient-btn-success-check" aria-hidden="true">
+              <CheckIcon size="xs" />
+            </span>
+            <span>{successLabel ?? 'Tersimpan'}</span>
+          </>
         ) : (
           <>
             {leadingIcon && <span className="focient-btn-icon-leading">{leadingIcon}</span>}

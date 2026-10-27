@@ -81,7 +81,13 @@
       "types": "./src/loading-token.d.ts",
       "default": "./src/loading-token.js"
     },
-    "./loading-token.json": "./tokens/loading-token.json"
+    "./loading-token.json": "./tokens/loading-token.json",
+    "./success-token.css": "./src/success-token.css",
+    "./success-token": {
+      "types": "./src/success-token.d.ts",
+      "default": "./src/success-token.js"
+    },
+    "./success-token.json": "./tokens/success-token.json"
   },
   "scripts": {
     "generate": "node scripts/generate.mjs",

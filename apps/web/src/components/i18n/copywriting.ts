@@ -211,6 +211,16 @@ export interface FoCientCopywriting {
     savingChanges: string;
     optimizingSchedule: string;
   };
+
+  // Success States (Calm Affirmation, Anti-Hyper-Gamified, Reversibility)
+  successStates: {
+    dailyPillarCompletedTitle: string;
+    dailyPillarCompletedBody: string;
+    undoAction: string;
+    savedSuccess: string;
+    scheduleUpdated: string;
+    taskCompletedUndo: (title: string) => string;
+  };
 }
 
 export const idCopywriting: FoCientCopywriting = {
@@ -408,6 +418,15 @@ export const idCopywriting: FoCientCopywriting = {
     savingChanges: 'Menyimpan perubahan...',
     optimizingSchedule: 'Mengoptimalkan jadwal harian...',
   },
+
+  successStates: {
+    dailyPillarCompletedTitle: 'Ritme Hari Ini Selesai',
+    dailyPillarCompletedBody: 'Semua prioritas inti telah tuntas. Energi harianmu terpakai secara efektif tanpa beban berlebih.',
+    undoAction: 'Urungkan',
+    savedSuccess: 'Tersimpan',
+    scheduleUpdated: 'Jadwal berhasil disesuaikan',
+    taskCompletedUndo: (title: string) => `"${title}" selesai`,
+  },
 };
 
 export const enCopywriting: FoCientCopywriting = {
@@ -604,6 +623,15 @@ export const enCopywriting: FoCientCopywriting = {
     syncingTimeline: 'Adjusting timeline rhythm...',
     savingChanges: 'Saving changes...',
     optimizingSchedule: 'Optimizing daily schedule...',
+  },
+
+  successStates: {
+    dailyPillarCompletedTitle: "Today's Rhythm Complete",
+    dailyPillarCompletedBody: 'All core priorities accomplished. Your daily energy was spent effectively without overload.',
+    undoAction: 'Undo',
+    savedSuccess: 'Saved',
+    scheduleUpdated: 'Schedule successfully updated',
+    taskCompletedUndo: (title: string) => `"${title}" completed`,
   },
 };
 

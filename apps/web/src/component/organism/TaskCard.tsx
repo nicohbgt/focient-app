@@ -261,7 +261,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     activeVariant === 'top-3' ? 'focient-card--top-3' : '',
     activeVariant === 'scheduled' ? 'focient-card--scheduled' : '',
     activeVariant === 'backlog' ? 'focient-card--backlog' : '',
-    activeVariant === 'completed' ? 'focient-card--completed' : '',
+    activeVariant === 'completed' || completed ? 'focient-card--completed' : '',
     activeDragging ? 'focient-task-card--dragging' : '',
     className,
   ]
@@ -278,6 +278,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       {/* Checkbox (or Rank Indicator for Top 3) */}
       <Checkbox
         checked={completed}
+        variant={completed ? 'success' : 'primary'}
         onChange={(checkedVal) => onToggleComplete?.(id, checkedVal)}
         aria-label={
           completed
