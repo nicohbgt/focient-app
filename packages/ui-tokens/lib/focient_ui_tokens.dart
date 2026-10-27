@@ -10,6 +10,7 @@ export 'error_token.dart';
 export 'icon_token.dart';
 export 'layout_token.dart';
 export 'loading_token.dart';
+export 'motion_token.dart';
 export 'shadow_token.dart';
 export 'spacing_token.dart';
 export 'success_token.dart';

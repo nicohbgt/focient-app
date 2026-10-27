@@ -3,6 +3,7 @@
  * Import this file once at the web application entry point.
  */
 :root {
+  --duration-instant: 100ms;
   --duration-fast: 150ms;
   --duration-normal: 200ms;
   --duration-moderate: 250ms;

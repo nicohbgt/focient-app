@@ -2,11 +2,46 @@
    FOCIENT DESIGN SYSTEM - COMPONENT STYLES (COMPREHENSIVE)
    Standards: DTCG Semantic Tokens, 4-Point Spacing Grid, WCAG 2.1 AAA, Multi-Platform
    ========================================================================== */
+@import './microinteractions.css';
 
 /* --------------------------------------------------------------------------
    0. BASE FOUNDATIONS, ACCESSIBILITY & TABULAR NUMBERS
    -------------------------------------------------------------------------- */
 :root {
+  /* Foundational Motion Tokens (DTCG Standard) */
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-moderate: 250ms;
+  --duration-slow: 300ms;
+  --duration-deliberate: 400ms;
+
+  --ease-fluid: cubic-bezier(0.4, 0.0, 0.2, 1.0);
+  --ease-decelerate: cubic-bezier(0.0, 0.0, 0.2, 1.0);
+  --ease-accelerate: cubic-bezier(0.4, 0.0, 1.0, 1.0);
+
+  --motion-press-scale: scale(0.98);
+  --motion-lift-subtle: translateY(-2px);
+  --motion-drag-scale: scale(1.02);
+  --motion-drag-opacity: 0.92;
+  --motion-modal-offset: 16px;
+  --motion-sheet-handle-width: 36px;
+  --motion-sheet-handle-height: 4px;
+  --motion-breathe-duration: 3000ms;
+  --motion-dot-size: 8px;
+  --motion-drop-min-height: 48px;
+  --motion-drop-border-width: 2px;
+  --motion-focus-ring-width: 2px;
+  --motion-focus-ring-offset: 2px;
+  --motion-focus-ring-color: #BFDBFE;
+  --motion-chevron-rotation: 180deg;
+  --motion-workload-threshold-light: 50;
+  --motion-workload-threshold-optimal: 75;
+  --motion-workload-threshold-near: 90;
+  --motion-capacity-fill-duration: 400ms;
+  --motion-haptic-duration: 10ms;
+  --motion-reorder-duration: 250ms;
+
   --error-surface-subtle: #FFF1F2;
   --error-border-subtle: #FECDD3;
   --error-border-action: #E11D48;

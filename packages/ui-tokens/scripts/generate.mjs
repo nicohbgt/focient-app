@@ -209,6 +209,24 @@ const domains = [
     removePrefixForDart: true,
     dartLine: (name, value, domain) => createDartSuccessLine(name, value, domain),
   },
+  {
+    name: 'motion-token',
+    sourceGroup: 'motion',
+    prefix: 'motion',
+    javaScriptExport: 'motionTokens',
+    typeName: 'MotionTokenName',
+    dartFile: 'motion_token.dart',
+    dartClass: 'FocientMotionTokens',
+    dartImports: ["import 'package:flutter/widgets.dart';"],
+    dartDocumentation: [
+      '/// Shared semantic motion, tactile feedback, and microinteraction tokens for FoCient Flutter applications.',
+      '///',
+      '/// Encapsulates tactile scales, lift displacements, drag states, and capacity thresholds.',
+    ],
+    cssValue: (value) => value,
+    removePrefixForDart: true,
+    dartLine: (name, value, domain) => createDartMotionLine(name, value, domain),
+  },
 ];
 
 function flattenTokens(node, prefix, path = [], tokens = {}, nameForPath = (segments) => `${prefix}-${segments.join('-')}`) {
@@ -411,6 +429,48 @@ function createDartSuccessLine(name, value, domain) {
     return Number.isInteger(value)
       ? `  static const int ${dartName} = ${value};`
       : `  static const double ${dartName} = ${value};`;
+  }
+  return `  static const String ${dartName} = '${value}';`;
+}
+
+function createDartMotionLine(name, value, domain) {
+  const dartName = toDartName(name, domain.removePrefixForDart);
+  if (typeof value === 'string' && value.startsWith('#')) {
+    return `  static const Color ${dartName} = Color(0xFF${value.slice(1)});`;
+  }
+  if (typeof value === 'string' && value.startsWith('rgba')) {
+    const match = /rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/.exec(value);
+    if (match) {
+      const [, r, g, b, a] = match;
+      const alphaHex = Math.round(Number.parseFloat(a) * 255).toString(16).toUpperCase().padStart(2, '0');
+      const rHex = Number.parseInt(r, 10).toString(16).toUpperCase().padStart(2, '0');
+      const gHex = Number.parseInt(g, 10).toString(16).toUpperCase().padStart(2, '0');
+      const bHex = Number.parseInt(b, 10).toString(16).toUpperCase().padStart(2, '0');
+      return `  static const Color ${dartName} = Color(0x${alphaHex}${rHex}${gHex}${bHex});`;
+    }
+  }
+  if (typeof value === 'string' && /^(\d+)ms$/.test(value)) {
+    const ms = Number.parseInt(value, 10);
+    return [
+      `  static const Duration ${dartName} = Duration(milliseconds: ${ms});`,
+      `  static const int ${dartName}Ms = ${ms};`,
+    ].join('\n');
+  }
+  if (typeof value === 'string' && /^(-?\d+(?:\.\d+)?)px$/.test(value)) {
+    const pixels = Number.parseFloat(value);
+    const dartDouble = Number.isInteger(pixels) ? `${pixels}.0` : String(pixels);
+    return `  static const double ${dartName} = ${dartDouble};`;
+  }
+  if (typeof value === 'string' && /^(\d+)deg$/.test(value)) {
+    const deg = Number.parseInt(value, 10);
+    return `  static const double ${dartName} = ${deg}.0;`;
+  }
+  if (typeof value === 'number') {
+    const isFloatingMetric = dartName.toLowerCase().includes('scale') || dartName.toLowerCase().includes('opacity') || !Number.isInteger(value);
+    if (isFloatingMetric) {
+      return `  static const double ${dartName} = ${Number.isInteger(value) ? `${value}.0` : String(value)};`;
+    }
+    return `  static const int ${dartName} = ${value};`;
   }
   return `  static const String ${dartName} = '${value}';`;
 }

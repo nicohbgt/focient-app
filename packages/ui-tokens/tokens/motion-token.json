@@ -1,0 +1,110 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "motion": {
+    "press-scale": {
+      "$type": "number",
+      "$value": 0.98,
+      "$description": "Skala taktil saat tombol atau elemen interaktif ditekan mousedown/touchstart."
+    },
+    "lift-subtle": {
+      "$type": "dimension",
+      "$value": "-2px",
+      "$description": "Translasi vertikal halus saat kursor melayang di atas kartu linimasa (translateY(-2px))."
+    },
+    "drag-scale": {
+      "$type": "number",
+      "$value": 1.02,
+      "$description": "Skala pembesaran mikro saat kartu linimasa diangkat dan ditarik (scale(1.02))."
+    },
+    "drag-opacity": {
+      "$type": "number",
+      "$value": 0.92,
+      "$description": "Opasitas visual kartu linimasa saat dalam fase penyeretan (dragging)."
+    },
+    "modal-offset": {
+      "$type": "dimension",
+      "$value": "16px",
+      "$description": "Jarak pergeseran sumbu Y vertikal saat modal dialog masuk/keluar layar."
+    },
+    "sheet-handle-width": {
+      "$type": "dimension",
+      "$value": "36px",
+      "$description": "Lebar garis pegangan elips swipe-to-dismiss pada Bottom Sheet seluler."
+    },
+    "sheet-handle-height": {
+      "$type": "dimension",
+      "$value": "4px",
+      "$description": "Tinggi garis pegangan elips pada Bottom Sheet seluler."
+    },
+    "breathe-duration": {
+      "$type": "duration",
+      "$value": "3000ms",
+      "$description": "Durasi siklus animasi bernapas lembut (gentle breathe) pada indikator titik waktu linimasa."
+    },
+    "dot-size": {
+      "$type": "dimension",
+      "$value": "8px",
+      "$description": "Diameter lingkaran indikator titik waktu linimasa (Current Time Dot)."
+    },
+    "drop-min-height": {
+      "$type": "dimension",
+      "$value": "48px",
+      "$description": "Tinggi minimum area target penempatan (drop placeholder slot)."
+    },
+    "drop-border-width": {
+      "$type": "dimension",
+      "$value": "2px",
+      "$description": "Ketebalan garis putus-putus pada area slot target penempatan (dashed drop-line)."
+    },
+    "focus-ring-width": {
+      "$type": "dimension",
+      "$value": "2px",
+      "$description": "Ketebalan cincin fokus aksesibilitas keyboard (WCAG 2.1 AAA)."
+    },
+    "focus-ring-offset": {
+      "$type": "dimension",
+      "$value": "2px",
+      "$description": "Jarak renggang outline cincin fokus dari batas elemen interaktif."
+    },
+    "focus-ring-color": {
+      "$type": "color",
+      "$value": "#BFDBFE",
+      "$description": "Warna cincin fokus aksesibilitas ganda (Primary Track Base)."
+    },
+    "chevron-rotation": {
+      "$type": "dimension",
+      "$value": "180deg",
+      "$description": "Derajat putaran rotasi ikon panah chevron saat accordion dibuka."
+    },
+    "workload-threshold-light": {
+      "$type": "number",
+      "$value": 50,
+      "$description": "Batas persentase beban kerja ringan (< 50%)."
+    },
+    "workload-threshold-optimal": {
+      "$type": "number",
+      "$value": 75,
+      "$description": "Batas persentase beban kerja optimal (50% - 75%)."
+    },
+    "workload-threshold-near": {
+      "$type": "number",
+      "$value": 90,
+      "$description": "Batas persentase mendekati kapasitas penuh harian (76% - 90%)."
+    },
+    "capacity-fill-duration": {
+      "$type": "duration",
+      "$value": "400ms",
+      "$description": "Durasi pengisian bilah kapasitas harian secara halus (--duration-deliberate)."
+    },
+    "haptic-duration": {
+      "$type": "duration",
+      "$value": "10ms",
+      "$description": "Durasi getaran haptik singkat saat kartu disentuh dan diangkat di seluler."
+    },
+    "reorder-duration": {
+      "$type": "duration",
+      "$value": "250ms",
+      "$description": "Durasi pergeseran bergelombang halus slot jadwal saat penyisipan (ripple shift)."
+    }
+  }
+}

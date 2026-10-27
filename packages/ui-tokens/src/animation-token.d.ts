@@ -1,5 +1,6 @@
 /** GENERATED FILE. Source: ../tokens/animation-token.json */
 export type AnimationTokenName =
+  | 'duration-instant'
   | 'duration-fast'
   | 'duration-normal'
   | 'duration-moderate'

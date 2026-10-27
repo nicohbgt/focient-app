@@ -5,6 +5,8 @@ import 'package:flutter/widgets.dart';
 ///
 /// Use [Duration] tokens for transition durations and [Curve] tokens for easing curves.
 abstract final class FocientAnimationTokens {
+  static const Duration durationInstant = Duration(milliseconds: 100);
+  static const int durationInstantMs = 100;
   static const Duration durationFast = Duration(milliseconds: 150);
   static const int durationFastMs = 150;
   static const Duration durationNormal = Duration(milliseconds: 200);

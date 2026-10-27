@@ -21,6 +21,7 @@ import {
   MobileKeyboardBottomSheet,
   Skeleton,
 } from './primitive/index.js';
+import { Accordion } from './molecule/index.js';
 import {
   TaskCard,
   FocusTaskCard,
@@ -182,6 +183,11 @@ export const ComponentShowcaseInner: React.FC = () => {
   const [successBtnDone, setSuccessBtnDone] = useState(false);
   const [demoTaskCompleted, setDemoTaskCompleted] = useState(false);
   const [dailyBannerDismissed, setDailyBannerDismissed] = useState(false);
+
+  // Microinteraction interactive playground
+  const [interactiveWorkload, setInteractiveWorkload] = useState(65);
+  const [rippleShiftActive, setRippleShiftActive] = useState(false);
+  const [accordionDemoExpanded, setAccordionDemoExpanded] = useState(false);
 
   // Toasts
   const [toasts, setToasts] = useState<ToastMessage[]>([
@@ -1755,6 +1761,187 @@ export const ComponentShowcaseInner: React.FC = () => {
                 <strong>Prinsip Anti-Hyper-Gamified:</strong> Tidak ada konfeti satu layar penuh, suara dering keras, atau popup mengganggu. Penegasan sukses berlangsung tenang dan selalu dapat diurungkan (reversibel).
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Section 14: Microinteraction & Scalable Motion Token Matrix */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '20px' }}>✨</span>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1E3A8A' }}>
+                Section 14: Microinteraction &amp; Scalable Motion Token Matrix
+              </h3>
+            </div>
+            <p style={{ margin: 0, color: '#64748B', fontSize: '14px' }}>
+              9 Core Microinteractions • DTCG Motion Tokens • Tactile Scale(0.98) • Smooth Ripple Shift • Anti-Accusatory Capacity States
+            </p>
+          </div>
+
+          {/* Microinteraction Suite Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+            
+            {/* A & C: Tactile Press, Focus-Visible & Current Time Dot Breathe */}
+            <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Microinteraction A &amp; C
+                </span>
+                <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                  Taktil Hover, Press (scale 0.98) &amp; Breathe Indicator
+                </h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Respon instan 100ms hover, 150ms press scale, ring ganda fokus keyboard (2px #BFDBFE), dan titik waktu bernapas tenang 3000ms.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                <Button className="focient-interactive" onClick={() => addToast('Tombol ditekan dengan umpan balik taktil')}>
+                  Uji Taktil scale(0.98)
+                </Button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: '#F0FDFA', border: '1px solid #CCFBF1', borderRadius: '8px' }}>
+                  <span className="focient-current-time-dot" aria-hidden="true" />
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#0F766E' }}>
+                    Sesi Berjalan (Breathe 3s)
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ fontSize: '12.5px', color: '#475569', backgroundColor: '#F8FAFC', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                Tekan tombol Tab untuk menguji cincin fokus ganda (<code>outline: 2px solid #BFDBFE</code> dengan <code>offset: 2px</code>) yang ramah aksesibilitas keyboard (WCAG 2.1 AAA).
+              </div>
+            </div>
+
+            {/* D & E: Drag-and-Drop Lift & Ripple Shift Reorder */}
+            <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#0D9488', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Microinteraction D &amp; E
+                  </span>
+                  <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                    Drag Lift (scale 1.02) &amp; Ripple Shift (250ms)
+                  </h4>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                    Tekan tahan 150ms untuk mengangkat kartu (shadow-3, opacity 0.92) dan simulasi pergeseran slot bergelombang tanpa collision.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Button
+                  size="sm"
+                  variant={rippleShiftActive ? 'primary' : 'outline'}
+                  onClick={() => setRippleShiftActive((prev) => !prev)}
+                >
+                  {rippleShiftActive ? 'Kembalikan Slot Jadwal' : 'Simulasi Ripple Auto-Shift (250ms)'}
+                </Button>
+              </div>
+
+              {/* Slot and Drop Placeholder Demo */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div
+                  className="focient-timeline-slot"
+                  style={{
+                    transform: rippleShiftActive ? 'translateY(12px)' : 'translateY(0)',
+                    transition: 'transform var(--duration-moderate, 250ms) var(--ease-fluid)',
+                  }}
+                >
+                  <TaskCard
+                    id="drag-demo-1"
+                    title="Analisis Kebutuhan Arsitektur Sistem"
+                    duration="45m"
+                    timeSlot="13:00 - 13:45"
+                    projectCategory="Sistem"
+                    projectColor="blue"
+                  />
+                </div>
+
+                {rippleShiftActive && (
+                  <div className="focient-drop-placeholder" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: '12.5px', color: '#0D9488', fontWeight: 600 }}>
+                      + Area Target Penempatan Otomatis (Dashed Teal)
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* H: Accordion Detail Disclosure */}
+            <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Microinteraction H
+                </span>
+                <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                  Detail Disclosure (Grid 0fr → 1fr &amp; Chevron 180°)
+                </h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Buka-tutup informasi tambahan tugas dalam 200ms (--duration-normal, --ease-fluid) tanpa layout shift mendadak.
+                </p>
+              </div>
+
+              <Accordion
+                title="Catatan Tambahan &amp; Sub-Tugas Prioritas"
+                badge={<Badge size="xs" variant="neutral">3 Sub-item</Badge>}
+                expanded={accordionDemoExpanded}
+                onToggle={(val) => setAccordionDemoExpanded(val)}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#475569' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Checkbox checked={true} variant="success" onChange={() => {}} />
+                    <span style={{ textDecoration: 'line-through', color: '#94A3B8' }}>Audit design token W3C DTCG</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Checkbox checked={true} variant="success" onChange={() => {}} />
+                    <span style={{ textDecoration: 'line-through', color: '#94A3B8' }}>Implementasi kurva easing Fluid</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Checkbox checked={false} onChange={() => {}} />
+                    <span>Verifikasi aksesibilitas keyboard dan prefers-reduced-motion</span>
+                  </div>
+                </div>
+              </Accordion>
+            </div>
+
+            {/* I: Dynamic Workload Thresholding (Capacity Meter State) */}
+            <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Microinteraction I
+                </span>
+                <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 600 }}>
+                  Dynamic Workload Thresholding (Zero-Guilt Amber)
+                </h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Geser slider untuk melihat transisi warna bilah (Light &lt;50%, Optimal 50-75%, Near 76-90%, Overload &gt;90%). Dilarang keras memakai merah panik.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 600 }}>
+                  <span>Simulasi Beban Harian:</span>
+                  <span className="focient-tnum" style={{ color: interactiveWorkload > 75 ? '#D97706' : '#0D9488' }}>
+                    {interactiveWorkload}% ({Math.round(interactiveWorkload * 4.8)}m / 480m)
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="100"
+                  value={interactiveWorkload}
+                  onChange={(e) => setInteractiveWorkload(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: interactiveWorkload > 75 ? '#D97706' : '#0D9488' }}
+                />
+              </div>
+
+              <DailyCapacityMeter
+                allocatedMinutes={Math.round(interactiveWorkload * 4.8)}
+                totalCapacityMinutes={480}
+              />
+            </div>
+
           </div>
         </section>
 

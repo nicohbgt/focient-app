@@ -274,6 +274,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       onDragStart={draggable ? handleDragStart : undefined}
       onDragEnd={draggable ? handleDragEnd : undefined}
       className={cardClasses}
+      data-completed={completed ? 'true' : undefined}
     >
       {/* Checkbox (or Rank Indicator for Top 3) */}
       <Checkbox
@@ -303,7 +304,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </Badge>
           )}
 
-          <h4 className="focient-task-card-title">{title}</h4>
+          <h4 className="focient-task-card-title focient-task-title">{title}</h4>
         </div>
 
         {notes && <p className="focient-task-card-notes">{notes}</p>}

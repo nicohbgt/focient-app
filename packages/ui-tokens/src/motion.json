@@ -1,49 +1,110 @@
 {
   "$schema": "https://design-tokens.github.io/community-group/format/",
-  "animation": {
-    "duration": {
-      "fast": {
-        "$type": "duration",
-        "$value": "150ms",
-        "$description": "Tanggap, mikro, elastis (tactile feedback). Target Tailwind: duration-150. Hover & active state tombol, pemulihan cincin fokus, centang checkbox, dan toggle switch."
-      },
-      "normal": {
-        "$type": "duration",
-        "$value": "200ms",
-        "$description": "Seimbang, lincah (component transition). Target Tailwind: duration-200. Elevasi kartu linimasa (card hover), buka/tutup menu dropdown, kemunculan tooltip, dan tab filter."
-      },
-      "moderate": {
-        "$type": "duration",
-        "$value": "250ms",
-        "$description": "Halus, struktural (layout & flow shift). Target Tailwind: duration-250. Pergeseran blok jadwal otomatis (ripple reschedule), reposisi kartu linimasa, indikator geser tab."
-      },
-      "slow": {
-        "$type": "duration",
-        "$value": "300ms",
-        "$description": "Terarah, berbobot (surface & modal overlay). Target Tailwind: duration-300. Dialog Adaptive Reschedule Modal, lembar geser Bottom Sheet seluler, dan pemudaran lapisan gelap Backdrop Scrim."
-      },
-      "deliberate": {
-        "$type": "duration",
-        "$value": "400ms",
-        "$description": "Bertahap, ekspansif (data expansion & alert). Target Tailwind: duration-400. Buka/tutup vertikal detail tugas (accordion expand), pengisian bilah kapasitas (capacity meter fill), System Banner."
-      }
+  "motion": {
+    "press-scale": {
+      "$type": "number",
+      "$value": 0.98,
+      "$description": "Skala taktil saat tombol atau elemen interaktif ditekan mousedown/touchstart."
     },
-    "ease": {
-      "fluid": {
-        "$type": "cubicBezier",
-        "$value": "cubic-bezier(0.4, 0, 0.2, 1)",
-        "$description": "Fluid Ease (Default) - Digunakan untuk transisi umum dua arah, perubahan warna/border, dan hover."
-      },
-      "decelerate": {
-        "$type": "cubicBezier",
-        "$value": "cubic-bezier(0.0, 0, 0.2, 1)",
-        "$description": "Decelerate / Enter Ease - Digunakan saat elemen baru memasuki layar (entry) agar mendarat secara tenang."
-      },
-      "accelerate": {
-        "$type": "cubicBezier",
-        "$value": "cubic-bezier(0.4, 0, 1, 1)",
-        "$description": "Accelerate / Exit Ease - Digunakan saat elemen keluar atau menghilang dari layar (exit/dismiss)."
-      }
+    "lift-subtle": {
+      "$type": "dimension",
+      "$value": "-2px",
+      "$description": "Translasi vertikal halus saat kursor melayang di atas kartu linimasa (translateY(-2px))."
+    },
+    "drag-scale": {
+      "$type": "number",
+      "$value": 1.02,
+      "$description": "Skala pembesaran mikro saat kartu linimasa diangkat dan ditarik (scale(1.02))."
+    },
+    "drag-opacity": {
+      "$type": "number",
+      "$value": 0.92,
+      "$description": "Opasitas visual kartu linimasa saat dalam fase penyeretan (dragging)."
+    },
+    "modal-offset": {
+      "$type": "dimension",
+      "$value": "16px",
+      "$description": "Jarak pergeseran sumbu Y vertikal saat modal dialog masuk/keluar layar."
+    },
+    "sheet-handle-width": {
+      "$type": "dimension",
+      "$value": "36px",
+      "$description": "Lebar garis pegangan elips swipe-to-dismiss pada Bottom Sheet seluler."
+    },
+    "sheet-handle-height": {
+      "$type": "dimension",
+      "$value": "4px",
+      "$description": "Tinggi garis pegangan elips pada Bottom Sheet seluler."
+    },
+    "breathe-duration": {
+      "$type": "duration",
+      "$value": "3000ms",
+      "$description": "Durasi siklus animasi bernapas lembut (gentle breathe) pada indikator titik waktu linimasa."
+    },
+    "dot-size": {
+      "$type": "dimension",
+      "$value": "8px",
+      "$description": "Diameter lingkaran indikator titik waktu linimasa (Current Time Dot)."
+    },
+    "drop-min-height": {
+      "$type": "dimension",
+      "$value": "48px",
+      "$description": "Tinggi minimum area target penempatan (drop placeholder slot)."
+    },
+    "drop-border-width": {
+      "$type": "dimension",
+      "$value": "2px",
+      "$description": "Ketebalan garis putus-putus pada area slot target penempatan (dashed drop-line)."
+    },
+    "focus-ring-width": {
+      "$type": "dimension",
+      "$value": "2px",
+      "$description": "Ketebalan cincin fokus aksesibilitas keyboard (WCAG 2.1 AAA)."
+    },
+    "focus-ring-offset": {
+      "$type": "dimension",
+      "$value": "2px",
+      "$description": "Jarak renggang outline cincin fokus dari batas elemen interaktif."
+    },
+    "focus-ring-color": {
+      "$type": "color",
+      "$value": "#BFDBFE",
+      "$description": "Warna cincin fokus aksesibilitas ganda (Primary Track Base)."
+    },
+    "chevron-rotation": {
+      "$type": "dimension",
+      "$value": "180deg",
+      "$description": "Derajat putaran rotasi ikon panah chevron saat accordion dibuka."
+    },
+    "workload-threshold-light": {
+      "$type": "number",
+      "$value": 50,
+      "$description": "Batas persentase beban kerja ringan (< 50%)."
+    },
+    "workload-threshold-optimal": {
+      "$type": "number",
+      "$value": 75,
+      "$description": "Batas persentase beban kerja optimal (50% - 75%)."
+    },
+    "workload-threshold-near": {
+      "$type": "number",
+      "$value": 90,
+      "$description": "Batas persentase mendekati kapasitas penuh harian (76% - 90%)."
+    },
+    "capacity-fill-duration": {
+      "$type": "duration",
+      "$value": "400ms",
+      "$description": "Durasi pengisian bilah kapasitas harian secara halus (--duration-deliberate)."
+    },
+    "haptic-duration": {
+      "$type": "duration",
+      "$value": "10ms",
+      "$description": "Durasi getaran haptik singkat saat kartu disentuh dan diangkat di seluler."
+    },
+    "reorder-duration": {
+      "$type": "duration",
+      "$value": "250ms",
+      "$description": "Durasi pergeseran bergelombang halus slot jadwal saat penyisipan (ripple shift)."
     }
   }
 }

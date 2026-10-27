@@ -108,7 +108,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({
         ) : (
           /* State 3: Standard Pop-in Checkmark */
           <svg
-            className="focient-checkbox-icon"
+            className="focient-checkbox-icon focient-checkbox__icon"
             viewBox="0 0 16 16"
             fill="none"
             stroke="currentColor"

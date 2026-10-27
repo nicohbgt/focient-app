@@ -2,6 +2,11 @@
   "$schema": "https://design-tokens.github.io/community-group/format/",
   "animation": {
     "duration": {
+      "instant": {
+        "$type": "duration",
+        "$value": "100ms",
+        "$description": "Instan, mikro (micro-state, hover color, caret). Target Tailwind: duration-100."
+      },
       "fast": {
         "$type": "duration",
         "$value": "150ms",

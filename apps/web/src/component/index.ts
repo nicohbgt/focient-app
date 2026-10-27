@@ -9,6 +9,9 @@ export * from './icons/index.js';
 // Primitive Components (Atomic Form Controls)
 export * from './primitive/index.js';
 
+// Molecule Components (Detail Disclosures, Accordions)
+export * from './molecule/index.js';
+
 // Organism Components & Navigation Suites
 export * from './organism/index.js';
 

@@ -9,6 +9,7 @@ import { emptyTokens } from '../src/empty-token.js';
 import { errorTokens } from '../src/error-token.js';
 import { iconTokens } from '../src/icon-token.js';
 import { loadingTokens } from '../src/loading-token.js';
+import { motionTokens } from '../src/motion-token.js';
 import { shadowTokens } from '../src/shadow-token.js';
 import { spacingTokens } from '../src/spacing-token.js';
 import { successTokens } from '../src/success-token.js';
@@ -179,6 +180,7 @@ test('animation artifacts contain canonical durations, easing curves, and Flutte
   assert.deepEqual(animationTokens, expected);
 
   // Verify durations in CSS
+  assert.match(css, /--duration-instant: 100ms;/);
   assert.match(css, /--duration-fast: 150ms;/);
   assert.match(css, /--duration-normal: 200ms;/);
   assert.match(css, /--duration-moderate: 250ms;/);
@@ -191,6 +193,8 @@ test('animation artifacts contain canonical durations, easing curves, and Flutte
   assert.match(css, /--ease-accelerate: cubic-bezier\(0\.4, 0, 1, 1\);/);
 
   // Verify Dart durations and curves
+  assert.match(dart, /static const Duration durationInstant = Duration\(milliseconds: 100\);/);
+  assert.match(dart, /static const int durationInstantMs = 100;/);
   assert.match(dart, /static const Duration durationFast = Duration\(milliseconds: 150\);/);
   assert.match(dart, /static const int durationFastMs = 150;/);
   assert.match(dart, /static const Duration durationNormal = Duration\(milliseconds: 200\);/);
@@ -421,4 +425,47 @@ test('success state token artifacts preserve calm affirmation, reversibility buf
 
   // Button feedback transition duration is 600ms
   assert.equal(successTokens['success-button-transition-duration'], '600ms');
+});
+
+test('motion state token artifacts preserve tactile scales, lift displacements, and Flutter contracts', async () => {
+  const source = JSON.parse(await readFile(new URL('tokens/motion-token.json', packageUrl), 'utf8'));
+  const expected = flattenTokens(source.motion, 'motion');
+  const css = await readFile(new URL('src/motion-token.css', packageUrl), 'utf8');
+  const dart = await readFile(new URL('lib/motion_token.dart', packageUrl), 'utf8');
+  const cssTokens = Object.fromEntries(
+    [...css.matchAll(/--(motion-[a-z0-9-]+): ([^;]+);/g)].map(([, name, value]) => [name, value])
+  );
+
+  assert.deepEqual(motionTokens, expected);
+  assert.deepEqual(cssTokens, Object.fromEntries(
+    Object.entries(expected).map(([k, v]) => [k, String(v)])
+  ));
+
+  // Flutter Dart token class
+  assert.match(dart, /abstract final class FocientMotionTokens/);
+  assert.match(dart, /static const double pressScale = 0\.98;/);
+  assert.match(dart, /static const double liftSubtle = -2\.0;/);
+  assert.match(dart, /static const double dragScale = 1\.02;/);
+  assert.match(dart, /static const double dragOpacity = 0\.92;/);
+  assert.match(dart, /static const double modalOffset = 16\.0;/);
+  assert.match(dart, /static const double sheetHandleWidth = 36\.0;/);
+  assert.match(dart, /static const double sheetHandleHeight = 4\.0;/);
+  assert.match(dart, /static const Duration breatheDuration = Duration\(milliseconds: 3000\);/);
+  assert.match(dart, /static const int breatheDurationMs = 3000;/);
+  assert.match(dart, /static const double dotSize = 8\.0;/);
+  assert.match(dart, /static const double dropMinHeight = 48\.0;/);
+  assert.match(dart, /static const double dropBorderWidth = 2\.0;/);
+  assert.match(dart, /static const double focusRingWidth = 2\.0;/);
+  assert.match(dart, /static const double focusRingOffset = 2\.0;/);
+  assert.match(dart, /static const Color focusRingColor = Color\(0xFFBFDBFE\);/);
+  assert.match(dart, /static const double chevronRotation = 180\.0;/);
+  assert.match(dart, /static const int workloadThresholdLight = 50;/);
+  assert.match(dart, /static const int workloadThresholdOptimal = 75;/);
+  assert.match(dart, /static const int workloadThresholdNear = 90;/);
+  assert.match(dart, /static const Duration capacityFillDuration = Duration\(milliseconds: 400\);/);
+  assert.match(dart, /static const int capacityFillDurationMs = 400;/);
+  assert.match(dart, /static const Duration hapticDuration = Duration\(milliseconds: 10\);/);
+  assert.match(dart, /static const int hapticDurationMs = 10;/);
+  assert.match(dart, /static const Duration reorderDuration = Duration\(milliseconds: 250\);/);
+  assert.match(dart, /static const int reorderDurationMs = 250;/);
 });

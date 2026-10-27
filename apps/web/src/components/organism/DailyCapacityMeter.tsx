@@ -107,6 +107,7 @@ export const DailyCapacityMeter: React.FC<DailyCapacityMeterProps> = ({
       >
         <div
           className="focient-capacity-fill"
+          data-threshold={percentage < 50 ? 'light' : percentage <= 75 ? 'optimal' : percentage <= 90 ? 'near' : 'overload'}
           style={{
             width: `${percentage}%`,
             backgroundColor: color,

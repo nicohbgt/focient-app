@@ -1,6 +1,7 @@
 /** GENERATED FILE. Source: ../tokens/animation-token.json */
 export const animationTokens = Object.freeze(
   {
+  "duration-instant": "100ms",
   "duration-fast": "150ms",
   "duration-normal": "200ms",
   "duration-moderate": "250ms",

@@ -46,6 +46,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const classes = [
       'focient-btn',
+      'focient-interactive',
       `focient-btn--${variant}`,
       `focient-btn--${size}`,
       fullWidth ? 'focient-btn--full' : '',
