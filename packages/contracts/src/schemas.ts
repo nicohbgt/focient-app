@@ -187,6 +187,8 @@ export const TaskFilterSchema = z.object({
  */
 export const OnboardingSetupSchema = z
   .object({
+    username: z.string().min(1).optional(),
+    name: z.string().min(1).optional(),
     roleArchetype: z.string().min(1).optional().default('Software Engineer'),
     workHoursLimit: z
       .number({ required_error: MSG.workHoursLimit, invalid_type_error: MSG.workHoursLimit })

@@ -194,6 +194,8 @@ export interface TaskFilterDto {
 // 4. Onboarding & Setup DTOs (Proses 1.0)
 // ==========================================
 export interface CompleteOnboardingDto {
+  username?: string;
+  name?: string;
   roleArchetype: string;
   workHoursLimit: number; // 1 to 16 hours
   startWorkTime: string;  // "HH:mm"

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:focient_mobile/core/validators/focient_validators.dart';
 import 'package:focient_mobile/data/auth_state.dart';
+import 'package:focient_mobile/data/workspace_category.dart';
 import 'package:focient_mobile/presentation/primitive/focient_otp_input.dart';
 import 'package:focient_mobile/presentation/screens/auth/focient_auth_flow.dart';
 import 'package:focient_mobile/presentation/screens/auth/focient_forgot_password_screen.dart';
@@ -11,6 +12,8 @@ import 'package:focient_mobile/presentation/screens/auth/focient_otp_screen.dart
 import 'package:focient_mobile/presentation/screens/auth/focient_register_screen.dart';
 import 'package:focient_mobile/presentation/screens/auth/focient_reset_password_screen.dart';
 import 'package:focient_mobile/presentation/screens/auth/focient_welcome_screen.dart';
+import 'package:focient_mobile/presentation/screens/onboarding/add_task_category_sheet.dart';
+import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_workspace_screen.dart';
 
 class TestRealAuthNotifier extends AuthNotifier {
   @override
@@ -64,8 +67,9 @@ class TestRealAuthNotifier extends AuthNotifier {
         id: 'usr-real-123',
         name: state.pendingName ?? 'Alex Morgan',
         email: state.pendingEmail ?? 'alex@gmail.com',
-        roleArchetype: 'Software Engineer',
+        roleArchetype: 'General',
         dailyCapacityMinutes: 480,
+        isOnboardingCompleted: false,
       ),
       clearError: true,
     );
@@ -77,6 +81,34 @@ class TestRealAuthNotifier extends AuthNotifier {
     state = state.copyWith(
       status: AuthStatus.unauthenticated,
       resetPasswordOtp: null,
+      clearError: true,
+    );
+    return true;
+  }
+
+  @override
+  Future<bool> completeWorkspaceOnboarding({
+    required String username,
+    required String occupancy,
+    required List<WorkspaceCategory> categories,
+  }) async {
+    final updatedUser = (state.user ??
+            AuthUser(
+              id: 'usr-real-123',
+              name: username,
+              email: state.pendingEmail ?? 'alex@gmail.com',
+            ))
+        .copyWith(
+      name: username,
+      username: username,
+      roleArchetype: occupancy,
+      isOnboardingCompleted: true,
+      selectedCategories: categories.map((c) => c.name).toList(),
+    );
+
+    state = state.copyWith(
+      status: AuthStatus.authenticated,
+      user: updatedUser,
       clearError: true,
     );
     return true;
@@ -95,6 +127,7 @@ class TestRealAuthNotifier extends AuthNotifier {
         email: email.trim().toLowerCase(),
         roleArchetype: 'Focus Achiever',
         dailyCapacityMinutes: 480,
+        isOnboardingCompleted: true,
       ),
       clearError: true,
     );
@@ -297,7 +330,17 @@ void main() {
       await tester.tap(find.text('Submit'));
       await tester.pumpAndSettle();
 
-      // 4. Authenticated Dashboard!
+      // 4. Onboarding Step 1: Personalize your Workspace
+      expect(find.text('Personalize your Workspace'), findsOneWidget);
+      expect(find.text('1 of 5 steps'), findsOneWidget);
+      expect(find.text('General'), findsOneWidget);
+      expect(find.text('Personal'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Next'));
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      // 5. Authenticated Dashboard!
       expect(find.text('Account Authenticated'), findsOneWidget);
       expect(find.text('Alex Morgan'), findsOneWidget);
     });
@@ -384,6 +427,174 @@ void main() {
 
       // 5. Back to Login screen!
       expect(find.text('Welcome Back!'), findsOneWidget);
+    });
+  });
+
+  group('FoCient Onboarding Workspace Screen Widget Tests', () {
+    testWidgets('Renders all Step 1 UI elements matching specifications', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authProvider.overrideWith((ref) => TestRealAuthNotifier()),
+          ],
+          child: const MaterialApp(
+            home: FocientOnboardingWorkspaceScreen(),
+          ),
+        ),
+      );
+
+      // 1. Step indicator and progress
+      expect(find.text('1 of 5 steps'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+      // 2. Title & Subtitle
+      expect(find.text('Personalize your Workspace'), findsOneWidget);
+      expect(
+        find.text('enter your nickname and occupancies for setup your personal task categories'),
+        findsOneWidget,
+      );
+
+      // 3. Username field
+      expect(find.text('Username'), findsOneWidget);
+      expect(find.text('Enter your username here'), findsOneWidget);
+
+      // 4. Occupancies chips
+      expect(find.text('Occupancies'), findsOneWidget);
+      expect(find.text('General'), findsOneWidget);
+      expect(find.text('Entrepreneur'), findsOneWidget);
+      expect(find.text('Professional'), findsOneWidget);
+      expect(find.text('Freelancer'), findsOneWidget);
+      expect(find.text('Student'), findsOneWidget);
+      expect(find.text('Creator'), findsOneWidget);
+
+      // 5. Default General Category Template
+      expect(find.text('Task Category'), findsOneWidget);
+      expect(find.text('Personal'), findsOneWidget);
+      expect(find.text('Deep Work'), findsOneWidget);
+      expect(find.text('Communication'), findsOneWidget);
+      expect(find.text('+ Add Category'), findsOneWidget);
+
+      // 6. Next CTA button
+      expect(find.text('Next'), findsOneWidget);
+    });
+
+    testWidgets('Occupancy chip selection automatically updates task category template', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authProvider.overrideWith((ref) => TestRealAuthNotifier()),
+          ],
+          child: const MaterialApp(
+            home: FocientOnboardingWorkspaceScreen(),
+          ),
+        ),
+      );
+
+      // Initially General template
+      expect(find.text('Personal'), findsOneWidget);
+      expect(find.text('Deep Work'), findsOneWidget);
+
+      // Tap "Entrepreneur" chip
+      await tester.tap(find.text('Entrepreneur'));
+      await tester.pumpAndSettle();
+
+      // Categories should now be Entrepreneur template
+      expect(find.text('Strategic'), findsOneWidget);
+      expect(find.text('Execution'), findsOneWidget);
+      expect(find.text('Meeting'), findsOneWidget);
+      expect(find.text('Personal'), findsNothing);
+
+      // Tap "Student" chip
+      await tester.ensureVisible(find.text('Student'));
+      await tester.tap(find.text('Student'));
+      await tester.pumpAndSettle();
+
+      // Categories should now be Student template
+      expect(find.text('Study & Class'), findsOneWidget);
+      expect(find.text('Assignments'), findsOneWidget);
+      expect(find.text('Self-Care'), findsOneWidget);
+      expect(find.text('Strategic'), findsNothing);
+    });
+
+    testWidgets('Validates username and categories requirement before advancing', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authProvider.overrideWith((ref) => TestRealAuthNotifier()),
+          ],
+          child: const MaterialApp(
+            home: FocientOnboardingWorkspaceScreen(),
+          ),
+        ),
+      );
+
+      // Clear the username field
+      final usernameField = find.byType(TextField).first;
+      await tester.enterText(usernameField, '');
+      await tester.pumpAndSettle();
+
+      // Tap Next
+      await tester.ensureVisible(find.text('Next'));
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      // Shows error message
+      expect(find.text('Username minimal 2 karakter.'), findsOneWidget);
+    });
+  });
+
+  group('FoCient Add Task Category Sheet Widget Tests', () {
+    testWidgets('Renders modal inputs and returns created category', (tester) async {
+      WorkspaceCategory? created;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  created = await AddTaskCategorySheet.show(context);
+                },
+                child: const Text('Open Sheet'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Open sheet
+      await tester.tap(find.text('Open Sheet'));
+      await tester.pumpAndSettle();
+
+      // Check sheet elements
+      expect(find.text('Category Name'), findsOneWidget);
+      expect(find.text('Label Color'), findsOneWidget);
+      expect(find.text('Focus Type'), findsOneWidget);
+      expect(find.text('Light'), findsOneWidget);
+      expect(find.text('Medium'), findsOneWidget);
+      expect(find.text('Deep Focus'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Confirm'), findsOneWidget);
+
+      // Enter category name
+      final field = find.descendant(
+        of: find.byType(AddTaskCategorySheet),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(field, 'Research & Development');
+
+      // Select Deep Focus
+      await tester.tap(find.text('Deep Focus'));
+      await tester.pumpAndSettle();
+
+      // Tap Confirm
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+
+      // Modal closed and category returned
+      expect(created, isNotNull);
+      expect(created!.name, 'Research & Development');
+      expect(created!.focusType, FocusType.deepFocus);
     });
   });
 }

@@ -342,6 +342,7 @@ export class AuthService {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
+        name: data.username || data.name || user.name,
         roleArchetype: data.roleArchetype,
         workHoursLimit: data.workHoursLimit,
         startWorkTime: data.startWorkTime,

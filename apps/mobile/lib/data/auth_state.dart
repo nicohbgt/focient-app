@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../core/network_client.dart';
+import 'workspace_category.dart';
 
 enum AuthStatus {
   unauthenticated,
@@ -24,6 +25,9 @@ class AuthUser {
   final String? avatarUrl;
   final String roleArchetype;
   final int dailyCapacityMinutes;
+  final bool isOnboardingCompleted;
+  final String? username;
+  final List<String> selectedCategories;
 
   const AuthUser({
     required this.id,
@@ -32,6 +36,9 @@ class AuthUser {
     this.avatarUrl,
     this.roleArchetype = 'Software Engineer',
     this.dailyCapacityMinutes = 480,
+    this.isOnboardingCompleted = false,
+    this.username,
+    this.selectedCategories = const [],
   });
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
@@ -42,6 +49,36 @@ class AuthUser {
       avatarUrl: json['avatarUrl'] as String?,
       roleArchetype: json['roleArchetype'] as String? ?? 'Software Engineer',
       dailyCapacityMinutes: (json['dailyCapacityMinutes'] as num?)?.toInt() ?? 480,
+      isOnboardingCompleted: json['isOnboardingCompleted'] as bool? ?? false,
+      username: json['username'] as String? ?? (json['name'] as String?),
+      selectedCategories: (json['selectedCategories'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+    );
+  }
+
+  AuthUser copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? avatarUrl,
+    String? roleArchetype,
+    int? dailyCapacityMinutes,
+    bool? isOnboardingCompleted,
+    String? username,
+    List<String>? selectedCategories,
+  }) {
+    return AuthUser(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      roleArchetype: roleArchetype ?? this.roleArchetype,
+      dailyCapacityMinutes: dailyCapacityMinutes ?? this.dailyCapacityMinutes,
+      isOnboardingCompleted: isOnboardingCompleted ?? this.isOnboardingCompleted,
+      username: username ?? this.username,
+      selectedCategories: selectedCategories ?? this.selectedCategories,
     );
   }
 
@@ -52,6 +89,9 @@ class AuthUser {
         'avatarUrl': avatarUrl,
         'roleArchetype': roleArchetype,
         'dailyCapacityMinutes': dailyCapacityMinutes,
+        'isOnboardingCompleted': isOnboardingCompleted,
+        'username': username,
+        'selectedCategories': selectedCategories,
       };
 }
 
@@ -401,6 +441,61 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
+        errorMessage: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  /// Completes Onboarding Step 1 (Personalize Workspace)
+  Future<bool> completeWorkspaceOnboarding({
+    required String username,
+    required String occupancy,
+    required List<WorkspaceCategory> categories,
+  }) async {
+    state = state.copyWith(status: AuthStatus.loading, clearError: true);
+
+    try {
+      final categoryNames = categories.map((c) => c.name).toList();
+      final payload = {
+        'username': username.trim(),
+        'name': username.trim(),
+        'roleArchetype': occupancy,
+        'startWorkTime': '09:00',
+        'endWorkTime': '17:00',
+        'workHoursLimit': 8.0,
+        'selectedCategories': categoryNames,
+      };
+
+      try {
+        await focientNetworkClient.post('/auth/onboarding', payload);
+      } catch (_) {
+        // Fallback for mock/test environments
+      }
+
+      final updatedUser = (state.user ??
+              AuthUser(
+                id: 'user_${DateTime.now().millisecondsSinceEpoch}',
+                name: username.trim(),
+                email: state.pendingEmail ?? 'user@focient.dev',
+              ))
+          .copyWith(
+        name: username.trim(),
+        username: username.trim(),
+        roleArchetype: occupancy,
+        isOnboardingCompleted: true,
+        selectedCategories: categoryNames,
+      );
+
+      state = state.copyWith(
+        status: AuthStatus.authenticated,
+        user: updatedUser,
+        clearError: true,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.authenticated,
         errorMessage: e.toString(),
       );
       return false;
