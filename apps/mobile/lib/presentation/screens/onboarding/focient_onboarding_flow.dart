@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/auth_state.dart';
+import '../../../data/onboarding_task.dart';
+import '../../../data/task_state.dart';
 import '../../../data/workspace_category.dart';
+import '../../riverpod_providers.dart';
+import 'focient_onboarding_review_screen.dart';
 import 'focient_onboarding_rhythm_screen.dart';
+import 'focient_onboarding_task_screen.dart';
 import 'focient_onboarding_time_screen.dart';
 import 'focient_onboarding_workspace_screen.dart';
 
 /// FoCient Multi-Phase Onboarding Flow Coordinator
 ///
-/// Coordinates the 5-step onboarding journey:
-/// - Step 1: Personalize your Workspace (Username, Occupancy, Task Categories)
+/// Coordinates all 5 canonical steps of the onboarding journey:
+/// - Step 1: Personalize your Workspace (Username, Occupancies, Task Categories)
 /// - Step 2: Working Rhythm Setup (Daily Energy Rhythm & Scheduling Style)
 /// - Step 3: Time Allocation Setup (Daily Active Hour & Rest Time per Task)
-/// - (Step 4 & 5: Capacity limits and confirmation)
+/// - Step 4: Enter your first task (Add Task card & Task Added card with badges)
+/// - Step 5: Your first plan is complete (Today Workload, Top 3 detail, Notification & Start Plan)
 class FocientOnboardingFlow extends ConsumerStatefulWidget {
   final VoidCallback? onCancel;
   final VoidCallback? onCompleted;
@@ -47,6 +53,9 @@ class _FocientOnboardingFlowState extends ConsumerState<FocientOnboardingFlow> {
   String _endHour24 = '17:00';
   int _restMinutes = 20;
 
+  // Step 4 & 5 state
+  List<OnboardingTask> _tasks = [];
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +63,19 @@ class _FocientOnboardingFlowState extends ConsumerState<FocientOnboardingFlow> {
   }
 
   Future<void> _finalizeOnboarding() async {
+    // Add any onboarding tasks to taskListProvider
+    for (final t in _tasks) {
+      ref.read(taskListProvider.notifier).addTask(
+            MobileTask(
+              id: t.id,
+              title: t.title,
+              durationMinutes: t.durationMinutes,
+              priority: TaskPriorityEnum.top3,
+              status: TaskStatusEnum.todo,
+            ),
+          );
+    }
+
     final success = await ref
         .read(authProvider.notifier)
         .completeWorkspaceOnboarding(
@@ -77,6 +99,11 @@ class _FocientOnboardingFlowState extends ConsumerState<FocientOnboardingFlow> {
 
   @override
   Widget build(BuildContext context) {
+    final activeCategories = _categories.isNotEmpty
+        ? _categories
+        : (kOccupancyCategoryTemplates[_occupancy] ??
+            kOccupancyCategoryTemplates['General']!);
+
     switch (_currentStep) {
       case 1:
         return FocientOnboardingWorkspaceScreen(
@@ -111,18 +138,45 @@ class _FocientOnboardingFlowState extends ConsumerState<FocientOnboardingFlow> {
         );
 
       case 3:
-      default:
         return FocientOnboardingTimeScreen(
           initialRestMinutes: _restMinutes,
           onBack: () {
             setState(() => _currentStep = 2);
           },
           onNext: (start24, end24, restMinutes) {
-            _startHour24 = start24;
-            _endHour24 = end24;
-            _restMinutes = restMinutes;
-            _finalizeOnboarding();
+            setState(() {
+              _startHour24 = start24;
+              _endHour24 = end24;
+              _restMinutes = restMinutes;
+              _currentStep = 4;
+            });
           },
+        );
+
+      case 4:
+        return FocientOnboardingTaskScreen(
+          categories: activeCategories,
+          defaultRestMinutes: _restMinutes,
+          initialTasks: _tasks,
+          onBack: () {
+            setState(() => _currentStep = 3);
+          },
+          onNext: (tasks) {
+            setState(() {
+              _tasks = tasks;
+              _currentStep = 5;
+            });
+          },
+        );
+
+      case 5:
+      default:
+        return FocientOnboardingReviewScreen(
+          tasks: _tasks,
+          onBack: () {
+            setState(() => _currentStep = 4);
+          },
+          onStartPlan: _finalizeOnboarding,
         );
     }
   }

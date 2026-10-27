@@ -16,9 +16,14 @@ import 'package:focient_mobile/presentation/screens/onboarding/add_task_category
 import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_workspace_screen.dart';
 import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_rhythm_screen.dart';
 import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_time_screen.dart';
+import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_task_screen.dart';
+import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_review_screen.dart';
+import 'package:focient_mobile/presentation/screens/onboarding/create_task_bottom_sheet.dart';
+import 'package:focient_mobile/presentation/organism/focient_onboarding_task_card.dart';
 import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_flow.dart';
 import 'package:focient_mobile/presentation/primitive/focient_rest_time_slider.dart';
 import 'package:focient_mobile/data/working_rhythm.dart';
+import 'package:focient_mobile/data/onboarding_task.dart';
 
 class TestRealAuthNotifier extends AuthNotifier {
   @override
@@ -376,7 +381,40 @@ void main() {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
 
-      // 7. Authenticated Dashboard!
+      // 7. Onboarding Step 4: Enter your first task
+      expect(find.text('Enter your first task'), findsOneWidget);
+      expect(find.text('4 of 5 steps'), findsOneWidget);
+      expect(find.text('Your Task Category'), findsOneWidget);
+      expect(find.text('First Task'), findsOneWidget);
+      expect(find.text('Add your Task'), findsOneWidget);
+
+      // Open Create Task bottom sheet
+      await tester.tap(find.text('Add your Task'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Create Your Task'), findsOneWidget);
+      await tester.ensureVisible(find.text('Confirm'));
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+
+      // Verify task added card
+      expect(find.text('Create the Annual OKR'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Next'));
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      // 8. Onboarding Step 5: Your first plan is complete
+      expect(find.text('Your first plan is complete'), findsOneWidget);
+      expect(find.text('5 of 5 steps'), findsOneWidget);
+      expect(find.text('Today Workload'), findsOneWidget);
+      expect(find.text('Start your Current Plan!'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Start your Current Plan!'));
+      await tester.tap(find.text('Start your Current Plan!'));
+      await tester.pumpAndSettle();
+
+      // 9. Authenticated Dashboard!
       expect(find.text('Account Authenticated'), findsOneWidget);
       expect(find.text('Alex Morgan'), findsOneWidget);
     });
@@ -786,6 +824,155 @@ void main() {
       expect(submittedStart, '09:00');
       expect(submittedEnd, '17:00');
       expect(submittedRest, isNotNull);
+    });
+  });
+
+  group('FoCient Onboarding Step 4: Enter your first task Screen Widget Tests', () {
+    testWidgets('Renders all Step 4 elements with Page 1 consistent category style', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FocientOnboardingTaskScreen(
+            categories: const [
+              WorkspaceCategory(name: 'Strategic', color: Color(0xFF7C3AED), colorHex: '#7C3AED'),
+              WorkspaceCategory(name: 'Execution', color: Color(0xFF0284C7), colorHex: '#0284C7'),
+              WorkspaceCategory(name: 'Operation', color: Color(0xFF0D9488), colorHex: '#0D9488'),
+            ],
+          ),
+        ),
+      );
+
+      // Indicator and progress bar
+      expect(find.text('4 of 5 steps'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+      // Title & Subtitle
+      expect(find.text('Enter your first task'), findsOneWidget);
+      expect(
+        find.text('Start with your most important task, the\nsystem will prioritize the execution'),
+        findsOneWidget,
+      );
+
+      // Your Task Category (Strict Page 1 UI Consistency)
+      expect(find.text('Your Task Category'), findsOneWidget);
+      expect(find.text('Strategic'), findsOneWidget);
+      expect(find.text('Execution'), findsOneWidget);
+      expect(find.text('Operation'), findsOneWidget);
+
+      // First Task Section with (A) Add Task card
+      expect(find.text('First Task'), findsOneWidget);
+      expect(find.byType(FocientAddTaskCard), findsOneWidget);
+      expect(find.text('Add your Task'), findsOneWidget);
+
+      // Next CTA
+      expect(find.text('Next'), findsOneWidget);
+    });
+
+    testWidgets('Opens Create Task modal, confirms, and renders (B) Task Added card', (tester) async {
+      List<OnboardingTask>? confirmedTasks;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FocientOnboardingTaskScreen(
+            categories: const [
+              WorkspaceCategory(name: 'Strategic', color: Color(0xFF7C3AED), colorHex: '#7C3AED'),
+              WorkspaceCategory(name: 'Execution', color: Color(0xFF0284C7), colorHex: '#0284C7'),
+            ],
+            defaultRestMinutes: 20,
+            onNext: (tasks) {
+              confirmedTasks = tasks;
+            },
+          ),
+        ),
+      );
+
+      // Tap Add Task card
+      await tester.tap(find.text('Add your Task'));
+      await tester.pumpAndSettle();
+
+      // In Create Task Bottom Sheet
+      expect(find.text('Create Your Task'), findsOneWidget);
+      expect(find.text('Task Name'), findsOneWidget);
+      expect(find.text('Task Categories'), findsOneWidget);
+      expect(find.text('Task Duration'), findsOneWidget);
+      expect(find.text('Focus Type'), findsOneWidget);
+      expect(find.text('Time Slot'), findsOneWidget);
+      expect(find.text('Backlog Task'), findsOneWidget);
+      expect(find.text('Need to Rest After Task?'), findsOneWidget);
+
+      // Confirm
+      await tester.ensureVisible(find.text('Confirm'));
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+
+      // Verified: (B) Task Added card is rendered
+      expect(find.byType(FocientTaskAddedCard), findsOneWidget);
+      expect(find.text('Create the Annual OKR'), findsOneWidget);
+      expect(find.text('25" Task'), findsOneWidget);
+      expect(find.text('20" Rest'), findsOneWidget);
+      expect(find.text('Strategic'), findsAtLeastNWidgets(1));
+
+      // Tap Next to submit
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      expect(confirmedTasks, isNotNull);
+      expect(confirmedTasks!.length, 1);
+      expect(confirmedTasks!.first.title, 'Create the Annual OKR');
+    });
+  });
+
+  group('FoCient Onboarding Step 5: Your first plan is complete Screen Widget Tests', () {
+    testWidgets('Renders all Step 5 elements matching specifications', (tester) async {
+      bool planStarted = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FocientOnboardingReviewScreen(
+            tasks: const [
+              OnboardingTask(
+                id: 't-1',
+                title: 'Create the Annual OKR',
+                categoryName: 'Strategy',
+                categoryColor: Color(0xFF7C3AED),
+                durationMinutes: 25,
+                restMinutes: 20,
+              ),
+            ],
+            onStartPlan: () {
+              planStarted = true;
+            },
+          ),
+        ),
+      );
+
+      // Indicator and progress bar
+      expect(find.text('5 of 5 steps'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsNWidgets(2));
+
+      // Title & Subtitle
+      expect(find.text('Your first plan is complete'), findsOneWidget);
+      expect(
+        find.text("Let's review your latest task and give us\nthe notification permission"),
+        findsOneWidget,
+      );
+
+      // Today Workload Card
+      expect(find.text('Today Workload'), findsOneWidget);
+      expect(find.textContaining('Optimal'), findsOneWidget);
+      expect(find.text('Show More'), findsOneWidget);
+      expect(find.text('Top 3 Task Detail'), findsOneWidget);
+      expect(find.text('Create the Annual OKR'), findsOneWidget);
+      expect(find.text('Strategy'), findsOneWidget);
+
+      // Notification Toggle
+      expect(find.text('Notification'), findsOneWidget);
+
+      // Start your Current Plan CTA
+      expect(find.text('Start your Current Plan!'), findsOneWidget);
+      await tester.tap(find.text('Start your Current Plan!'));
+      await tester.pumpAndSettle();
+
+      expect(planStarted, isTrue);
     });
   });
 }
