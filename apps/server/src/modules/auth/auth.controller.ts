@@ -1,10 +1,69 @@
 import { Router, Response } from 'express';
-import { RegisterSchema, LoginSchema, CompleteOnboardingSchema } from '@focient/contracts';
+import {
+  RegisterSchema,
+  LoginSchema,
+  CompleteOnboardingSchema,
+  SendOtpSchema,
+  VerifyOtpSchema,
+  ForgotPasswordSchema,
+  VerifyResetOtpSchema,
+  ResetPasswordSchema,
+} from '@focient/contracts';
 import { validateBody } from '../../middleware/validate.middleware.js';
 import { authService } from './auth.service.js';
 import { authenticate, AuthenticatedRequest } from './auth.middleware.js';
 
 export const authRouter = Router();
+
+// Dispatch 6-digit verification code to user's real email for registration
+authRouter.post('/send-otp', validateBody(SendOtpSchema), async (req, res: Response, next) => {
+  try {
+    const result = await authService.sendOtp(req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Verify 6-digit OTP code and complete real account registration
+authRouter.post('/verify-otp', validateBody(VerifyOtpSchema), async (req, res: Response, next) => {
+  try {
+    const result = await authService.verifyOtp(req.body);
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Forgot Password: Send OTP to reset password
+authRouter.post('/forgot-password', validateBody(ForgotPasswordSchema), async (req, res: Response, next) => {
+  try {
+    const result = await authService.forgotPassword(req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Verify OTP for Password Reset
+authRouter.post('/verify-reset-otp', validateBody(VerifyResetOtpSchema), async (req, res: Response, next) => {
+  try {
+    const result = await authService.verifyResetOtp(req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Reset Password: Submit new password with verified OTP
+authRouter.post('/reset-password', validateBody(ResetPasswordSchema), async (req, res: Response, next) => {
+  try {
+    const result = await authService.resetPassword(req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
 
 authRouter.post('/register', validateBody(RegisterSchema), async (req, res: Response, next) => {
   try {

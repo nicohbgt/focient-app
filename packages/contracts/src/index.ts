@@ -10,6 +10,11 @@ export const API_ROUTES = {
   AUTH: {
     REGISTER: '/api/auth/register',
     LOGIN: '/api/auth/login',
+    SEND_OTP: '/api/auth/send-otp',
+    VERIFY_OTP: '/api/auth/verify-otp',
+    FORGOT_PASSWORD: '/api/auth/forgot-password',
+    VERIFY_RESET_OTP: '/api/auth/verify-reset-otp',
+    RESET_PASSWORD: '/api/auth/reset-password',
     ME: '/api/auth/me',
   },
   TASKS: {

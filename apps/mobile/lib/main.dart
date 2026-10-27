@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:focient_ui_tokens/focient_ui_tokens.dart';
+import 'core/inter_theme.dart';
+import 'presentation/screens/auth/focient_auth_flow.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const FocientMobileApp());
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+    ),
+  );
+  runApp(const ProviderScope(child: FocientMobileApp()));
 }
 
 class FocientMobileApp extends StatelessWidget {
@@ -10,14 +22,22 @@ class FocientMobileApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       title: 'FoCient',
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(
-          child: Text('FoCient — Backend Core Engine Active. UI/UX screen development pending.'),
+      theme: ThemeData(
+        useMaterial3: true,
+        fontFamily: FocientTheme.fontFamily,
+        fontFamilyFallback: FocientTheme.fontFamilyFallbacks,
+        scaffoldBackgroundColor: FocientColorTokens.neutralBgCanvas,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: FocientColorTokens.primaryActionBase,
+          primary: FocientColorTokens.primaryActionBase,
+          surface: FocientColorTokens.neutralSurfaceCard,
+          error: FocientColorTokens.dangerActionBase,
         ),
       ),
+      home: const FocientAuthFlow(),
     );
   }
 }

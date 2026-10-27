@@ -7,6 +7,8 @@ export 'primitive/focient_checkbox.dart';
 export 'primitive/focient_icon.dart';
 export 'primitive/focient_input_field.dart';
 export 'primitive/focient_keyboard.dart';
+export 'primitive/focient_otp_input.dart';
+export 'primitive/google_logo.dart';
 
 export 'organism/focient_daily_capacity_meter.dart';
 export 'organism/focient_reschedule_alert.dart';
@@ -14,4 +16,15 @@ export 'organism/focient_task_card.dart';
 export 'organism/focient_task_validation_form.dart';
 export 'organism/focient_onboarding_validation_form.dart';
 export 'organism/focient_adaptive_schedule_sheet.dart';
+
+export 'screens/auth/focient_auth_flow.dart';
+export 'screens/auth/focient_welcome_screen.dart';
+export 'screens/auth/focient_register_screen.dart';
+export 'screens/auth/focient_otp_screen.dart';
+export 'screens/auth/focient_login_screen.dart';
+export 'screens/auth/focient_forgot_password_screen.dart';
+export 'screens/auth/focient_reset_password_screen.dart';
+export 'screens/auth/focient_terms_sheet.dart';
+export 'screens/dashboard/focient_dashboard_screen.dart';
+export '../data/auth_state.dart';
 export '../core/validators/focient_validators.dart';

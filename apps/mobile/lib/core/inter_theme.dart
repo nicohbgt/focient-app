@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 /// FoCient Single Typeface Standard (100% Inter Font Family)

@@ -201,6 +201,98 @@ class FocientValidators {
     return ValidationResult.valid;
   }
 
+  /// 10. User Name: minimum 2 characters.
+  static ValidationResult validateName(
+    String? value, {
+    FoCientLanguage language = FoCientLanguage.id,
+  }) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.length < 2) {
+      return ValidationResult.error(
+        language == FoCientLanguage.id
+            ? 'Nama minimal 2 karakter.'
+            : 'Name should be at least 2 characters.',
+      );
+    }
+    return ValidationResult.valid;
+  }
+
+  /// 11. Email Address: valid email format.
+  static final RegExp emailRegex = RegExp(
+    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+  );
+
+  static ValidationResult validateEmail(
+    String? value, {
+    FoCientLanguage language = FoCientLanguage.id,
+  }) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty || !emailRegex.hasMatch(trimmed)) {
+      return ValidationResult.error(
+        language == FoCientLanguage.id
+            ? 'Format email belum pas. Masukkan alamat email yang aktif.'
+            : 'Email format is not aligned. Please enter an active email.',
+      );
+    }
+    return ValidationResult.valid;
+  }
+
+  /// 12. Password: min 8 characters, 1 uppercase, 1 lowercase, 1 number.
+  static ValidationResult validatePassword(
+    String? value, {
+    FoCientLanguage language = FoCientLanguage.id,
+  }) {
+    final pass = value ?? '';
+    if (pass.length < 8) {
+      return ValidationResult.error(
+        language == FoCientLanguage.id
+            ? 'Kata sandi minimal 8 karakter untuk keamanan fokusmu.'
+            : 'Password should be at least 8 characters.',
+      );
+    }
+    final hasUpper = pass.contains(RegExp(r'[A-Z]'));
+    final hasLower = pass.contains(RegExp(r'[a-z]'));
+    final hasNumber = pass.contains(RegExp(r'[0-9]'));
+
+    if (!hasUpper || !hasLower || !hasNumber) {
+      return ValidationResult.error(
+        language == FoCientLanguage.id
+            ? 'Pastikan menyertakan 1 huruf besar, 1 huruf kecil, dan 1 angka.'
+            : 'Make sure include 1 Uppercase, 1 Lowercase and 1 Number.',
+      );
+    }
+
+    return ValidationResult.valid;
+  }
+
+  /// 13. OTP Code: 6 numeric digits.
+  static final RegExp otpRegex = RegExp(r'^\d{6}$');
+
+  static ValidationResult validateOtp(
+    String? value, {
+    FoCientLanguage language = FoCientLanguage.id,
+  }) {
+    final trimmed = value?.trim() ?? '';
+    if (!otpRegex.hasMatch(trimmed)) {
+      return ValidationResult.error(
+        language == FoCientLanguage.id
+            ? 'Masukkan 6 digit kode OTP yang valid.'
+            : 'Enter a valid 6-digit OTP code.',
+      );
+    }
+    return ValidationResult.valid;
+  }
+
+  /// Masks email for privacy (e.g. "johndoe@gmail.com" -> "j******@gmail.com").
+  static String maskEmail(String email) {
+    final atIndex = email.indexOf('@');
+    if (atIndex <= 0) return email;
+    final prefix = email.substring(0, atIndex);
+    final domain = email.substring(atIndex); // includes '@'
+    final firstChar = prefix[0];
+    return '$firstChar******$domain';
+  }
+
   /// Format Waktu Mandiri: Calculates endTime = startTime + durationMinutes.
   static DateTime calculateEndTime(DateTime startTime, int durationMinutes) {
     return startTime.add(Duration(minutes: durationMinutes));

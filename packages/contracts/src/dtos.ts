@@ -22,6 +22,39 @@ export interface LoginDto {
   password: string;
 }
 
+export interface SendOtpDto {
+  email: string;
+  name?: string;
+}
+
+export interface VerifyOtpDto {
+  email: string;
+  code: string;
+  name: string;
+  password: string;
+}
+
+export interface OtpResponseDto {
+  success: boolean;
+  message: string;
+  expiresInSeconds: number;
+}
+
+export interface ForgotPasswordDto {
+  email: string;
+}
+
+export interface VerifyResetOtpDto {
+  email: string;
+  code: string;
+}
+
+export interface ResetPasswordDto {
+  email: string;
+  code: string;
+  newPassword: string;
+}
+
 export type MotivationType =
   | 'IDENTITY_DRIVEN'
   | 'ACHIEVEMENT_DRIVEN'

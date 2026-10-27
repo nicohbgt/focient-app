@@ -71,6 +71,33 @@ export const LoginSchema = z.object({
   password: z.string().min(1, 'Kata sandi wajib diisi'),
 });
 
+export const SendOtpSchema = z.object({
+  email: z.string().email(MSG.emailInvalid),
+  name: z.string().min(2, MSG.nameMin).optional(),
+});
+
+export const VerifyOtpSchema = z.object({
+  email: z.string().email(MSG.emailInvalid),
+  code: z.string().length(6, 'Kode OTP harus 6 digit angka'),
+  name: z.string().min(2, MSG.nameMin),
+  password: z.string().min(8, MSG.passwordMin),
+});
+
+export const ForgotPasswordSchema = z.object({
+  email: z.string().email(MSG.emailInvalid),
+});
+
+export const VerifyResetOtpSchema = z.object({
+  email: z.string().email(MSG.emailInvalid),
+  code: z.string().length(6, 'Kode OTP harus 6 digit angka'),
+});
+
+export const ResetPasswordSchema = z.object({
+  email: z.string().email(MSG.emailInvalid),
+  code: z.string().length(6, 'Kode OTP harus 6 digit angka'),
+  newPassword: z.string().min(8, MSG.passwordMin),
+});
+
 // ==========================================
 // Task Schemas
 // ==========================================

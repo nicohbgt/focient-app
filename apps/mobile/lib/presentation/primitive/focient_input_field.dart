@@ -23,6 +23,13 @@ class FocientInputField extends StatelessWidget {
   final TextInputType? keyboardType;
   final ValueChanged<String>? onChanged;
   final VoidCallback? onEditingComplete;
+  final bool obscureText;
+  final Widget? suffixIcon;
+  final String? helperText;
+  final FocusNode? focusNode;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
+  final double? borderRadius;
 
   const FocientInputField({
     super.key,
@@ -39,6 +46,13 @@ class FocientInputField extends StatelessWidget {
     this.keyboardType,
     this.onChanged,
     this.onEditingComplete,
+    this.obscureText = false,
+    this.suffixIcon,
+    this.helperText,
+    this.focusNode,
+    this.textInputAction,
+    this.onSubmitted,
+    this.borderRadius,
   });
 
   @override
@@ -98,6 +112,10 @@ class FocientInputField extends StatelessWidget {
             child: TextField(
               controller: controller,
               enabled: enabled,
+              obscureText: obscureText,
+              focusNode: focusNode,
+              textInputAction: textInputAction,
+              onSubmitted: onSubmitted,
               keyboardType: effectiveKeyboardType,
               onChanged: onChanged,
               onEditingComplete: onEditingComplete,
@@ -119,7 +137,7 @@ class FocientInputField extends StatelessWidget {
                       ? FocientColorDarkTokens.neutralTextSubtle
                       : FocientColorTokens.neutralTextSubtle,
                 ),
-                suffixIcon: unit != null
+                suffixIcon: suffixIcon ?? (unit != null
                     ? Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12.0),
                         child: Align(
@@ -139,7 +157,7 @@ class FocientInputField extends StatelessWidget {
                           ),
                         ),
                       )
-                    : null,
+                    : null),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: FocientSpacingTokens.space4,
                   vertical: FocientSpacingTokens.space2,
@@ -149,7 +167,7 @@ class FocientInputField extends StatelessWidget {
                     ? FocientColorDarkTokens.neutralSurfaceCard
                     : FocientColorTokens.neutralSurfaceCard,
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(FocientBorderRadiusTokens.radiusMd),
+                  borderRadius: BorderRadius.circular(borderRadius ?? FocientBorderRadiusTokens.radiusMd),
                   borderSide: BorderSide(
                     color: activeBorderColor,
                     width: hasError || hasWarning
@@ -158,7 +176,7 @@ class FocientInputField extends StatelessWidget {
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(FocientBorderRadiusTokens.radiusMd),
+                  borderRadius: BorderRadius.circular(borderRadius ?? FocientBorderRadiusTokens.radiusMd),
                   borderSide: BorderSide(
                     color: hasError
                         ? errorColor
@@ -193,6 +211,18 @@ class FocientInputField extends StatelessWidget {
                 color: isDark
                     ? FocientColorDarkTokens.warningTextBold
                     : FocientColorTokens.warningTextBold,
+              ),
+            ),
+          ] else if (helperText != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              helperText!,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: isDark
+                    ? FocientColorDarkTokens.neutralTextMuted
+                    : FocientColorTokens.neutralTextMuted,
               ),
             ),
           ],
