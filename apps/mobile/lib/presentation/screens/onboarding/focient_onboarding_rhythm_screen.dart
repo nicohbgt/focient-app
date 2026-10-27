@@ -14,15 +14,15 @@ import '../../primitive/focient_button.dart';
 class FocientOnboardingRhythmScreen extends StatefulWidget {
   final VoidCallback? onBack;
   final void Function(String rhythm, String style)? onNext;
-  final String initialRhythm;
-  final String initialStyle;
+  final String? initialRhythm;
+  final String? initialStyle;
 
   const FocientOnboardingRhythmScreen({
     super.key,
     this.onBack,
     this.onNext,
-    this.initialRhythm = 'Early Bird',
-    this.initialStyle = 'Structured',
+    this.initialRhythm,
+    this.initialStyle,
   });
 
   @override
@@ -32,8 +32,9 @@ class FocientOnboardingRhythmScreen extends StatefulWidget {
 
 class _FocientOnboardingRhythmScreenState
     extends State<FocientOnboardingRhythmScreen> {
-  late String _selectedRhythm;
-  late String _selectedStyle;
+  String? _selectedRhythm;
+  String? _selectedStyle;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -43,7 +44,13 @@ class _FocientOnboardingRhythmScreenState
   }
 
   void _onNextPressed() {
-    widget.onNext?.call(_selectedRhythm, _selectedStyle);
+    if (_selectedRhythm == null || _selectedStyle == null) {
+      setState(() {
+        _errorMessage = 'Pilih ritme energi harian dan gaya penjadwalan Anda.';
+      });
+      return;
+    }
+    widget.onNext?.call(_selectedRhythm!, _selectedStyle!);
   }
 
   @override
@@ -187,6 +194,7 @@ class _FocientOnboardingRhythmScreenState
                               onTap: () {
                                 setState(() {
                                   _selectedRhythm = rhythm.title;
+                                  _errorMessage = null;
                                 });
                               },
                               child: AnimatedContainer(
@@ -303,6 +311,7 @@ class _FocientOnboardingRhythmScreenState
                               onTap: () {
                                 setState(() {
                                   _selectedStyle = style;
+                                  _errorMessage = null;
                                 });
                               },
                               child: Container(
@@ -339,6 +348,17 @@ class _FocientOnboardingRhythmScreenState
                         );
                       }).toList(),
                     ),
+                    if (_errorMessage != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(
+                          color: Color(0xFFE11D48),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 40),
                   ],
                 ),

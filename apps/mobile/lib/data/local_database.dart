@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-part 'local_database.g.dart';
+// part 'local_database.g.dart';
 
 /// Drift (SQLite) Local Database for FoCient Offline-First Performance
 /// Enables instantaneous daily timeline rendering without network wait.
@@ -32,10 +32,10 @@ class ScheduleBlockEntries extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [TaskEntries, ScheduleBlockEntries])
-class FocientLocalDatabase extends _$FocientLocalDatabase {
-  FocientLocalDatabase(QueryExecutor e) : super(e);
-
-  @override
-  int get schemaVersion => 1;
-}
+// @DriftDatabase(tables: [TaskEntries, ScheduleBlockEntries])
+// class FocientLocalDatabase extends _$FocientLocalDatabase {
+//   FocientLocalDatabase(QueryExecutor e) : super(e);
+// 
+//   @override
+//   int get schemaVersion => 1;
+// }

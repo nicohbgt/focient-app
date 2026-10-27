@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import 'core/inter_theme.dart';
-import 'presentation/screens/auth/focient_auth_flow.dart';
+import 'presentation/screens/onboarding/focient_screen_inspector.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +37,7 @@ class FocientMobileApp extends StatelessWidget {
           error: FocientColorTokens.dangerActionBase,
         ),
       ),
-      home: const FocientAuthFlow(),
+      home: const FocientScreenInspector(),
     );
   }
 }

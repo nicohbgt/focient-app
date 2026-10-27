@@ -21,12 +21,18 @@ class FocientOnboardingWorkspaceScreen extends ConsumerStatefulWidget {
   final VoidCallback? onNext;
   final void Function(String username, String occupancy, List<WorkspaceCategory> categories)?
       onWorkspaceConfigured;
+  final String? initialUsername;
+  final String? initialOccupancy;
+  final List<WorkspaceCategory>? initialCategories;
 
   const FocientOnboardingWorkspaceScreen({
     super.key,
     this.onBack,
     this.onNext,
     this.onWorkspaceConfigured,
+    this.initialUsername,
+    this.initialOccupancy,
+    this.initialCategories,
   });
 
   @override
@@ -37,7 +43,7 @@ class FocientOnboardingWorkspaceScreen extends ConsumerStatefulWidget {
 class _FocientOnboardingWorkspaceScreenState
     extends ConsumerState<FocientOnboardingWorkspaceScreen> {
   late final TextEditingController _usernameController;
-  String? _selectedOccupancy = 'General';
+  String? _selectedOccupancy;
   late List<WorkspaceCategory> _categories;
 
   String? _usernameError;
@@ -48,16 +54,24 @@ class _FocientOnboardingWorkspaceScreenState
   void initState() {
     super.initState();
     final currentUser = ref.read(authProvider).user;
-    final initialUsername = currentUser?.username ??
+    final usernameText = widget.initialUsername ??
+        currentUser?.username ??
         currentUser?.name ??
         ref.read(authProvider).pendingName ??
         '';
 
-    _usernameController = TextEditingController(text: initialUsername);
-    _categories = List<WorkspaceCategory>.from(
-      kOccupancyCategoryTemplates[_selectedOccupancy] ??
-          kOccupancyCategoryTemplates['General']!,
-    );
+    _usernameController = TextEditingController(text: usernameText);
+    _selectedOccupancy = widget.initialOccupancy;
+
+    if (widget.initialCategories != null) {
+      _categories = List<WorkspaceCategory>.from(widget.initialCategories!);
+    } else if (widget.initialOccupancy != null) {
+      _categories = List<WorkspaceCategory>.from(
+        kOccupancyCategoryTemplates[widget.initialOccupancy] ?? const [],
+      );
+    } else {
+      _categories = [];
+    }
   }
 
   @override
@@ -402,6 +416,50 @@ class _FocientOnboardingWorkspaceScreenState
                       ),
                     ],
                     const SizedBox(height: 12),
+                    if (_categories.isEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.category_outlined,
+                              size: 26,
+                              color: subtitleColor,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'No Categories Configured',
+                              style: TextStyle(
+                                fontFamily: FocientTypographyTokens.fontFamily,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: titleColor,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Select an occupancy above or tap + Add Category to configure your focus taxonomy.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: FocientTypographyTokens.fontFamily,
+                                fontSize: 12,
+                                color: subtitleColor,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     // Category Chips Wrap
                     Wrap(
                       spacing: 8,

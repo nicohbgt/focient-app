@@ -544,7 +544,7 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
                 ),
                 Switch.adaptive(
                   value: _isBacklog,
-                  activeColor: const Color(0xFF2563EB),
+                  activeTrackColor: const Color(0xFF2563EB),
                   onChanged: (val) {
                     setState(() => _isBacklog = val);
                   },
@@ -581,7 +581,7 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
                 ),
                 Switch.adaptive(
                   value: _needsRestAfter,
-                  activeColor: const Color(0xFF2563EB),
+                  activeTrackColor: const Color(0xFF2563EB),
                   onChanged: (val) {
                     setState(() => _needsRestAfter = val);
                   },

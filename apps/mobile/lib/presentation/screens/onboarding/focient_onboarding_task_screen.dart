@@ -274,6 +274,57 @@ class _FocientOnboardingTaskScreenState
                     ),
                     const SizedBox(height: 12),
 
+                    // Empty State when no tasks added yet
+                    if (_tasks.isEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.assignment_outlined,
+                              size: 24,
+                              color: subtitleColor,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'No Tasks Planned Yet',
+                                    style: TextStyle(
+                                      fontFamily: FocientTypographyTokens.fontFamily,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: titleColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Add your first priority task to establish your single-task focus schedule.',
+                                    style: TextStyle(
+                                      fontFamily: FocientTypographyTokens.fontFamily,
+                                      fontSize: 12,
+                                      color: subtitleColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     // Render Added Tasks (B)
                     if (_tasks.isNotEmpty) ...[
                       ..._tasks.asMap().entries.map((entry) {

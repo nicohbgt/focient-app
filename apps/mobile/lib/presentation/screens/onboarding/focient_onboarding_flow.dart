@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/auth_state.dart';
-import '../../../data/onboarding_task.dart';
+import '../../../data/onboarding_state.dart';
 import '../../../data/task_state.dart';
 import '../../../data/workspace_category.dart';
 import '../../riverpod_providers.dart';
@@ -13,12 +13,12 @@ import 'focient_onboarding_workspace_screen.dart';
 
 /// FoCient Multi-Phase Onboarding Flow Coordinator
 ///
-/// Coordinates all 5 canonical steps of the onboarding journey:
-/// - Step 1: Personalize your Workspace (Username, Occupancies, Task Categories)
-/// - Step 2: Working Rhythm Setup (Daily Energy Rhythm & Scheduling Style)
-/// - Step 3: Time Allocation Setup (Daily Active Hour & Rest Time per Task)
-/// - Step 4: Enter your first task (Add Task card & Task Added card with badges)
-/// - Step 5: Your first plan is complete (Today Workload, Top 3 detail, Notification & Start Plan)
+/// Drives the data-driven onboarding journey starting from the clean empty state:
+/// - Step 1: Personalize your Workspace (Empty state -> Occupancy template / Custom categories)
+/// - Step 2: Working Rhythm Setup (Empty state -> Selected rhythm & scheduling style)
+/// - Step 3: Time Allocation Setup (Dynamic active hours & rest buffer)
+/// - Step 4: Enter your first task (Empty state -> Real focus tasks)
+/// - Step 5: Review & Workload Engine (Real-time dynamic workload calculations)
 class FocientOnboardingFlow extends ConsumerStatefulWidget {
   final VoidCallback? onCancel;
   final VoidCallback? onCompleted;
@@ -39,23 +39,6 @@ class FocientOnboardingFlow extends ConsumerStatefulWidget {
 class _FocientOnboardingFlowState extends ConsumerState<FocientOnboardingFlow> {
   late int _currentStep;
 
-  // Step 1 state
-  String _username = '';
-  String _occupancy = 'General';
-  List<WorkspaceCategory> _categories = [];
-
-  // Step 2 state
-  String _energyRhythm = 'Early Bird';
-  String _schedulingStyle = 'Structured';
-
-  // Step 3 state
-  String _startHour24 = '09:00';
-  String _endHour24 = '17:00';
-  int _restMinutes = 20;
-
-  // Step 4 & 5 state
-  List<OnboardingTask> _tasks = [];
-
   @override
   void initState() {
     super.initState();
@@ -63,8 +46,11 @@ class _FocientOnboardingFlowState extends ConsumerState<FocientOnboardingFlow> {
   }
 
   Future<void> _finalizeOnboarding() async {
-    // Add any onboarding tasks to taskListProvider
-    for (final t in _tasks) {
+    final state = ref.read(onboardingStateProvider);
+
+    // Clear existing tasks and seed with onboarding focus tasks
+    ref.read(taskListProvider.notifier).clear();
+    for (final t in state.tasks) {
       ref.read(taskListProvider.notifier).addTask(
             MobileTask(
               id: t.id,
@@ -72,6 +58,12 @@ class _FocientOnboardingFlowState extends ConsumerState<FocientOnboardingFlow> {
               durationMinutes: t.durationMinutes,
               priority: TaskPriorityEnum.top3,
               status: TaskStatusEnum.todo,
+              categoryName: t.categoryName,
+              categoryColor: t.categoryColor,
+              restMinutes: t.restMinutes,
+              dateDisplay: t.dateDisplay,
+              startHourDisplay: t.startHourDisplay,
+              focusType: t.focusType,
             ),
           );
     }
@@ -79,100 +71,114 @@ class _FocientOnboardingFlowState extends ConsumerState<FocientOnboardingFlow> {
     final success = await ref
         .read(authProvider.notifier)
         .completeWorkspaceOnboarding(
-          username: _username.isNotEmpty ? _username : 'User',
-          occupancy: _occupancy,
-          categories: _categories.isNotEmpty
-              ? _categories
-              : (kOccupancyCategoryTemplates[_occupancy] ??
-                  kOccupancyCategoryTemplates['General']!),
-          energyRhythm: _energyRhythm,
-          schedulingStyle: _schedulingStyle,
-          startWorkTime: _startHour24,
-          endWorkTime: _endHour24,
-          restTimeMinutesPerTask: _restMinutes,
+          username: state.username.isNotEmpty ? state.username : 'User',
+          occupancy: state.selectedOccupancy ?? 'General',
+          categories: state.categories.isNotEmpty
+              ? state.categories
+              : (kOccupancyCategoryTemplates['General']!),
+          energyRhythm: state.selectedRhythm ?? 'Steady Pacer',
+          schedulingStyle: state.selectedStyle ?? 'Structured',
+          startWorkTime: state.startHour24 ?? '09:00',
+          endWorkTime: state.endHour24 ?? '17:00',
+          restTimeMinutesPerTask: state.restMinutesPerTask,
         );
 
     if (success && mounted) {
+      ref.read(onboardingStateProvider.notifier).markCompleted();
       widget.onCompleted?.call();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final activeCategories = _categories.isNotEmpty
-        ? _categories
-        : (kOccupancyCategoryTemplates[_occupancy] ??
-            kOccupancyCategoryTemplates['General']!);
+    final onboarding = ref.watch(onboardingStateProvider);
+    final notifier = ref.read(onboardingStateProvider.notifier);
+
+    final activeCategories = onboarding.categories.isNotEmpty
+        ? onboarding.categories
+        : (onboarding.selectedOccupancy != null
+            ? (kOccupancyCategoryTemplates[onboarding.selectedOccupancy] ?? const [])
+            : const <WorkspaceCategory>[]);
 
     switch (_currentStep) {
       case 1:
         return FocientOnboardingWorkspaceScreen(
+          initialUsername: onboarding.username.isNotEmpty ? onboarding.username : null,
+          initialOccupancy: onboarding.selectedOccupancy,
+          initialCategories: onboarding.categories.isNotEmpty ? onboarding.categories : null,
           onBack: widget.onCancel ??
               () {
                 ref.read(authProvider.notifier).logout();
               },
           onWorkspaceConfigured: (username, occupancy, categories) {
-            setState(() {
-              _username = username;
-              _occupancy = occupancy;
-              _categories = categories;
-              _currentStep = 2;
-            });
+            notifier.setUsername(username);
+            notifier.selectOccupancy(occupancy);
+            for (final cat in categories) {
+              if (!onboarding.categories.any((c) => c.name == cat.name)) {
+                notifier.addCategory(cat);
+              }
+            }
+            setState(() => _currentStep = 2);
           },
         );
 
       case 2:
         return FocientOnboardingRhythmScreen(
-          initialRhythm: _energyRhythm,
-          initialStyle: _schedulingStyle,
+          initialRhythm: onboarding.selectedRhythm,
+          initialStyle: onboarding.selectedStyle,
           onBack: () {
             setState(() => _currentStep = 1);
           },
           onNext: (rhythm, style) {
-            setState(() {
-              _energyRhythm = rhythm;
-              _schedulingStyle = style;
-              _currentStep = 3;
-            });
+            notifier.selectRhythmAndStyle(rhythm, style);
+            setState(() => _currentStep = 3);
           },
         );
 
       case 3:
         return FocientOnboardingTimeScreen(
-          initialRestMinutes: _restMinutes,
+          initialRestMinutes: onboarding.restMinutesPerTask > 0
+              ? onboarding.restMinutesPerTask
+              : 20,
           onBack: () {
             setState(() => _currentStep = 2);
           },
           onNext: (start24, end24, restMinutes) {
-            setState(() {
-              _startHour24 = start24;
-              _endHour24 = end24;
-              _restMinutes = restMinutes;
-              _currentStep = 4;
-            });
+            notifier.setTimeAllocation(
+              startHour24: start24,
+              endHour24: end24,
+              restMinutes: restMinutes,
+            );
+            setState(() => _currentStep = 4);
           },
         );
 
       case 4:
         return FocientOnboardingTaskScreen(
           categories: activeCategories,
-          defaultRestMinutes: _restMinutes,
-          initialTasks: _tasks,
+          defaultRestMinutes: onboarding.restMinutesPerTask > 0
+              ? onboarding.restMinutesPerTask
+              : 20,
+          initialTasks: onboarding.tasks,
           onBack: () {
             setState(() => _currentStep = 3);
           },
           onNext: (tasks) {
-            setState(() {
-              _tasks = tasks;
-              _currentStep = 5;
-            });
+            // Replace tasks in state
+            for (final t in tasks) {
+              if (!onboarding.tasks.any((existing) => existing.id == t.id)) {
+                notifier.addTask(t);
+              }
+            }
+            setState(() => _currentStep = 5);
           },
         );
 
       case 5:
       default:
         return FocientOnboardingReviewScreen(
-          tasks: _tasks,
+          tasks: onboarding.tasks,
+          workCapacityMinutes: onboarding.activeCapacityMinutes,
           onBack: () {
             setState(() => _currentStep = 4);
           },

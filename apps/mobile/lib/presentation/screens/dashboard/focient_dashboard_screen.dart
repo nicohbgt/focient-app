@@ -2,21 +2,149 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../../data/auth_state.dart';
-import '../../organism/focient_daily_capacity_meter.dart';
-import '../../organism/focient_task_card.dart';
-import '../../primitive/focient_badge.dart';
+import '../../../data/task_state.dart';
+import '../../../data/workspace_category.dart';
 import '../../primitive/focient_button.dart';
+import '../../primitive/focient_input_field.dart';
 import '../../riverpod_providers.dart';
+import '../onboarding/create_task_bottom_sheet.dart';
 
-class FocientDashboardScreen extends ConsumerWidget {
+/// FoCient Main Dashboard Screen
+///
+/// Implements:
+/// - Top bar: Profile avatar, "Hi, John Doe", dynamic workload bell pill (e.g. 60%), notifications & settings.
+/// - Header: "My Dashboard" & "Monday, October 5th 2026".
+/// - Card 1: Today Workload (Dynamic percentage meter, Total tasks count, High/Medium/Low priority breakdown).
+/// - Card 2: Task Reschedule Suggestion (Empathetic collision detection, mini timeline with overlapping blocks, "Reschedule Later" & "Reschedule Now" CTAs).
+/// - Card 3: Top 3 Priority Task (Dynamic top-3 tasks with "Show More" toggle between compact and detailed card styles).
+/// - Section 4: Today Timeline (Horizontal timeline with time markers 13:30 - 16:30 and placed task blocks).
+/// - Card 5: Quick Add Task (Task name input, Category pills, Duration pills, "Confirm New Task" green button).
+/// - Bottom Navigation Bar: Home, Plan, Add Task, Task List, Insights.
+class FocientDashboardScreen extends ConsumerStatefulWidget {
   const FocientDashboardScreen({super.key});
+
+  @override
+  ConsumerState<FocientDashboardScreen> createState() =>
+      _FocientDashboardScreenState();
+}
+
+class _FocientDashboardScreenState
+    extends ConsumerState<FocientDashboardScreen> {
+  int _activeNavIndex = 0;
+  bool _showDetailedTop3 = true; // Toggle between compact and detailed view
+  bool _rescheduleResolved = false;
+  bool _rescheduleDismissed = false;
+
+  // Quick Add Task Form State
+  final _taskNameController = TextEditingController();
+  String _selectedCategoryName = 'Strategic';
+  Color _selectedCategoryColor = const Color(0xFF7C3AED);
+  int _selectedDurationMinutes = 20;
+
+  final List<String> _availableCategories = const [
+    'Strategic',
+    'Execution',
+    'Meeting',
+    'Operation',
+  ];
+
+  final Map<String, Color> _categoryColors = const {
+    'Strategic': Color(0xFF7C3AED),
+    'Execution': Color(0xFF0284C7),
+    'Meeting': Color(0xFFB45309),
+    'Operation': Color(0xFF0D9488),
+    'Personal': Color(0xFFD97706),
+  };
+
+  final List<int> _availableDurations = const [10, 15, 20, 25, 30];
+
+  @override
+  void dispose() {
+    _taskNameController.dispose();
+    super.dispose();
+  }
+
+  void _onConfirmNewTask() {
+    final title = _taskNameController.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Beri nama tugas singkat agar fokus kerjamu lebih terarah.'),
+          backgroundColor: Color(0xFFE11D48),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final tasks = ref.read(taskListProvider);
+    final top3Count = tasks.where((t) => t.priority == TaskPriorityEnum.top3 && !t.isCompleted).length;
+    final isTop3 = top3Count < 3;
+
+    final newTask = MobileTask(
+      id: 'task-${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      durationMinutes: _selectedDurationMinutes,
+      priority: isTop3 ? TaskPriorityEnum.top3 : TaskPriorityEnum.normal,
+      energyLevel: isTop3 ? EnergyLevelEnum.high : EnergyLevelEnum.medium,
+      categoryName: _selectedCategoryName,
+      categoryColor: _selectedCategoryColor,
+      restMinutes: 20,
+      dateDisplay: 'October, 5th',
+      startHourDisplay: '14:30',
+      focusType: isTop3 ? 'Deep Focus' : 'Medium',
+    );
+
+    ref.read(taskListProvider.notifier).addTask(newTask);
+    _taskNameController.clear();
+    FocusScope.of(context).unfocus();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Tugas "$title" berhasil ditambahkan ke jadwal hari ini!'),
+        backgroundColor: const Color(0xFF059669),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _onRescheduleNow() {
+    setState(() {
+      _rescheduleResolved = true;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Jadwal disesuaikan tanpa rasa bersalah! Tugas dijadwalkan ulang setelah "Implement Color Palette Token" dengan buffer istirahat 10 menit.',
+        ),
+        backgroundColor: Color(0xFF059669),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 4),
+      ),
+    );
+  }
+
+  void _onRescheduleLater() {
+    setState(() {
+      _rescheduleDismissed = true;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Penyesuaian jadwal ditunda. Sistem akan memantau waktu luang Anda.'),
+        backgroundColor: Color(0xFF475569),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   void _confirmLogout(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(FocientBorderRadiusTokens.radiusLg),
+          borderRadius: BorderRadius.circular(16),
         ),
         title: const Text('Log Out'),
         content: const Text('Are you sure you want to log out of FoCient?'),
@@ -39,275 +167,1361 @@ class FocientDashboardScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final tasks = ref.watch(taskListProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final bgColor = isDark
+        ? FocientColorDarkTokens.neutralBgCanvas
+        : const Color(0xFFF8FAFC);
+
+    final cardBg = isDark
+        ? FocientColorDarkTokens.neutralSurfaceCard
+        : Colors.white;
+
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
+
     final titleColor = isDark
         ? FocientColorDarkTokens.neutralTextBold
-        : FocientColorTokens.neutralTextBold;
+        : const Color(0xFF0F172A);
 
-    final mutedColor = isDark
+    final subtitleColor = isDark
         ? FocientColorDarkTokens.neutralTextMuted
         : const Color(0xFF64748B);
+
+    // --- Dynamic Workload & Priority Computation ---
+    final totalTasksCount = tasks.length;
+    final highPriorityCount = tasks
+        .where((t) => t.priority == TaskPriorityEnum.top3 || t.energyLevel == EnergyLevelEnum.high)
+        .length;
+    final mediumPriorityCount = tasks
+        .where((t) => t.priority == TaskPriorityEnum.normal || t.energyLevel == EnergyLevelEnum.medium)
+        .length;
+    final lowPriorityCount = tasks
+        .where((t) => t.priority == TaskPriorityEnum.low || t.energyLevel == EnergyLevelEnum.low)
+        .length;
 
     final allocatedMinutes = tasks
         .where((t) => !t.isCompleted)
         .fold<int>(0, (sum, t) => sum + t.durationMinutes);
 
+    const capacityMinutes = 480;
+    final workloadPercent = tasks.isEmpty
+        ? 0
+        : ((allocatedMinutes / capacityMinutes) * 100).round().clamp(0, 100);
+
+    String workloadStatus;
+    if (tasks.isEmpty || workloadPercent == 0) {
+      workloadStatus = 'Empty Plan';
+    } else if (workloadPercent < 50) {
+      workloadStatus = 'Light';
+    } else if (workloadPercent <= 80) {
+      workloadStatus = 'Optimal';
+    } else if (workloadPercent <= 95) {
+      workloadStatus = 'Near Capacity';
+    } else {
+      workloadStatus = 'Overload';
+    }
+
+    final top3Tasks = tasks
+        .where((t) => t.priority == TaskPriorityEnum.top3 && !t.isCompleted)
+        .toList();
+
     return Scaffold(
-      backgroundColor: isDark
-          ? FocientColorDarkTokens.neutralBgCanvas
-          : FocientColorTokens.neutralBgCanvas,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Row(
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: Column(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: FocientColorTokens.primaryActionBase,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                user != null && user.name.isNotEmpty ? user.name[0].toUpperCase() : 'F',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
+            // Top App Bar
+            _buildTopAppBar(
+              user: user,
+              workloadPercent: workloadPercent,
+              titleColor: titleColor,
+              subtitleColor: subtitleColor,
             ),
-            const SizedBox(width: 12),
+
+            // Scrollable Dashboard Content
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    user?.name ?? 'FoCient Member',
-                    style: TextStyle(
-                      fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: titleColor,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Page Title & Formatted Date
+                    Text(
+                      'My Dashboard',
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: titleColor,
+                        height: 1.2,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    user?.email ?? 'user@focient.dev',
-                    style: TextStyle(
-                      fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 12,
-                      color: mutedColor,
+                    const SizedBox(height: 4),
+                    Text(
+                      'Monday, October 5th 2026',
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: subtitleColor,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                    const SizedBox(height: 16),
+
+                    // Card 1: Today Workload
+                    _buildTodayWorkloadCard(
+                      cardBg: cardBg,
+                      borderColor: borderColor,
+                      titleColor: titleColor,
+                      subtitleColor: subtitleColor,
+                      workloadPercent: workloadPercent,
+                      workloadStatus: workloadStatus,
+                      totalTasksCount: totalTasksCount,
+                      highPriorityCount: highPriorityCount,
+                      mediumPriorityCount: mediumPriorityCount,
+                      lowPriorityCount: lowPriorityCount,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Card 2: Task Reschedule Suggestion (Algoritma 3)
+                    if (!_rescheduleDismissed)
+                      _buildRescheduleSuggestionCard(
+                        cardBg: cardBg,
+                        borderColor: borderColor,
+                        titleColor: titleColor,
+                        subtitleColor: subtitleColor,
+                        isResolved: _rescheduleResolved,
+                      ),
+                    if (!_rescheduleDismissed) const SizedBox(height: 16),
+
+                    // Card 3: Top 3 Priority Task
+                    _buildTop3PriorityCard(
+                      cardBg: cardBg,
+                      borderColor: borderColor,
+                      titleColor: titleColor,
+                      subtitleColor: subtitleColor,
+                      top3Tasks: top3Tasks,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Section 4: Today Timeline
+                    _buildTodayTimelineSection(
+                      cardBg: cardBg,
+                      borderColor: borderColor,
+                      titleColor: titleColor,
+                      subtitleColor: subtitleColor,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Section 5: Quick Add Task
+                    _buildQuickAddTaskCard(
+                      cardBg: cardBg,
+                      borderColor: borderColor,
+                      titleColor: titleColor,
+                      subtitleColor: subtitleColor,
+                    ),
+                    const SizedBox(height: 28),
+                  ],
+                ),
               ),
             ),
           ],
         ),
-        actions: [
+      ),
+      bottomNavigationBar: _buildBottomNavBar(isDark: isDark),
+    );
+  }
+
+  // --- 1. Top App Bar ---
+  Widget _buildTopAppBar({
+    required AuthUser? user,
+    required int workloadPercent,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    final userName = (user?.name != null && user!.name.isNotEmpty)
+        ? user.name
+        : ((user?.username != null && user!.username!.isNotEmpty)
+            ? user.username!
+            : 'John Doe');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+      child: Row(
+        children: [
+          // Profile User Icon Outline
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFBFDBFE)),
+            ),
+            child: const Icon(
+              Icons.person_outline_rounded,
+              size: 20,
+              color: Color(0xFF2563EB),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Hi, $userName',
+              style: TextStyle(
+                fontFamily: FocientTypographyTokens.fontFamily,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: titleColor,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          // Workload Pill (e.g. 60% bell pill)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFBFDBFE)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.notifications_active_outlined,
+                  size: 13,
+                  color: Color(0xFF2563EB),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '$workloadPercent%',
+                  style: const TextStyle(
+                    fontFamily: FocientTypographyTokens.fontFamily,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2563EB),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Bell Icon
           IconButton(
-            icon: const Icon(Icons.logout_rounded, color: Color(0xFF64748B)),
-            tooltip: 'Log Out',
+            icon: const Icon(Icons.notifications_none_rounded, size: 22),
+            color: subtitleColor,
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Semua notifikasi ritme kerja tersinkronisasi.'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            tooltip: 'Notifications',
+          ),
+          // Settings Gear Icon
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, size: 22),
+            color: subtitleColor,
             onPressed: () => _confirmLogout(context, ref),
+            tooltip: 'Settings / Logout',
           ),
         ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: FocientSpacingTokens.space5,
-            vertical: FocientSpacingTokens.space4,
+    );
+  }
+
+  // --- 2. Card 1: Today Workload ---
+  Widget _buildTodayWorkloadCard({
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+    required int workloadPercent,
+    required String workloadStatus,
+    required int totalTasksCount,
+    required int highPriorityCount,
+    required int mediumPriorityCount,
+    required int lowPriorityCount,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Welcome Banner
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(FocientSpacingTokens.space5),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? FocientColorDarkTokens.primaryBgSubtle
-                      : FocientColorTokens.primaryBgSubtle,
-                  borderRadius: BorderRadius.circular(FocientBorderRadiusTokens.radiusLg),
-                  border: Border.all(
-                    color: isDark
-                        ? FocientColorDarkTokens.primaryBorderSubtle
-                        : FocientColorTokens.primaryBorderSubtle,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.verified_rounded,
-                          size: 20,
-                          color: FocientColorTokens.primaryActionBase,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Account Authenticated',
-                          style: TextStyle(
-                            fontFamily: FocientTypographyTokens.fontFamily,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: FocientColorTokens.primaryTextBold,
-                          ),
-                        ),
-                        const Spacer(),
-                        FocientBadge(
-                          text: user?.roleArchetype ?? 'Software Engineer',
-                          variant: FocientBadgeVariant.focus,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Welcome to your guilt-free focus workflow. Single-task rhythm and respectful pacing are active.',
-                      style: TextStyle(
-                        fontFamily: FocientTypographyTokens.fontFamily,
-                        fontSize: 13,
-                        color: mutedColor,
-                        height: 1.4,
-                      ),
-                    ),
-                    if (user?.selectedCategories.isNotEmpty == true) ...[
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: user!.selectedCategories.map((catName) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: const BoxDecoration(
-                                    color: FocientColorTokens.primaryActionBase,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  catName,
-                                  style: TextStyle(
-                                    fontFamily: FocientTypographyTokens.fontFamily,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: isDark ? Colors.white : const Color(0xFF1E293B),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                  ],
-                ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Today Workload',
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Big Status (e.g. "60% - Optimal")
+          Text(
+            '$workloadPercent% - $workloadStatus',
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: titleColor,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Capacity Progress Bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: (workloadPercent / 100.0).clamp(0.0, 1.0),
+              minHeight: 8,
+              backgroundColor: const Color(0xFFEFF6FF),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF0284C7),
               ),
+            ),
+          ),
+          const SizedBox(height: 16),
 
-              const SizedBox(height: FocientSpacingTokens.space5),
-
-              // Daily Capacity Meter
+          // Total Today's Task Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
               Text(
-                'Workload & Capacity',
+                "Total Today's Task",
                 style: TextStyle(
                   fontFamily: FocientTypographyTokens.fontFamily,
-                  fontSize: 16,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: titleColor,
                 ),
               ),
-              const SizedBox(height: 8),
-              FocientDailyCapacityMeter(
-                allocatedMinutes: allocatedMinutes,
-                totalCapacityMinutes: user?.dailyCapacityMinutes ?? 480,
+              Text(
+                '$totalTasksCount Tasks',
+                style: TextStyle(
+                  fontFamily: FocientTypographyTokens.fontFamily,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: titleColor,
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 10),
 
-              const SizedBox(height: FocientSpacingTokens.space5),
+          // High Priority Row (Orange Dot)
+          _buildPriorityCountRow(
+            dotColor: const Color(0xFFF97316),
+            label: 'High Priority',
+            count: highPriorityCount,
+            titleColor: titleColor,
+          ),
+          const SizedBox(height: 8),
 
-              // Focus Top-3 Tasks Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Top 3 Focus Tasks',
-                    style: TextStyle(
-                      fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: titleColor,
+          // Medium Priority Row (Blue Dot)
+          _buildPriorityCountRow(
+            dotColor: const Color(0xFF0284C7),
+            label: 'Medium Priority',
+            count: mediumPriorityCount,
+            titleColor: titleColor,
+          ),
+          const SizedBox(height: 8),
+
+          // Low Priority Row (Green Dot)
+          _buildPriorityCountRow(
+            dotColor: const Color(0xFF10B981),
+            label: 'Low Priority',
+            count: lowPriorityCount,
+            titleColor: titleColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriorityCountRow({
+    required Color dotColor,
+    required String label,
+    required int count,
+    required Color titleColor,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: dotColor,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: FocientTypographyTokens.fontFamily,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: titleColor,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          '$count Tasks',
+          style: TextStyle(
+            fontFamily: FocientTypographyTokens.fontFamily,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: titleColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- 3. Card 2: Task Reschedule Suggestion ---
+  Widget _buildRescheduleSuggestionCard({
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+    required bool isResolved,
+  }) {
+    if (isResolved) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFBBF7D0)),
+        ),
+        child: const Row(
+          children: [
+            Icon(
+              Icons.check_circle_rounded,
+              color: Color(0xFF16A34A),
+              size: 20,
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Jadwal hari ini selaras dan bebas benturan. Ritme kerja optimal!',
+                style: TextStyle(
+                  fontFamily: FocientTypographyTokens.fontFamily,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF166534),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Task Reschedule Suggestion',
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '"Message to best friend" need to reschedule due another assignment at the same time, we suggest reschedule after "Implement Color Palette Token"',
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: subtitleColor,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Mini Timeline Collision Graphic
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              children: [
+                // Top Time Markers
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Text(
+                      '14:30',
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 11,
+                        color: subtitleColor,
+                      ),
                     ),
-                  ),
-                  const FocientBadge(
-                    text: 'Max 3 Slots',
-                    variant: FocientBadgeVariant.neutral,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+                    Text(
+                      '15:30',
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 11,
+                        color: subtitleColor,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
 
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: tasks.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final task = tasks[index];
-                  return FocientTaskCard(
-                    id: task.id,
-                    title: task.title,
-                    duration: '${task.durationMinutes}m',
-                    completed: task.isCompleted,
-                    isFocusTop3: index < 3,
-                    onToggleComplete: (_) {
-                      ref.read(taskListProvider.notifier).toggleTask(task.id);
-                    },
-                  );
-                },
-              ),
+                // Colliding Blocks
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                      ),
+                      child: const Text(
+                        'Implement..',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1D4ED8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
+                      ),
+                      child: const Text(
+                        'Mess..',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFB45309),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
 
-              const SizedBox(height: FocientSpacingTokens.space6),
+                // Bottom Time Markers
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '14:00',
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: titleColor,
+                      ),
+                    ),
+                    Text(
+                      '15:00',
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: titleColor,
+                      ),
+                    ),
+                    Text(
+                      '16:00',
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: titleColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
 
-              // Action to switch / re-test auth flow
-              Center(
-                child: TextButton.icon(
-                  onPressed: () => _confirmLogout(context, ref),
-                  icon: const Icon(Icons.arrow_back_rounded, size: 16),
-                  label: const Text('Log out & return to Login / Register'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF64748B),
+          // Action Buttons: Reschedule Later & Reschedule Now
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 40,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97706),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: EdgeInsets.zero,
+                    ),
+                    onPressed: _onRescheduleLater,
+                    child: const Text(
+                      'Reschedule Later',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SizedBox(
+                  height: 40,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: EdgeInsets.zero,
+                    ),
+                    onPressed: _onRescheduleNow,
+                    child: const Text(
+                      'Reschedule Now',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  // --- 4. Card 3: Top 3 Priority Task ---
+  Widget _buildTop3PriorityCard({
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+    required List<MobileTask> top3Tasks,
+  }) {
+    final firstTask = top3Tasks.isNotEmpty
+        ? top3Tasks.first
+        : MobileTask(
+            id: 'mock-okr',
+            title: 'Create the Annual OKR',
+            durationMinutes: 25,
+            restMinutes: 20,
+            categoryName: 'Strategy',
+            categoryColor: const Color(0xFF7C3AED),
+            dateDisplay: 'October, 10th',
+            startHourDisplay: '10:00',
+          );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row
+          Text(
+            'Top 3 Priority Task',
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Show More Toggle Row
+          InkWell(
+            onTap: () {
+              setState(() => _showDetailedTop3 = !_showDetailedTop3);
+            },
+            child: Row(
+              children: [
+                Text(
+                  _showDetailedTop3 ? 'Show Less' : 'Show More',
+                  style: TextStyle(
+                    fontFamily: FocientTypographyTokens.fontFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: subtitleColor,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _showDetailedTop3
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  size: 18,
+                  color: subtitleColor,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Subheader: Top 3 Task Detail
+          Text(
+            'Top 3 Task Detail',
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Image 1: Compact View (when _showDetailedTop3 is false)
+          if (!_showDetailedTop3)
+            Row(
+              children: [
+                // Blue Dot Indicator
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF2563EB),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    firstTask.title,
+                    style: TextStyle(
+                      fontFamily: FocientTypographyTokens.fontFamily,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: titleColor,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Purple Category Badge (e.g. Strategy)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3E8FF),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: firstTask.categoryColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        firstTask.categoryName,
+                        style: const TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF7C3AED),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            )
+          // Image 2: Detailed Boxed Card (when _showDetailedTop3 is true)
+          else
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    firstTask.title,
+                    style: TextStyle(
+                      fontFamily: FocientTypographyTokens.fontFamily,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: titleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${firstTask.dateDisplay} - ${firstTask.startHourDisplay}',
+                    style: TextStyle(
+                      fontFamily: FocientTypographyTokens.fontFamily,
+                      fontSize: 12,
+                      color: subtitleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Badges Row: 25" Task | 20" Rest | ● Strategic
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                        ),
+                        child: Text(
+                          '${firstTask.durationMinutes}" Task',
+                          style: const TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF2563EB),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                        ),
+                        child: Text(
+                          '${firstTask.restMinutes}" Rest',
+                          style: const TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF2563EB),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3E8FF),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: firstTask.categoryColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              firstTask.categoryName,
+                              style: const TextStyle(
+                                fontFamily: FocientTypographyTokens.fontFamily,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF7C3AED),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // --- 5. Section 4: Today Timeline ---
+  Widget _buildTodayTimelineSection({
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Today Timeline',
+          style: TextStyle(
+            fontFamily: FocientTypographyTokens.fontFamily,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: titleColor,
+          ),
         ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Time Markers
+                Row(
+                  children: [
+                    const SizedBox(width: 4),
+                    _timelineText('13:30', subtitleColor),
+                    const SizedBox(width: 60),
+                    _timelineText('14:30', subtitleColor),
+                    const SizedBox(width: 70),
+                    _timelineText('15:30', subtitleColor),
+                    const SizedBox(width: 60),
+                    _timelineText('16:30', subtitleColor),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Task Blocks on Track
+                Row(
+                  children: [
+                    const SizedBox(width: 90),
+                    // Block 1: Meeting C..
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                      ),
+                      child: const Text(
+                        'Meeting C..',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1D4ED8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Block 2: Create th..
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                      ),
+                      child: const Text(
+                        'Create th..',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1D4ED8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Bottom Time Markers
+                Row(
+                  children: [
+                    const SizedBox(width: 30),
+                    _timelineText('14:00', titleColor, isBold: true),
+                    const SizedBox(width: 70),
+                    _timelineText('15:00', titleColor, isBold: true),
+                    const SizedBox(width: 70),
+                    _timelineText('16:00', titleColor, isBold: true),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _timelineText(String text, Color color, {bool isBold = false}) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontFamily: FocientTypographyTokens.fontFamily,
+        fontSize: 11,
+        fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+        color: color,
+      ),
+    );
+  }
+
+  // --- 6. Section 5: Quick Add Task ---
+  Widget _buildQuickAddTaskCard({
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Quick Add Task',
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Field 1: Task Name
+          Text(
+            'Task Name',
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          FocientInputField(
+            controller: _taskNameController,
+            hintText: 'Input in here!',
+          ),
+          const SizedBox(height: 16),
+
+          // Field 2: Task Categories
+          Text(
+            'Task Categories',
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _availableCategories.map((catName) {
+                final isSelected = _selectedCategoryName == catName;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      setState(() {
+                        _selectedCategoryName = catName;
+                        _selectedCategoryColor =
+                            _categoryColors[catName] ?? const Color(0xFF7C3AED);
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFFEDE9FE)
+                            : const Color(0xFFF3E8FF),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF7C3AED)
+                              : const Color(0xFFDDD6FE),
+                          width: isSelected ? 1.5 : 1.0,
+                        ),
+                      ),
+                      child: Text(
+                        catName,
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 13,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: const Color(0xFF6D28D9),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Field 3: Task Duration
+          Text(
+            'Task Duration',
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _availableDurations.map((dur) {
+                final isSelected = _selectedDurationMinutes == dur;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      setState(() => _selectedDurationMinutes = dur);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF2563EB)
+                            : const Color(0xFFDBEAFE),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF1D4ED8)
+                              : const Color(0xFFBFDBFE),
+                        ),
+                      ),
+                      child: Text(
+                        '$dur Minute',
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 12,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected ? Colors.white : const Color(0xFF1D4ED8),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Action Button: Confirm New Task
+          Align(
+            alignment: Alignment.centerRight,
+            child: SizedBox(
+              height: 42,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF059669),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                ),
+                onPressed: _onConfirmNewTask,
+                child: const Text(
+                  'Confirm New Task',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 7. Bottom Navigation Bar ---
+  Widget _buildBottomNavBar({required bool isDark}) {
+    final navItems = [
+      (Icons.home_outlined, Icons.home_rounded, 'Home'),
+      (Icons.calendar_today_outlined, Icons.calendar_month_rounded, 'Plan'),
+      (Icons.add_rounded, Icons.add_rounded, 'Add Task'),
+      (Icons.format_list_bulleted_rounded, Icons.format_list_bulleted_rounded, 'Task List'),
+      (Icons.insert_chart_outlined_rounded, Icons.insert_chart_rounded, 'Insights'),
+    ];
+
+    return Container(
+      height: 64,
+      decoration: BoxDecoration(
+        color: isDark ? FocientColorDarkTokens.neutralSurfaceCard : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: navItems.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final (iconOutlined, iconFilled, label) = entry.value;
+          final isActive = _activeNavIndex == idx;
+          final isCenterAdd = idx == 2;
+
+          return InkWell(
+            onTap: () {
+              if (isCenterAdd) {
+                CreateTaskBottomSheet.show(
+                  context,
+                  availableCategories: const [
+                    WorkspaceCategory(name: 'Strategic', color: Color(0xFF7C3AED), colorHex: '#7C3AED'),
+                    WorkspaceCategory(name: 'Execution', color: Color(0xFF0284C7), colorHex: '#0284C7'),
+                    WorkspaceCategory(name: 'Meeting', color: Color(0xFFB45309), colorHex: '#B45309'),
+                    WorkspaceCategory(name: 'Operation', color: Color(0xFF0D9488), colorHex: '#0D9488'),
+                  ],
+                );
+                return;
+              }
+              setState(() => _activeNavIndex = idx);
+            },
+            child: SizedBox(
+              width: 58,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isActive ? iconFilled : iconOutlined,
+                    size: isCenterAdd ? 24 : 20,
+                    color: isActive
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFF64748B),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontFamily: FocientTypographyTokens.fontFamily,
+                      fontSize: 10,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                      color: isActive
+                          ? const Color(0xFF0F172A)
+                          : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

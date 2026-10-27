@@ -1,41 +1,206 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/task_state.dart';
 
-final taskListProvider = StateNotifierProvider<TaskListNotifier, List<MobileTask>>((ref) {
-  return TaskListNotifier([
-    MobileTask(
-      id: 'm-1',
-      title: 'Selesaikan Desain Arsitektur FoCient Monorepo',
-      durationMinutes: 90,
-      priority: TaskPriorityEnum.top3,
-      status: TaskStatusEnum.inProgress,
-    ),
-    MobileTask(
-      id: 'm-2',
-      title: 'Review Kontrak DTO & Migrasi Database Relasional',
-      durationMinutes: 60,
-      priority: TaskPriorityEnum.top3,
-      status: TaskStatusEnum.todo,
-    ),
-    MobileTask(
-      id: 'm-3',
-      title: 'Sinkronisasi Token Visual Inter 100% Multi-Platform',
-      durationMinutes: 45,
-      priority: TaskPriorityEnum.top3,
-      status: TaskStatusEnum.todo,
-    ),
-    MobileTask(
-      id: 'm-4',
-      title: 'Pemeriksaan Buffer Rest & Pacing Balance',
-      durationMinutes: 30,
-      priority: TaskPriorityEnum.normal,
-      status: TaskStatusEnum.todo,
-    ),
-  ]);
+/// Data-driven Task List Provider starting in a pure EMPTY STATE.
+/// Tasks are dynamically populated during user onboarding or loaded via API/local cache.
+final taskListProvider =
+    StateNotifierProvider<TaskListNotifier, List<MobileTask>>((ref) {
+  return TaskListNotifier([]);
 });
 
 class TaskListNotifier extends StateNotifier<List<MobileTask>> {
-  TaskListNotifier(super.state);
+  TaskListNotifier([List<MobileTask>? initialTasks])
+      : super(initialTasks ?? []);
+
+  void setTasks(List<MobileTask> tasks) {
+    state = List.unmodifiable(tasks);
+  }
+
+  void addTask(MobileTask task) {
+    state = [...state, task];
+  }
+
+  void removeTask(String id) {
+    state = state.where((t) => t.id != id).toList();
+  }
+
+  void clear() {
+    state = const [];
+  }
+
+  void seedSampleTasks() {
+    state = [
+      MobileTask(
+        id: 't-1',
+        title: 'Create the Annual OKR',
+        durationMinutes: 25,
+        priority: TaskPriorityEnum.top3,
+        energyLevel: EnergyLevelEnum.high,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Strategic',
+        categoryColor: const Color(0xFF7C3AED),
+        restMinutes: 20,
+        dateDisplay: 'October, 10th',
+        startHourDisplay: '10:00',
+        focusType: 'Deep Focus',
+      ),
+      MobileTask(
+        id: 't-2',
+        title: 'Design Architecture Monorepo',
+        durationMinutes: 45,
+        priority: TaskPriorityEnum.top3,
+        energyLevel: EnergyLevelEnum.high,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Execution',
+        categoryColor: const Color(0xFF0284C7),
+        restMinutes: 15,
+        dateDisplay: 'October, 5th',
+        startHourDisplay: '11:00',
+        focusType: 'Deep Focus',
+      ),
+      MobileTask(
+        id: 't-3',
+        title: 'Finalize Security Audit',
+        durationMinutes: 33,
+        priority: TaskPriorityEnum.top3,
+        energyLevel: EnergyLevelEnum.high,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Execution',
+        categoryColor: const Color(0xFF0284C7),
+        restMinutes: 15,
+        dateDisplay: 'October, 5th',
+        startHourDisplay: '13:00',
+        focusType: 'Deep Focus',
+      ),
+      MobileTask(
+        id: 't-4',
+        title: 'Meeting Client Sync',
+        durationMinutes: 30,
+        priority: TaskPriorityEnum.normal,
+        energyLevel: EnergyLevelEnum.medium,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Meeting',
+        categoryColor: const Color(0xFFB45309),
+        restMinutes: 10,
+        dateDisplay: 'October, 5th',
+        startHourDisplay: '14:00',
+        focusType: 'Light',
+      ),
+      MobileTask(
+        id: 't-5',
+        title: 'Implement Color Palette Token',
+        durationMinutes: 25,
+        priority: TaskPriorityEnum.normal,
+        energyLevel: EnergyLevelEnum.medium,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Execution',
+        categoryColor: const Color(0xFF0284C7),
+        restMinutes: 10,
+        dateDisplay: 'October, 5th',
+        startHourDisplay: '14:30',
+        focusType: 'Medium',
+      ),
+      MobileTask(
+        id: 't-6',
+        title: 'Review PRs & Code Cleanliness',
+        durationMinutes: 25,
+        priority: TaskPriorityEnum.normal,
+        energyLevel: EnergyLevelEnum.medium,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Execution',
+        categoryColor: const Color(0xFF0284C7),
+        restMinutes: 10,
+        dateDisplay: 'October, 5th',
+        startHourDisplay: '15:30',
+        focusType: 'Medium',
+      ),
+      MobileTask(
+        id: 't-7',
+        title: 'Buffer Rest Check & Rhythm Sync',
+        durationMinutes: 25,
+        priority: TaskPriorityEnum.normal,
+        energyLevel: EnergyLevelEnum.medium,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Strategic',
+        categoryColor: const Color(0xFF7C3AED),
+        restMinutes: 10,
+        dateDisplay: 'October, 5th',
+        startHourDisplay: '16:00',
+        focusType: 'Light',
+      ),
+      MobileTask(
+        id: 't-8',
+        title: 'Update API Contract DTOs',
+        durationMinutes: 20,
+        priority: TaskPriorityEnum.normal,
+        energyLevel: EnergyLevelEnum.medium,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Execution',
+        categoryColor: const Color(0xFF0284C7),
+        restMinutes: 10,
+        dateDisplay: 'October, 5th',
+        startHourDisplay: '16:30',
+        focusType: 'Medium',
+      ),
+      MobileTask(
+        id: 't-9',
+        title: 'Message to best friend',
+        durationMinutes: 15,
+        priority: TaskPriorityEnum.low,
+        energyLevel: EnergyLevelEnum.low,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Personal',
+        categoryColor: const Color(0xFFD97706),
+        restMinutes: 5,
+        dateDisplay: 'October, 5th',
+        startHourDisplay: '14:30',
+        focusType: 'Light',
+      ),
+      MobileTask(
+        id: 't-10',
+        title: 'Clean email inbox & triage',
+        durationMinutes: 15,
+        priority: TaskPriorityEnum.low,
+        energyLevel: EnergyLevelEnum.low,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Operation',
+        categoryColor: const Color(0xFF0D9488),
+        restMinutes: 5,
+        dateDisplay: 'October, 5th',
+        startHourDisplay: '17:00',
+        focusType: 'Light',
+      ),
+      MobileTask(
+        id: 't-11',
+        title: 'Weekly Reflection & Journal',
+        durationMinutes: 15,
+        priority: TaskPriorityEnum.low,
+        energyLevel: EnergyLevelEnum.low,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Strategic',
+        categoryColor: const Color(0xFF7C3AED),
+        restMinutes: 5,
+        dateDisplay: 'October, 5th',
+        startHourDisplay: '17:20',
+        focusType: 'Light',
+      ),
+      MobileTask(
+        id: 't-12',
+        title: 'Check Documentation Updates',
+        durationMinutes: 15,
+        priority: TaskPriorityEnum.low,
+        energyLevel: EnergyLevelEnum.low,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Operation',
+        categoryColor: const Color(0xFF0D9488),
+        restMinutes: 5,
+        dateDisplay: 'October, 5th',
+        startHourDisplay: '17:40',
+        focusType: 'Light',
+      ),
+    ];
+  }
 
   void toggleTask(String id) {
     state = [
@@ -49,10 +214,6 @@ class TaskListNotifier extends StateNotifier<List<MobileTask>> {
         else
           task
     ];
-  }
-
-  void addTask(MobileTask task) {
-    state = [...state, task];
   }
 
   void reorderTasks(int oldIndex, int newIndex) {
@@ -77,15 +238,19 @@ final dailyCapacityProvider = Provider<Map<String, dynamic>>((ref) {
       .where((t) => !t.isCompleted)
       .fold<int>(0, (sum, t) => sum + t.durationMinutes);
   const capacity = 480;
-  final percentage = ((allocated / capacity) * 100).round();
+  final percentage = capacity > 0 ? ((allocated / capacity) * 100).round() : 0;
 
-  String status = 'LIGHT';
-  if (percentage >= 90) {
+  String status = 'EMPTY';
+  if (allocated == 0) {
+    status = 'EMPTY';
+  } else if (percentage >= 90) {
     status = 'OVERLOAD';
   } else if (percentage >= 75) {
     status = 'NEAR_CAPACITY';
   } else if (percentage >= 50) {
     status = 'OPTIMAL';
+  } else {
+    status = 'LIGHT';
   }
 
   return {

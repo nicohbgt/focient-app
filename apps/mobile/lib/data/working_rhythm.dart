@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class DailyEnergyRhythm {
   final String title;
   final String badge;

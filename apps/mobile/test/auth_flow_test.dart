@@ -7,9 +7,7 @@ import 'package:focient_mobile/data/workspace_category.dart';
 import 'package:focient_mobile/presentation/primitive/focient_otp_input.dart';
 import 'package:focient_mobile/presentation/screens/auth/focient_auth_flow.dart';
 import 'package:focient_mobile/presentation/screens/auth/focient_forgot_password_screen.dart';
-import 'package:focient_mobile/presentation/screens/auth/focient_login_screen.dart';
 import 'package:focient_mobile/presentation/screens/auth/focient_otp_screen.dart';
-import 'package:focient_mobile/presentation/screens/auth/focient_register_screen.dart';
 import 'package:focient_mobile/presentation/screens/auth/focient_reset_password_screen.dart';
 import 'package:focient_mobile/presentation/screens/auth/focient_welcome_screen.dart';
 import 'package:focient_mobile/presentation/screens/onboarding/add_task_category_sheet.dart';
@@ -18,12 +16,11 @@ import 'package:focient_mobile/presentation/screens/onboarding/focient_onboardin
 import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_time_screen.dart';
 import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_task_screen.dart';
 import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_review_screen.dart';
-import 'package:focient_mobile/presentation/screens/onboarding/create_task_bottom_sheet.dart';
 import 'package:focient_mobile/presentation/organism/focient_onboarding_task_card.dart';
-import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_flow.dart';
 import 'package:focient_mobile/presentation/primitive/focient_rest_time_slider.dart';
-import 'package:focient_mobile/data/working_rhythm.dart';
 import 'package:focient_mobile/data/onboarding_task.dart';
+import 'package:focient_mobile/presentation/screens/dashboard/focient_dashboard_screen.dart';
+import 'package:focient_mobile/presentation/riverpod_providers.dart';
 
 class TestRealAuthNotifier extends AuthNotifier {
   @override
@@ -354,6 +351,11 @@ void main() {
       expect(find.text('Personalize your Workspace'), findsOneWidget);
       expect(find.text('1 of 5 steps'), findsOneWidget);
       expect(find.text('General'), findsOneWidget);
+      expect(find.text('No Categories Configured'), findsOneWidget);
+
+      // Tap General to select occupancy & populate categories
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
       expect(find.text('Personal'), findsOneWidget);
 
       await tester.ensureVisible(find.text('Next'));
@@ -366,6 +368,15 @@ void main() {
       expect(find.text('Early Bird'), findsOneWidget);
       expect(find.text('Morning'), findsOneWidget);
       expect(find.text('Structured'), findsOneWidget);
+
+      // Select Early Bird & Structured
+      await tester.ensureVisible(find.text('Early Bird'));
+      await tester.tap(find.text('Early Bird'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Structured'));
+      await tester.tap(find.text('Structured'));
+      await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Next'));
       await tester.tap(find.text('Next'));
@@ -415,8 +426,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // 9. Authenticated Dashboard!
-      expect(find.text('Account Authenticated'), findsOneWidget);
-      expect(find.text('Alex Morgan'), findsOneWidget);
+      expect(find.text('My Dashboard'), findsOneWidget);
+      expect(find.textContaining('Alex Morgan'), findsOneWidget);
     });
 
     testWidgets('Flow 2: register -> login -> dashboard', (tester) async {
@@ -447,7 +458,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Authenticated Dashboard
-      expect(find.text('Account Authenticated'), findsOneWidget);
+      expect(find.text('My Dashboard'), findsOneWidget);
     });
 
     testWidgets('Flow 3: login -> forgot password -> input email -> OTP -> reset password -> login', (tester) async {
@@ -541,11 +552,9 @@ void main() {
       expect(find.text('Student'), findsOneWidget);
       expect(find.text('Creator'), findsOneWidget);
 
-      // 5. Default General Category Template
+      // 5. Empty State Task Categories
       expect(find.text('Task Category'), findsOneWidget);
-      expect(find.text('Personal'), findsOneWidget);
-      expect(find.text('Deep Work'), findsOneWidget);
-      expect(find.text('Communication'), findsOneWidget);
+      expect(find.text('No Categories Configured'), findsOneWidget);
       expect(find.text('+ Add Category'), findsOneWidget);
 
       // 6. Next CTA button
@@ -564,7 +573,12 @@ void main() {
         ),
       );
 
-      // Initially General template
+      // Initially empty state
+      expect(find.text('No Categories Configured'), findsOneWidget);
+
+      // Tap "General" chip
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
       expect(find.text('Personal'), findsOneWidget);
       expect(find.text('Deep Work'), findsOneWidget);
 
@@ -956,9 +970,9 @@ void main() {
         findsOneWidget,
       );
 
-      // Today Workload Card
+      // Today Workload Card (Dynamically computed: 25m task + 20m rest = 45m / 480m = 9% - Light)
       expect(find.text('Today Workload'), findsOneWidget);
-      expect(find.textContaining('Optimal'), findsOneWidget);
+      expect(find.textContaining('Light'), findsOneWidget);
       expect(find.text('Show More'), findsOneWidget);
       expect(find.text('Top 3 Task Detail'), findsOneWidget);
       expect(find.text('Create the Annual OKR'), findsOneWidget);
@@ -973,6 +987,195 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(planStarted, isTrue);
+    });
+
+    testWidgets('Step 5 renders dynamic empty workload when no tasks are added', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: FocientOnboardingReviewScreen(
+            tasks: [],
+          ),
+        ),
+      );
+
+      expect(find.text('Today Workload'), findsOneWidget);
+      expect(find.text('0% - Empty Plan'), findsOneWidget);
+      expect(find.text('No tasks in your focus plan yet.'), findsOneWidget);
+    });
+  });
+
+  group('FoCient Dashboard Screen Widget Tests', () {
+    testWidgets('Renders all Dashboard elements matching mockup specifications', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            taskListProvider.overrideWith((ref) {
+              final notifier = TaskListNotifier([]);
+              notifier.seedSampleTasks();
+              return notifier;
+            }),
+          ],
+          child: const MaterialApp(
+            home: FocientDashboardScreen(),
+          ),
+        ),
+      );
+
+      // Top app bar
+      expect(find.text('Hi, John Doe'), findsOneWidget);
+      expect(find.text('60%'), findsOneWidget);
+
+      // Header
+      expect(find.text('My Dashboard'), findsOneWidget);
+      expect(find.text('Monday, October 5th 2026'), findsOneWidget);
+
+      // Card 1: Today Workload
+      expect(find.text('Today Workload'), findsOneWidget);
+      expect(find.text('60% - Optimal'), findsOneWidget);
+      expect(find.text("Total Today's Task"), findsOneWidget);
+      expect(find.text('12 Tasks'), findsOneWidget);
+      expect(find.text('High Priority'), findsOneWidget);
+      expect(find.text('3 Tasks'), findsOneWidget);
+      expect(find.text('Medium Priority'), findsOneWidget);
+      expect(find.text('5 Tasks'), findsOneWidget);
+      expect(find.text('Low Priority'), findsOneWidget);
+      expect(find.text('4 Tasks'), findsOneWidget);
+
+      // Card 2: Task Reschedule Suggestion
+      expect(find.text('Task Reschedule Suggestion'), findsOneWidget);
+      expect(find.textContaining('Message to best friend'), findsOneWidget);
+      expect(find.text('Implement..'), findsOneWidget);
+      expect(find.text('Mess..'), findsOneWidget);
+      expect(find.text('Reschedule Later'), findsOneWidget);
+      expect(find.text('Reschedule Now'), findsOneWidget);
+
+      // Card 3: Top 3 Priority Task
+      await tester.ensureVisible(find.text('Top 3 Priority Task'));
+      expect(find.text('Top 3 Priority Task'), findsOneWidget);
+      expect(find.text('Show Less'), findsOneWidget);
+      expect(find.text('Top 3 Task Detail'), findsOneWidget);
+      expect(find.text('Create the Annual OKR'), findsOneWidget);
+      expect(find.text('October, 10th - 10:00'), findsOneWidget);
+      expect(find.text('25" Task'), findsOneWidget);
+      expect(find.text('20" Rest'), findsOneWidget);
+      expect(find.text('Strategic'), findsAtLeastNWidgets(1));
+
+      // Section 4: Today Timeline
+      await tester.ensureVisible(find.text('Today Timeline'));
+      expect(find.text('Today Timeline'), findsOneWidget);
+      expect(find.text('Meeting C..'), findsOneWidget);
+      expect(find.text('Create th..'), findsOneWidget);
+
+      // Section 5: Quick Add Task
+      await tester.ensureVisible(find.text('Quick Add Task'));
+      expect(find.text('Quick Add Task'), findsOneWidget);
+      expect(find.text('Task Name'), findsOneWidget);
+      expect(find.text('Input in here!'), findsOneWidget);
+      expect(find.text('Task Categories'), findsOneWidget);
+      expect(find.text('Task Duration'), findsOneWidget);
+      expect(find.text('Confirm New Task'), findsOneWidget);
+
+      // Bottom Navigation Bar
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Plan'), findsOneWidget);
+      expect(find.text('Add Task'), findsOneWidget);
+      expect(find.text('Task List'), findsOneWidget);
+      expect(find.text('Insights'), findsOneWidget);
+    });
+
+    testWidgets('Toggles Top 3 Priority Task between compact and detailed view', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            taskListProvider.overrideWith((ref) {
+              final notifier = TaskListNotifier([]);
+              notifier.seedSampleTasks();
+              return notifier;
+            }),
+          ],
+          child: const MaterialApp(
+            home: FocientDashboardScreen(),
+          ),
+        ),
+      );
+
+      // Initial state is detailed view (Show Less visible)
+      await tester.ensureVisible(find.text('Show Less'));
+      expect(find.text('Show Less'), findsOneWidget);
+      expect(find.text('October, 10th - 10:00'), findsOneWidget);
+
+      // Tap Show Less to toggle to compact view (matching Image 1)
+      await tester.tap(find.text('Show Less'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Show More'));
+      expect(find.text('Show More'), findsOneWidget);
+      expect(find.text('October, 10th - 10:00'), findsNothing);
+      expect(find.text('Create the Annual OKR'), findsOneWidget);
+
+      // Tap Show More to return to detailed view (matching Image 2)
+      await tester.tap(find.text('Show More'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Show Less'));
+      expect(find.text('Show Less'), findsOneWidget);
+      expect(find.text('October, 10th - 10:00'), findsOneWidget);
+    });
+
+    testWidgets('Reschedule Now applies collision resolution guilt-free', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            taskListProvider.overrideWith((ref) {
+              final notifier = TaskListNotifier([]);
+              notifier.seedSampleTasks();
+              return notifier;
+            }),
+          ],
+          child: const MaterialApp(
+            home: FocientDashboardScreen(),
+          ),
+        ),
+      );
+
+      // Tap Reschedule Now
+      await tester.ensureVisible(find.text('Reschedule Now'));
+      await tester.tap(find.text('Reschedule Now'));
+      await tester.pumpAndSettle();
+
+      // Card turns into calm resolved message
+      expect(find.textContaining('Jadwal hari ini selaras dan bebas benturan'), findsOneWidget);
+    });
+
+    testWidgets('Quick Add Task form validates and adds task to dashboard', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            taskListProvider.overrideWith((ref) => TaskListNotifier([])),
+          ],
+          child: const MaterialApp(
+            home: FocientDashboardScreen(),
+          ),
+        ),
+      );
+
+      // Initial empty state: 0 Tasks, 0% - Empty Plan
+      expect(find.text('0 Tasks'), findsAtLeastNWidgets(1));
+      expect(find.text('0% - Empty Plan'), findsOneWidget);
+
+      // Scroll to Quick Add Task
+      await tester.ensureVisible(find.text('Confirm New Task'));
+
+      // Enter task name
+      final inputField = find.byType(TextField);
+      await tester.enterText(inputField, 'Design Mobile Dashboard');
+
+      // Tap Confirm New Task
+      await tester.tap(find.text('Confirm New Task'));
+      await tester.pumpAndSettle();
+
+      // Total tasks increments to 1 Task
+      expect(find.text('1 Tasks'), findsAtLeastNWidgets(1));
     });
   });
 }

@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 enum TaskStatusEnum { todo, inProgress, completed }
 enum TaskPriorityEnum { top3, normal, low }
@@ -14,6 +14,12 @@ class MobileTask {
   final EnergyLevelEnum energyLevel;
   final TaskStatusEnum status;
   final DateTime? scheduledStart;
+  final String categoryName;
+  final Color categoryColor;
+  final int restMinutes;
+  final String dateDisplay;
+  final String startHourDisplay;
+  final String focusType;
 
   MobileTask({
     required this.id,
@@ -24,6 +30,12 @@ class MobileTask {
     this.energyLevel = EnergyLevelEnum.medium,
     this.status = TaskStatusEnum.todo,
     this.scheduledStart,
+    this.categoryName = 'Strategic',
+    this.categoryColor = const Color(0xFF7C3AED),
+    this.restMinutes = 20,
+    this.dateDisplay = 'October, 10th',
+    this.startHourDisplay = '10:00',
+    this.focusType = 'Deep Focus',
   });
 
   bool get isCompleted => status == TaskStatusEnum.completed;
@@ -36,6 +48,12 @@ class MobileTask {
     EnergyLevelEnum? energyLevel,
     TaskStatusEnum? status,
     DateTime? scheduledStart,
+    String? categoryName,
+    Color? categoryColor,
+    int? restMinutes,
+    String? dateDisplay,
+    String? startHourDisplay,
+    String? focusType,
   }) {
     return MobileTask(
       id: id,
@@ -46,6 +64,12 @@ class MobileTask {
       energyLevel: energyLevel ?? this.energyLevel,
       status: status ?? this.status,
       scheduledStart: scheduledStart ?? this.scheduledStart,
+      categoryName: categoryName ?? this.categoryName,
+      categoryColor: categoryColor ?? this.categoryColor,
+      restMinutes: restMinutes ?? this.restMinutes,
+      dateDisplay: dateDisplay ?? this.dateDisplay,
+      startHourDisplay: startHourDisplay ?? this.startHourDisplay,
+      focusType: focusType ?? this.focusType,
     );
   }
 }

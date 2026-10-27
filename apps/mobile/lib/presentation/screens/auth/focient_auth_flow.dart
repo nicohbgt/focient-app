@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/auth_state.dart';
 import '../dashboard/focient_dashboard_screen.dart';
 import '../onboarding/focient_onboarding_flow.dart';
-import '../onboarding/focient_onboarding_workspace_screen.dart';
 import 'focient_forgot_password_screen.dart';
 import 'focient_login_screen.dart';
 import 'focient_otp_screen.dart';

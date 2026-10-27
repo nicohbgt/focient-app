@@ -20,8 +20,8 @@ class FocientOnboardingReviewScreen extends StatefulWidget {
   final VoidCallback? onStartPlan;
   final List<OnboardingTask> tasks;
   final int workCapacityMinutes;
-  final int initialPercent;
-  final String initialStatus;
+  final int? initialPercent;
+  final String? initialStatus;
 
   const FocientOnboardingReviewScreen({
     super.key,
@@ -29,8 +29,8 @@ class FocientOnboardingReviewScreen extends StatefulWidget {
     this.onStartPlan,
     required this.tasks,
     this.workCapacityMinutes = 480,
-    this.initialPercent = 60,
-    this.initialStatus = 'Optimal',
+    this.initialPercent,
+    this.initialStatus,
   });
 
   @override
@@ -67,14 +67,35 @@ class _FocientOnboardingReviewScreenState
         ? const Color(0xFF334155)
         : const Color(0xFFE2E8F0);
 
-    // Calculate Workload based on Algoritma 1
-    final totalTaskMinutes = widget.tasks.fold<int>(
-      0,
-      (sum, t) => sum + t.durationMinutes + (t.needsRestAfter ? t.restMinutes : 0),
-    );
+    // Dynamic Workload Engine
+    final totalTaskMinutes =
+        widget.tasks.fold<int>(0, (sum, t) => sum + t.durationMinutes);
+    final totalRestMinutes =
+        widget.tasks.fold<int>(0, (sum, t) => sum + t.restMinutes);
+    final totalAllocated = totalTaskMinutes + totalRestMinutes;
+    final capacity =
+        widget.workCapacityMinutes > 0 ? widget.workCapacityMinutes : 480;
 
-    final percent = widget.initialPercent;
-    final statusText = widget.initialStatus;
+    final calculatedPercent = widget.tasks.isEmpty
+        ? 0
+        : ((totalAllocated / capacity) * 100).round().clamp(0, 100);
+
+    final percent = widget.initialPercent ?? calculatedPercent;
+
+    String calculatedStatus;
+    if (widget.tasks.isEmpty || percent == 0) {
+      calculatedStatus = 'Empty Plan';
+    } else if (percent < 50) {
+      calculatedStatus = 'Light';
+    } else if (percent <= 80) {
+      calculatedStatus = 'Optimal';
+    } else if (percent <= 95) {
+      calculatedStatus = 'Near Capacity';
+    } else {
+      calculatedStatus = 'Overload';
+    }
+
+    final statusText = widget.initialStatus ?? calculatedStatus;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -338,58 +359,36 @@ class _FocientOnboardingReviewScreenState
                                 );
                               })
                             else
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF2563EB),
-                                      shape: BoxShape.circle,
-                                    ),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Create the Annual OKR',
-                                      style: TextStyle(
-                                        fontFamily: FocientTypographyTokens.fontFamily,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: titleColor,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.assignment_outlined,
+                                      size: 18,
+                                      color: subtitleColor,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        'No tasks in your focus plan yet.',
+                                        style: TextStyle(
+                                          fontFamily: FocientTypographyTokens.fontFamily,
+                                          fontSize: 13,
+                                          color: subtitleColor,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF3E8FF),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 4,
-                                          backgroundColor: Color(0xFF7C3AED),
-                                        ),
-                                        SizedBox(width: 6),
-                                        Text(
-                                          'Strategy',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color(0xFF7C3AED),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                           ],
                         ],
@@ -402,7 +401,7 @@ class _FocientOnboardingReviewScreenState
                       children: [
                         Switch.adaptive(
                           value: _notificationEnabled,
-                          activeColor: const Color(0xFF2563EB),
+                          activeTrackColor: const Color(0xFF2563EB),
                           onChanged: (val) {
                             setState(() => _notificationEnabled = val);
                           },
