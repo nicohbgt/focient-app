@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/auth_state.dart';
 import '../dashboard/focient_dashboard_screen.dart';
+import '../onboarding/focient_onboarding_flow.dart';
 import '../onboarding/focient_onboarding_workspace_screen.dart';
 import 'focient_forgot_password_screen.dart';
 import 'focient_login_screen.dart';
@@ -52,8 +53,8 @@ class _FocientAuthFlowState extends ConsumerState<FocientAuthFlow> {
     // 1. If authenticated
     if (authState.isAuthenticated) {
       if (!(authState.user?.isOnboardingCompleted ?? false)) {
-        return FocientOnboardingWorkspaceScreen(
-          onBack: () {
+        return FocientOnboardingFlow(
+          onCancel: () {
             ref.read(authProvider.notifier).logout();
           },
         );

@@ -205,6 +205,8 @@ export interface CompleteOnboardingDto {
   motivationType?: MotivationType;
   workStyle?: string;
   timeToFirstPlanSeconds?: number;
+  restTimeMinutesPerTask?: number;
+  energyRhythm?: string;
 }
 
 export type OnboardingSetupDto = CompleteOnboardingDto;

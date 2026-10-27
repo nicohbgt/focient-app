@@ -14,6 +14,11 @@ import 'package:focient_mobile/presentation/screens/auth/focient_reset_password_
 import 'package:focient_mobile/presentation/screens/auth/focient_welcome_screen.dart';
 import 'package:focient_mobile/presentation/screens/onboarding/add_task_category_sheet.dart';
 import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_workspace_screen.dart';
+import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_rhythm_screen.dart';
+import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_time_screen.dart';
+import 'package:focient_mobile/presentation/screens/onboarding/focient_onboarding_flow.dart';
+import 'package:focient_mobile/presentation/primitive/focient_rest_time_slider.dart';
+import 'package:focient_mobile/data/working_rhythm.dart';
 
 class TestRealAuthNotifier extends AuthNotifier {
   @override
@@ -91,6 +96,11 @@ class TestRealAuthNotifier extends AuthNotifier {
     required String username,
     required String occupancy,
     required List<WorkspaceCategory> categories,
+    String energyRhythm = 'Early Bird',
+    String schedulingStyle = 'Structured',
+    String startWorkTime = '09:00',
+    String endWorkTime = '17:00',
+    int restTimeMinutesPerTask = 10,
   }) async {
     final updatedUser = (state.user ??
             AuthUser(
@@ -104,6 +114,11 @@ class TestRealAuthNotifier extends AuthNotifier {
       roleArchetype: occupancy,
       isOnboardingCompleted: true,
       selectedCategories: categories.map((c) => c.name).toList(),
+      energyRhythm: energyRhythm,
+      schedulingStyle: schedulingStyle,
+      startWorkTime: startWorkTime,
+      endWorkTime: endWorkTime,
+      restTimeMinutesPerTask: restTimeMinutesPerTask,
     );
 
     state = state.copyWith(
@@ -340,7 +355,28 @@ void main() {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
 
-      // 5. Authenticated Dashboard!
+      // 5. Onboarding Step 2: Working Rhythm Setup
+      expect(find.text('Working Rhythm Setup'), findsOneWidget);
+      expect(find.text('2 of 5 steps'), findsOneWidget);
+      expect(find.text('Early Bird'), findsOneWidget);
+      expect(find.text('Morning'), findsOneWidget);
+      expect(find.text('Structured'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Next'));
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      // 6. Onboarding Step 3: Time Allocation Setup
+      expect(find.text('Time Allocation Setup'), findsOneWidget);
+      expect(find.text('3 of 5 steps'), findsOneWidget);
+      expect(find.text('Daily Active Hour'), findsOneWidget);
+      expect(find.text('Rest Time per Task'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Next'));
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      // 7. Authenticated Dashboard!
       expect(find.text('Account Authenticated'), findsOneWidget);
       expect(find.text('Alex Morgan'), findsOneWidget);
     });
@@ -595,6 +631,161 @@ void main() {
       expect(created, isNotNull);
       expect(created!.name, 'Research & Development');
       expect(created!.focusType, FocusType.deepFocus);
+    });
+  });
+
+  group('FoCient Onboarding Step 2: Working Rhythm Setup Screen Widget Tests', () {
+    testWidgets('Renders all Step 2 elements matching specifications', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: FocientOnboardingRhythmScreen(),
+        ),
+      );
+
+      // Indicator and progress bar
+      expect(find.text('2 of 5 steps'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+      // Title & Subtitle
+      expect(find.text('Working Rhythm Setup'), findsOneWidget);
+      expect(
+        find.text('Setup your daily energy rhythms and\nscheduling style'),
+        findsOneWidget,
+      );
+
+      // Daily Energy Rhythm Cards structure
+      expect(find.text('Daily Energy Rhythm'), findsOneWidget);
+      expect(find.text('Early Bird'), findsOneWidget);
+      expect(find.text('Morning'), findsOneWidget);
+      expect(
+        find.text('Your peak focus are from morning until before 12:00'),
+        findsOneWidget,
+      );
+
+      expect(find.text('Steady Pacer'), findsOneWidget);
+      expect(find.text('Afternoon'), findsOneWidget);
+      expect(
+        find.text('Your energy are on peak condition from 12:00 until 18:00'),
+        findsOneWidget,
+      );
+
+      // Scheduling Style
+      expect(find.text('Scheduling Style'), findsOneWidget);
+      expect(find.text('Structured'), findsOneWidget);
+      expect(find.text('Flexible'), findsOneWidget);
+
+      // Next CTA
+      expect(find.text('Next'), findsOneWidget);
+    });
+
+    testWidgets('Allows selecting rhythm cards and scheduling style, then invokes onNext', (tester) async {
+      String? selectedRhythm;
+      String? selectedStyle;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FocientOnboardingRhythmScreen(
+            onNext: (rhythm, style) {
+              selectedRhythm = rhythm;
+              selectedStyle = style;
+            },
+          ),
+        ),
+      );
+
+      // Select Steady Pacer
+      await tester.ensureVisible(find.text('Steady Pacer'));
+      await tester.tap(find.text('Steady Pacer'));
+      await tester.pumpAndSettle();
+
+      // Select Flexible
+      await tester.ensureVisible(find.text('Flexible'));
+      await tester.tap(find.text('Flexible'));
+      await tester.pumpAndSettle();
+
+      // Tap Next
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      expect(selectedRhythm, 'Steady Pacer');
+      expect(selectedStyle, 'Flexible');
+    });
+  });
+
+  group('FoCient Onboarding Step 3: Time Allocation Setup Screen Widget Tests', () {
+    testWidgets('Renders all Step 3 elements matching specifications', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: FocientOnboardingTimeScreen(
+            initialStartHour: '09:00 AM',
+            initialEndHour: '05:00 PM',
+            initialRestMinutes: 20,
+          ),
+        ),
+      );
+
+      // Indicator and progress bar
+      expect(find.text('3 of 5 steps'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+      // Title & Subtitle
+      expect(find.text('Time Allocation Setup'), findsOneWidget);
+      expect(
+        find.text('Enter your daily working/active hour, rest\nhour and off hour, it’s help you to avoiding\nburnout and toxic productivity'),
+        findsOneWidget,
+      );
+
+      // Daily Active Hour
+      expect(find.text('Daily Active Hour'), findsOneWidget);
+      expect(find.text('Start Hour'), findsOneWidget);
+      expect(find.text('09:00 AM'), findsOneWidget);
+      expect(find.text('End Hour'), findsOneWidget);
+      expect(find.text('05:00 PM'), findsOneWidget);
+
+      // Rest Time per Task
+      expect(find.text('Rest Time per Task'), findsOneWidget);
+      expect(find.text('20 Minutes / Task'), findsOneWidget);
+      expect(find.byType(FocientRestTimeSlider), findsOneWidget);
+
+      // Next CTA
+      expect(find.text('Next'), findsOneWidget);
+    });
+
+    testWidgets('Rest Time slider interaction updates dynamic task rest minutes and submits', (tester) async {
+      String? submittedStart;
+      String? submittedEnd;
+      int? submittedRest;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FocientOnboardingTimeScreen(
+            initialRestMinutes: 5,
+            onNext: (start, end, rest) {
+              submittedStart = start;
+              submittedEnd = end;
+              submittedRest = rest;
+            },
+          ),
+        ),
+      );
+
+      expect(find.text('5 Minutes / Task'), findsOneWidget);
+
+      // Tap slider to change rest time
+      final sliderFinder = find.byType(FocientRestTimeSlider);
+      expect(sliderFinder, findsOneWidget);
+
+      // Tap on the slider at 50% width
+      await tester.tap(sliderFinder);
+      await tester.pumpAndSettle();
+
+      // Submit
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      expect(submittedStart, '09:00');
+      expect(submittedEnd, '17:00');
+      expect(submittedRest, isNotNull);
     });
   });
 }

@@ -19,11 +19,14 @@ import 'add_task_category_sheet.dart';
 class FocientOnboardingWorkspaceScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   final VoidCallback? onNext;
+  final void Function(String username, String occupancy, List<WorkspaceCategory> categories)?
+      onWorkspaceConfigured;
 
   const FocientOnboardingWorkspaceScreen({
     super.key,
     this.onBack,
     this.onNext,
+    this.onWorkspaceConfigured,
   });
 
   @override
@@ -124,6 +127,16 @@ class _FocientOnboardingWorkspaceScreenState
     }
 
     if (hasError) return;
+
+    if (widget.onWorkspaceConfigured != null) {
+      widget.onWorkspaceConfigured!(
+        username,
+        _selectedOccupancy ?? 'General',
+        _categories,
+      );
+      widget.onNext?.call();
+      return;
+    }
 
     setState(() {
       _isSubmitting = true;

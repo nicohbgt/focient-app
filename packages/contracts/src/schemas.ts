@@ -214,6 +214,8 @@ export const OnboardingSetupSchema = z
     motivationType: MotivationTypeEnum.optional().default('ACHIEVEMENT_DRIVEN'),
     workStyle: z.string().optional().default('Hybrid System: Structure + Flexibility'),
     timeToFirstPlanSeconds: z.number().int().positive().optional(),
+    restTimeMinutesPerTask: z.number().min(0).max(30).optional().default(10),
+    energyRhythm: z.string().optional().default('Early Bird'),
   })
   .refine(
     (data) => {

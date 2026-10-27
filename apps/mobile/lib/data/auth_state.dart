@@ -28,6 +28,11 @@ class AuthUser {
   final bool isOnboardingCompleted;
   final String? username;
   final List<String> selectedCategories;
+  final String energyRhythm;
+  final String schedulingStyle;
+  final String startWorkTime;
+  final String endWorkTime;
+  final int restTimeMinutesPerTask;
 
   const AuthUser({
     required this.id,
@@ -39,6 +44,11 @@ class AuthUser {
     this.isOnboardingCompleted = false,
     this.username,
     this.selectedCategories = const [],
+    this.energyRhythm = 'Early Bird',
+    this.schedulingStyle = 'Structured',
+    this.startWorkTime = '09:00',
+    this.endWorkTime = '17:00',
+    this.restTimeMinutesPerTask = 10,
   });
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
@@ -55,6 +65,11 @@ class AuthUser {
               ?.map((e) => e.toString())
               .toList() ??
           const [],
+      energyRhythm: json['energyRhythm'] as String? ?? 'Early Bird',
+      schedulingStyle: json['schedulingStyle'] as String? ?? 'Structured',
+      startWorkTime: json['startWorkTime'] as String? ?? '09:00',
+      endWorkTime: json['endWorkTime'] as String? ?? '17:00',
+      restTimeMinutesPerTask: (json['restTimeMinutesPerTask'] as num?)?.toInt() ?? 10,
     );
   }
 
@@ -68,6 +83,11 @@ class AuthUser {
     bool? isOnboardingCompleted,
     String? username,
     List<String>? selectedCategories,
+    String? energyRhythm,
+    String? schedulingStyle,
+    String? startWorkTime,
+    String? endWorkTime,
+    int? restTimeMinutesPerTask,
   }) {
     return AuthUser(
       id: id ?? this.id,
@@ -79,6 +99,11 @@ class AuthUser {
       isOnboardingCompleted: isOnboardingCompleted ?? this.isOnboardingCompleted,
       username: username ?? this.username,
       selectedCategories: selectedCategories ?? this.selectedCategories,
+      energyRhythm: energyRhythm ?? this.energyRhythm,
+      schedulingStyle: schedulingStyle ?? this.schedulingStyle,
+      startWorkTime: startWorkTime ?? this.startWorkTime,
+      endWorkTime: endWorkTime ?? this.endWorkTime,
+      restTimeMinutesPerTask: restTimeMinutesPerTask ?? this.restTimeMinutesPerTask,
     );
   }
 
@@ -92,6 +117,11 @@ class AuthUser {
         'isOnboardingCompleted': isOnboardingCompleted,
         'username': username,
         'selectedCategories': selectedCategories,
+        'energyRhythm': energyRhythm,
+        'schedulingStyle': schedulingStyle,
+        'startWorkTime': startWorkTime,
+        'endWorkTime': endWorkTime,
+        'restTimeMinutesPerTask': restTimeMinutesPerTask,
       };
 }
 
@@ -447,11 +477,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Completes Onboarding Step 1 (Personalize Workspace)
+  /// Completes Onboarding with full workspace, rhythm, and time allocation setup
   Future<bool> completeWorkspaceOnboarding({
     required String username,
     required String occupancy,
     required List<WorkspaceCategory> categories,
+    String energyRhythm = 'Early Bird',
+    String schedulingStyle = 'Structured',
+    String startWorkTime = '09:00',
+    String endWorkTime = '17:00',
+    int restTimeMinutesPerTask = 10,
   }) async {
     state = state.copyWith(status: AuthStatus.loading, clearError: true);
 
@@ -461,10 +496,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
         'username': username.trim(),
         'name': username.trim(),
         'roleArchetype': occupancy,
-        'startWorkTime': '09:00',
-        'endWorkTime': '17:00',
+        'startWorkTime': startWorkTime,
+        'endWorkTime': endWorkTime,
         'workHoursLimit': 8.0,
         'selectedCategories': categoryNames,
+        'workStyle': schedulingStyle,
+        'energyRhythm': energyRhythm,
+        'restTimeMinutesPerTask': restTimeMinutesPerTask,
       };
 
       try {
@@ -485,6 +523,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         roleArchetype: occupancy,
         isOnboardingCompleted: true,
         selectedCategories: categoryNames,
+        energyRhythm: energyRhythm,
+        schedulingStyle: schedulingStyle,
+        startWorkTime: startWorkTime,
+        endWorkTime: endWorkTime,
+        restTimeMinutesPerTask: restTimeMinutesPerTask,
       );
 
       state = state.copyWith(
