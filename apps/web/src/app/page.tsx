@@ -18,6 +18,8 @@ import { Step5ReviewScreen } from '../screens/onboarding/Step5ReviewScreen';
 import { DashboardScreen } from '../screens/dashboard/DashboardScreen';
 import { TodayPlanScreen } from '../screens/plan/TodayPlanScreen';
 import { TaskListScreen } from '../screens/tasks/TaskListScreen';
+import { InsightsScreen } from '../screens/insights/InsightsScreen';
+import { ReschedulingScreen } from '../screens/rescheduling/ReschedulingScreen';
 import { AddTaskModal } from '../screens/tasks/AddTaskModal';
 import { TaskDetailModal } from '../screens/tasks/TaskDetailModal';
 import { ScreenInspectorOverlay } from '../screens/inspector/ScreenInspectorOverlay';
@@ -153,6 +155,8 @@ function FocientAppContent() {
           {activeNavTab === 'dashboard' && <DashboardScreen />}
           {activeNavTab === 'plan' && <TodayPlanScreen />}
           {activeNavTab === 'tasks' && <TaskListScreen />}
+          {activeNavTab === 'reschedule' && <ReschedulingScreen />}
+          {activeNavTab === 'insights' && <InsightsScreen />}
           {activeNavTab === 'addTask' && <DashboardScreen />}
         </main>
       </div>

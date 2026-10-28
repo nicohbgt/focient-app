@@ -11,11 +11,24 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+class AuthExpiredException extends ApiException {
+  const AuthExpiredException([String message = 'Session expired. Please log in again.'])
+      : super(message, statusCode: 401);
+}
+
+class ConflictException extends ApiException {
+  final Map<String, dynamic>? conflictData;
+
+  const ConflictException(String message, {this.conflictData, int statusCode = 409})
+      : super(message, statusCode: statusCode);
+}
+
 /// Real Network Client for FoCient Mobile
 /// Communicates with the real FoCient API Engine
 class FocientNetworkClient {
   final String baseUrl;
   String? _jwtToken;
+  void Function()? onAuthExpired;
 
   FocientNetworkClient({
     String? baseUrl,
@@ -41,6 +54,24 @@ class FocientNetworkClient {
         if (_jwtToken != null) 'Authorization': 'Bearer $_jwtToken',
       };
 
+  Future<T> withRetry<T>(Future<T> Function() operation, {int maxRetries = 2}) async {
+    int attempts = 0;
+    while (true) {
+      attempts++;
+      try {
+        return await operation();
+      } catch (e) {
+        if (e is AuthExpiredException ||
+            e is ConflictException ||
+            (e is ApiException && e.statusCode != null && e.statusCode! < 500) ||
+            attempts > maxRetries) {
+          rethrow;
+        }
+        await Future.delayed(Duration(milliseconds: 200 * attempts));
+      }
+    }
+  }
+
   Future<dynamic> get(String endpoint) async {
     final cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
     try {
@@ -51,7 +82,7 @@ class FocientNetworkClient {
       return _handleResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException(
+      throw const ApiException(
         'Unable to connect to FoCient server. Please check your internet connection.',
       );
     }
@@ -68,7 +99,7 @@ class FocientNetworkClient {
       return _handleResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException(
+      throw const ApiException(
         'Unable to connect to FoCient server. Please check your internet connection.',
       );
     }
@@ -85,7 +116,7 @@ class FocientNetworkClient {
       return _handleResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException(
+      throw const ApiException(
         'Unable to connect to FoCient server. Please check your internet connection.',
       );
     }
@@ -102,7 +133,7 @@ class FocientNetworkClient {
       return _handleResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException(
+      throw const ApiException(
         'Unable to connect to FoCient server. Please check your internet connection.',
       );
     }
@@ -118,7 +149,7 @@ class FocientNetworkClient {
       return _handleResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException(
+      throw const ApiException(
         'Unable to connect to FoCient server. Please check your internet connection.',
       );
     }
@@ -130,12 +161,20 @@ class FocientNetworkClient {
       return jsonDecode(response.body);
     }
 
+    if (response.statusCode == 401) {
+      clearAuthToken();
+      onAuthExpired?.call();
+      throw const AuthExpiredException();
+    }
+
     // Parse structured server error response
     String errorMessage = 'A server error occurred (${response.statusCode})';
+    Map<String, dynamic>? parsedMap;
     try {
       if (response.body.isNotEmpty) {
         final parsed = jsonDecode(response.body);
         if (parsed is Map) {
+          parsedMap = Map<String, dynamic>.from(parsed);
           if (parsed['message'] != null) {
             errorMessage = parsed['message'].toString();
           } else if (parsed['error'] != null) {
@@ -145,6 +184,13 @@ class FocientNetworkClient {
       }
     } catch (_) {
       // Keep default error message
+    }
+
+    if (response.statusCode == 409 ||
+        (response.statusCode == 400 &&
+            parsedMap != null &&
+            (parsedMap['canSwap'] == true || parsedMap['activeTop3Tasks'] != null))) {
+      throw ConflictException(errorMessage, conflictData: parsedMap, statusCode: response.statusCode);
     }
 
     throw ApiException(errorMessage, statusCode: response.statusCode);

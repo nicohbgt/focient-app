@@ -40,6 +40,29 @@ class _FocientTaskDetailScreenState extends ConsumerState<FocientTaskDetailScree
     _currentTask = widget.task;
   }
 
+  void _onCompleteTask() async {
+    ref.read(taskListProvider.notifier).toggleComplete(_currentTask.id);
+    final completed = await ref.read(focientRepositoryProvider).completeTask(_currentTask.id);
+    if (!completed && mounted) {
+      final err = ref.read(focientRepositoryProvider).lastError;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menyelesaikan tugas di server: $err'),
+          backgroundColor: const Color(0xFFE11D48),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Selamat! Tugas "${_currentTask.title}" selesai dengan baik.'),
+          backgroundColor: const Color(0xFF059669),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   void _onCancelTask() {
     showDialog(
       context: context,
@@ -60,24 +83,37 @@ class _FocientTaskDetailScreenState extends ConsumerState<FocientTaskDetailScree
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(ctx).pop();
               ref.read(taskListProvider.notifier).removeTask(_currentTask.id);
-              ref.read(focientRepositoryProvider).deleteTask(_currentTask.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Task "${_currentTask.title}" cancelled without guilt.'),
-                  backgroundColor: const Color(0xFF475569),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+              final ok = await ref.read(focientRepositoryProvider).deleteTask(_currentTask.id);
+              if (!ok && mounted) {
+                final err = ref.read(focientRepositoryProvider).lastError;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Gagal menghapus tugas di server: $err'),
+                    backgroundColor: const Color(0xFFE11D48),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Task "${_currentTask.title}" cancelled without guilt.'),
+                    backgroundColor: const Color(0xFF475569),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
 
-              if (widget.onTaskDeleted != null) {
-                widget.onTaskDeleted!();
-              } else if (widget.onBack != null) {
-                widget.onBack!();
-              } else if (Navigator.of(context).canPop()) {
-                Navigator.of(context).pop();
+              if (mounted) {
+                if (widget.onTaskDeleted != null) {
+                  widget.onTaskDeleted!();
+                } else if (widget.onBack != null) {
+                  widget.onBack!();
+                } else if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                }
               }
             },
             child: const Text('Delete Task'),
@@ -229,6 +265,36 @@ class _FocientTaskDetailScreenState extends ConsumerState<FocientTaskDetailScree
                     _buildMetaRow('Rest Time', '${liveTask.restMinutes} Minutes', titleColor, subtitleColor),
 
                     const Spacer(),
+
+                    // Complete Task Button (Green)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: _onCompleteTask,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: liveTask.isCompleted ? const Color(0xFF64748B) : const Color(0xFF059669),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        icon: Icon(
+                          liveTask.isCompleted ? Icons.check_circle : Icons.check_circle_outline,
+                          size: 20,
+                        ),
+                        label: Text(
+                          liveTask.isCompleted ? 'Tugas Telah Selesai' : 'Selesaikan Tugas',
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
 
                     // Action Buttons (Cancel Task & Edit Task)
                     Row(

@@ -3,10 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../../data/focient_repository.dart';
 import '../../../data/planning_state.dart';
-import '../../../data/workspace_category.dart';
-import '../../primitive/focient_button.dart';
 import '../../riverpod_providers.dart';
-import '../onboarding/create_task_bottom_sheet.dart';
 
 /// FoCient Today Plan Screen ("Your Planning")
 ///
@@ -36,6 +33,39 @@ class FocientTodayPlanScreen extends ConsumerStatefulWidget {
 
 class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen> {
   int _activeNavIndex = 1; // Plan is active
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPlanningFromApi();
+    });
+  }
+
+  Future<void> _loadPlanningFromApi() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      await ref.read(focientRepositoryProvider).getWeeklyPlanning();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Tidak dapat memperbarui perencanaan dari server.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   void _onRescheduleTask() {
     ref.read(planningProvider.notifier).rescheduleOverloadedTasks();
@@ -182,13 +212,50 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
 
             // Scrollable Content
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Section 1: Task Categories
-                    _buildTaskCategoriesSection(
+              child: RefreshIndicator(
+                onRefresh: _loadPlanningFromApi,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_isLoading)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 12.0),
+                          child: LinearProgressIndicator(minHeight: 2),
+                        ),
+                      if (_errorMessage != null)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF2F2),
+                            border: Border.all(color: const Color(0xFFFECACA)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.info_outline, color: Color(0xFFDC2626), size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(
+                                    color: Color(0xFF991B1B),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _loadPlanningFromApi,
+                                child: const Text('Coba Lagi', style: TextStyle(fontSize: 12)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      // Section 1: Task Categories
+                      _buildTaskCategoriesSection(
                       categories: planningState.categories,
                       cardBg: cardBg,
                       borderColor: borderColor,
@@ -233,6 +300,7 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
                     const SizedBox(height: 24),
                   ],
                 ),
+              ),
               ),
             ),
           ],

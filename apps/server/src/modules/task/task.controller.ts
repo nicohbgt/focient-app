@@ -532,6 +532,50 @@ taskRouter.patch('/:id', validateBody(UpdateTaskSchema), async (req: Authenticat
   }
 });
 
+// POST /api/tasks/:id/complete
+taskRouter.post('/:id/complete', validateBody(MarkTaskCompleteSchema), async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const userId = req.user!.id;
+    const data = req.body;
+    const existing = await prisma.task.findFirst({
+      where: { id: req.params.id, userId },
+    });
+
+    if (!existing) {
+      throw new NotFoundError('Tugas tidak ditemukan');
+    }
+
+    const updated = await prisma.task.update({
+      where: { id: req.params.id },
+      data: {
+        status: TaskStatus.COMPLETED,
+        completedAt: new Date(),
+      },
+    });
+
+    // Record activity log to D5 for insights and reflection
+    await prisma.activityLog.create({
+      data: {
+        taskId: updated.id,
+        userId,
+        actualDurationMinutes: data.actualDurationMinutes ?? updated.durationMinutes,
+        energyLevel: (data.energyLevelAtCompletion as any) || updated.energyLevel || undefined,
+        moodRating: data.moodRating,
+        reflectionNotes: data.reflectionNotes,
+        completedAt: new Date(),
+      },
+    });
+
+    res.json({
+      success: true,
+      task: formatTask(updated),
+      message: 'Tugas selesai dengan penuh apresiasi!',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // DELETE /api/tasks/:id
 taskRouter.delete('/:id', async (req: AuthenticatedRequest, res: Response, next) => {
   try {
@@ -546,7 +590,11 @@ taskRouter.delete('/:id', async (req: AuthenticatedRequest, res: Response, next)
 
     await prisma.scheduleBlock.deleteMany({ where: { taskId: req.params.id } });
     await prisma.task.delete({ where: { id: req.params.id } });
-    res.status(204).send();
+    res.status(200).json({
+      success: true,
+      message: 'Tugas berhasil dihapus tanpa rasa bersalah',
+      taskId: req.params.id,
+    });
   } catch (error) {
     next(error);
   }

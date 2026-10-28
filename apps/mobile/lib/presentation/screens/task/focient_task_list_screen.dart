@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
+import '../../../data/focient_repository.dart';
 import '../../../data/task_state.dart';
 import '../../riverpod_providers.dart';
 import 'focient_add_task_screen.dart';
@@ -35,6 +36,42 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
   int _activeNavIndex = 3; // Task List is active
   int _selectedDay = 3; // October 3rd, 2026
   final int _selectedYear = 2026;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadTasksFromApi();
+    });
+  }
+
+  Future<void> _loadTasksFromApi() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final apiTasks = await ref.read(focientRepositoryProvider).getTasks();
+      if (apiTasks.isNotEmpty && mounted) {
+        ref.read(taskListProvider.notifier).setTasks(apiTasks);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Tidak dapat memperbarui tugas dari server.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   void _onSelectTask(MobileTask task) {
     Navigator.of(context).push(
@@ -123,11 +160,48 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
 
             // Scrollable Calendar & Schedule
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: RefreshIndicator(
+                onRefresh: _loadTasksFromApi,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_isLoading)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 12.0),
+                          child: LinearProgressIndicator(minHeight: 2),
+                        ),
+                      if (_errorMessage != null)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF2F2),
+                            border: Border.all(color: const Color(0xFFFECACA)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.info_outline, color: Color(0xFFDC2626), size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(
+                                    color: Color(0xFF991B1B),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _loadTasksFromApi,
+                                child: const Text('Coba Lagi', style: TextStyle(fontSize: 12)),
+                              ),
+                            ],
+                          ),
+                        ),
                     // Month Navigator (< October 2026 >)
                     _buildMonthNavigator(titleColor),
                     const SizedBox(height: 14),
@@ -204,6 +278,7 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
                     const SizedBox(height: 24),
                   ],
                 ),
+              ),
               ),
             ),
           ],

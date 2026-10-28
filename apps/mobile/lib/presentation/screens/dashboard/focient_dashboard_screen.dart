@@ -59,6 +59,42 @@ class _FocientDashboardScreenState
   };
 
   final List<int> _availableDurations = const [10, 15, 20, 25, 30];
+  bool _isLoadingTasks = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadTasksFromApi();
+    });
+  }
+
+  Future<void> _loadTasksFromApi() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoadingTasks = true;
+      _errorMessage = null;
+    });
+    try {
+      final apiTasks = await ref.read(focientRepositoryProvider).getTasks();
+      if (apiTasks.isNotEmpty && mounted) {
+        ref.read(taskListProvider.notifier).setTasks(apiTasks);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Could not sync latest tasks from server.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingTasks = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -66,7 +102,7 @@ class _FocientDashboardScreenState
     super.dispose();
   }
 
-  void _onConfirmNewTask() {
+  void _onConfirmNewTask() async {
     final title = _taskNameController.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -98,7 +134,6 @@ class _FocientDashboardScreenState
     );
 
     ref.read(taskListProvider.notifier).addTask(newTask);
-    ref.read(focientRepositoryProvider).createTask(newTask);
     _taskNameController.clear();
     FocusScope.of(context).unfocus();
 
@@ -109,6 +144,35 @@ class _FocientDashboardScreenState
         behavior: SnackBarBehavior.floating,
       ),
     );
+
+    final saved = await ref.read(focientRepositoryProvider).createTask(newTask);
+    final repo = ref.read(focientRepositoryProvider);
+    if (saved == null && mounted && repo.lastError != null) {
+      if (repo.lastConflict != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Conflict: ${repo.lastConflict!.message}'),
+            backgroundColor: const Color(0xFFD97706),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save to server: ${repo.lastError}'),
+            backgroundColor: const Color(0xFFE11D48),
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () {
+                ref.read(focientRepositoryProvider).createTask(newTask);
+              },
+            ),
+          ),
+        );
+      }
+    }
   }
 
   void _onRescheduleNow() {
@@ -276,14 +340,51 @@ class _FocientDashboardScreenState
 
             // Scrollable Dashboard Content
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Page Title & Formatted Date
-                    Text(
-                      'My Dashboard',
+              child: RefreshIndicator(
+                onRefresh: _loadTasksFromApi,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_isLoadingTasks)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 12.0),
+                          child: LinearProgressIndicator(minHeight: 2),
+                        ),
+                      if (_errorMessage != null)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF2F2),
+                            border: Border.all(color: const Color(0xFFFECACA)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.info_outline, color: Color(0xFFDC2626), size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(
+                                    color: Color(0xFF991B1B),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _loadTasksFromApi,
+                                child: const Text('Coba Lagi', style: TextStyle(fontSize: 12)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      // Page Title & Formatted Date
+                      Text(
+                        'My Dashboard',
                       style: TextStyle(
                         fontFamily: FocientTypographyTokens.fontFamily,
                         fontSize: 24,
@@ -359,6 +460,7 @@ class _FocientDashboardScreenState
                     const SizedBox(height: 28),
                   ],
                 ),
+              ),
               ),
             ),
           ],

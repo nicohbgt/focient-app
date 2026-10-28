@@ -9,6 +9,8 @@ import 'task_state.dart';
 /// FoCient Flutter UI (Riverpod State) and FoCient Backend Engine (REST API)
 class FocientRepository {
   final FocientNetworkClient client;
+  String? lastError;
+  ConflictException? lastConflict;
 
   FocientRepository({FocientNetworkClient? client})
       : client = client ?? focientNetworkClient;
@@ -16,6 +18,7 @@ class FocientRepository {
   /// Fetches tasks from backend with optional date filtering
   Future<List<MobileTask>> getTasks({String? date}) async {
     try {
+      lastError = null;
       final endpoint = date != null ? '/tasks?date=$date' : '/tasks';
       final response = await client.get(endpoint);
 
@@ -32,7 +35,8 @@ class FocientRepository {
           .map((item) => TaskDtoMapper.fromJson(item as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      debugPrint('[FocientRepository] getTasks error (falling back to local cache): $e');
+      debugPrint('[FocientRepository] getTasks error: $e');
+      lastError = e.toString();
       return [];
     }
   }
@@ -40,6 +44,7 @@ class FocientRepository {
   /// Fetches a single task by its unique ID
   Future<MobileTask?> getTaskById(String taskId) async {
     try {
+      lastError = null;
       final response = await client.get('/tasks/$taskId');
       if (response is Map<String, dynamic>) {
         final data = response['task'] ?? response['data'] ?? response;
@@ -50,15 +55,19 @@ class FocientRepository {
       return null;
     } catch (e) {
       debugPrint('[FocientRepository] getTaskById error: $e');
+      lastError = e.toString();
       return null;
     }
   }
 
-  /// Creates a new task in backend engine
-  Future<MobileTask> createTask(MobileTask task) async {
+  /// Creates a new task in backend engine with retry & conflict detection.
+  /// Returns the saved task if successful, or null on failure (does NOT falsely claim success).
+  Future<MobileTask?> createTask(MobileTask task, {bool throwOnError = false}) async {
     try {
+      lastError = null;
+      lastConflict = null;
       final payload = TaskDtoMapper.toJson(task);
-      final response = await client.post('/tasks', payload);
+      final response = await client.withRetry(() => client.post('/tasks', payload));
 
       if (response is Map<String, dynamic>) {
         final data = response['task'] ?? response['data'] ?? response;
@@ -68,17 +77,23 @@ class FocientRepository {
       }
       return task;
     } catch (e) {
-      debugPrint('[FocientRepository] createTask network warning: $e');
-      // Graceful local resilience
-      return task;
+      debugPrint('[FocientRepository] createTask error: $e');
+      lastError = e.toString();
+      if (e is ConflictException) {
+        lastConflict = e;
+      }
+      if (throwOnError) rethrow;
+      return null;
     }
   }
 
-  /// Updates an existing task in backend engine
-  Future<MobileTask> updateTask(MobileTask task) async {
+  /// Updates an existing task in backend engine with retry & conflict detection.
+  Future<MobileTask?> updateTask(MobileTask task, {bool throwOnError = false}) async {
     try {
+      lastError = null;
+      lastConflict = null;
       final payload = TaskDtoMapper.toJson(task);
-      final response = await client.patch('/tasks/${task.id}', payload);
+      final response = await client.withRetry(() => client.patch('/tasks/${task.id}', payload));
 
       if (response is Map<String, dynamic>) {
         final data = response['task'] ?? response['data'] ?? response;
@@ -88,26 +103,58 @@ class FocientRepository {
       }
       return task;
     } catch (e) {
-      debugPrint('[FocientRepository] updateTask network warning: $e');
-      // Graceful local resilience
-      return task;
+      debugPrint('[FocientRepository] updateTask error: $e');
+      lastError = e.toString();
+      if (e is ConflictException) {
+        lastConflict = e;
+      }
+      if (throwOnError) rethrow;
+      return null;
     }
   }
 
-  /// Deletes or cancels a task by ID
-  Future<bool> deleteTask(String taskId) async {
+  /// Deletes or cancels a task by ID. Returns false on failure.
+  Future<bool> deleteTask(String taskId, {bool throwOnError = false}) async {
     try {
-      await client.delete('/tasks/$taskId');
+      lastError = null;
+      await client.withRetry(() => client.delete('/tasks/$taskId'));
       return true;
     } catch (e) {
-      debugPrint('[FocientRepository] deleteTask network warning: $e');
-      return true; // Optimistic deletion
+      debugPrint('[FocientRepository] deleteTask error: $e');
+      lastError = e.toString();
+      if (throwOnError) rethrow;
+      return false;
+    }
+  }
+
+  /// Server-backed task completion with reflection & activity logging
+  Future<bool> completeTask(
+    String taskId, {
+    int? actualDuration,
+    int? moodRating,
+    String? reflectionNotes,
+    bool throwOnError = false,
+  }) async {
+    try {
+      lastError = null;
+      await client.withRetry(() => client.post('/tasks/$taskId/complete', {
+            if (actualDuration != null) 'actualDurationMinutes': actualDuration,
+            if (moodRating != null) 'moodRating': moodRating,
+            if (reflectionNotes != null) 'reflectionNotes': reflectionNotes,
+          }));
+      return true;
+    } catch (e) {
+      debugPrint('[FocientRepository] completeTask error: $e');
+      lastError = e.toString();
+      if (throwOnError) rethrow;
+      return false;
     }
   }
 
   /// Fetches today plan overview
   Future<Map<String, dynamic>?> getTodayPlan() async {
     try {
+      lastError = null;
       final response = await client.get('/schedule/today-plan');
       if (response is Map<String, dynamic>) {
         return response;
@@ -115,6 +162,7 @@ class FocientRepository {
       return null;
     } catch (e) {
       debugPrint('[FocientRepository] getTodayPlan error: $e');
+      lastError = e.toString();
       return null;
     }
   }
@@ -122,6 +170,7 @@ class FocientRepository {
   /// Fetches weekly planning data for Today Plan screen
   Future<PlanningState?> getWeeklyPlanning() async {
     try {
+      lastError = null;
       final response = await client.get('/schedule/weekly');
       if (response is! Map<String, dynamic>) return null;
 
@@ -231,41 +280,64 @@ class FocientRepository {
       );
     } catch (e) {
       debugPrint('[FocientRepository] getWeeklyPlanning error: $e');
+      lastError = e.toString();
       return null;
     }
   }
 
-  /// Applies guilt-free rebalancing
+  /// Applies guilt-free rebalancing with retry
   Future<bool> rebalanceSchedule({
     String sourceDay = 'Wednesday',
     String targetDay = 'Thursday',
+    bool throwOnError = false,
   }) async {
     try {
-      await client.post('/schedule/rebalance', {
-        'sourceDay': sourceDay,
-        'targetDay': targetDay,
-      });
+      lastError = null;
+      await client.withRetry(() => client.post('/schedule/rebalance', {
+            'sourceDay': sourceDay,
+            'targetDay': targetDay,
+          }));
       return true;
     } catch (e) {
-      debugPrint('[FocientRepository] rebalanceSchedule network warning: $e');
-      return true; // Local state will apply rebalance
+      debugPrint('[FocientRepository] rebalanceSchedule error: $e');
+      lastError = e.toString();
+      if (throwOnError) rethrow;
+      return false;
     }
   }
 
-  /// Schedules a backlog task into a target time slot
+  /// Schedules a backlog task into a target time slot with retry
   Future<bool> scheduleBacklogTask({
     required String taskId,
     required String targetTime,
+    bool throwOnError = false,
   }) async {
     try {
-      await client.post('/schedule/backlog/schedule', {
-        'taskId': taskId,
-        'targetTime': targetTime,
-      });
+      lastError = null;
+      await client.withRetry(() => client.post('/schedule/backlog/schedule', {
+            'taskId': taskId,
+            'targetTime': targetTime,
+          }));
       return true;
     } catch (e) {
-      debugPrint('[FocientRepository] scheduleBacklogTask network warning: $e');
-      return true;
+      debugPrint('[FocientRepository] scheduleBacklogTask error: $e');
+      lastError = e.toString();
+      if (throwOnError) rethrow;
+      return false;
+    }
+  }
+
+  /// Fetches weekly insights summary from /insights/weekly-summary
+  Future<Map<String, dynamic>?> getWeeklyInsights() async {
+    try {
+      lastError = null;
+      final res = await client.get('/insights/weekly-summary');
+      if (res is Map<String, dynamic>) return res;
+      return null;
+    } catch (e) {
+      debugPrint('[FocientRepository] getWeeklyInsights error: $e');
+      lastError = e.toString();
+      return null;
     }
   }
 }

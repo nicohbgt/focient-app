@@ -86,7 +86,7 @@ export type ScreenInspectorView =
   | 'addTask'
   | 'taskDetail';
 
-export type ActiveNavTab = 'dashboard' | 'plan' | 'addTask' | 'tasks' | 'insights';
+export type ActiveNavTab = 'dashboard' | 'plan' | 'addTask' | 'tasks' | 'insights' | 'reschedule';
 export type Language = 'en' | 'id';
 
 export const kOccupancyCategoryTemplates: Record<string, WorkspaceCategory[]> = {

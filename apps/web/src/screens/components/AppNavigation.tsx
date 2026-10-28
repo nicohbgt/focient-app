@@ -6,7 +6,6 @@ import {
   LayoutDashboardIcon,
   CalendarIcon,
   PlusIcon,
-  CheckIcon,
   ClockIcon,
   SparklesIcon,
 } from '../../components/icons';
@@ -37,6 +36,16 @@ export const AppNavigation: React.FC = () => {
       label: language === 'id' ? 'Daftar Tugas' : 'Task List',
       icon: <CalendarIcon size="sm" />,
     },
+    {
+      id: 'reschedule' as const,
+      label: language === 'id' ? 'Penyesuaian' : 'Reschedule',
+      icon: <ClockIcon size="sm" />,
+    },
+    {
+      id: 'insights' as const,
+      label: language === 'id' ? 'Refleksi' : 'Insights',
+      icon: <SparklesIcon size="sm" />,
+    },
   ];
 
   return (
@@ -59,7 +68,7 @@ export const AppNavigation: React.FC = () => {
                   key={item.id}
                   type="button"
                   onClick={() => setActiveNavTab(item.id)}
-                  className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                     isActive
                       ? 'bg-blue-50 text-blue-700 shadow-xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -99,7 +108,7 @@ export const AppNavigation: React.FC = () => {
       </header>
 
       {/* Mobile Fixed Bottom Navigation Bar (hidden on desktop) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2 flex items-center justify-around z-40 shadow-lg">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-2 flex items-center justify-around z-40 shadow-lg">
         {/* Dashboard Tab */}
         <button
           type="button"
@@ -144,6 +153,18 @@ export const AppNavigation: React.FC = () => {
         >
           <CalendarIcon size="sm" />
           <span>{language === 'id' ? 'Tugas' : 'Tasks'}</span>
+        </button>
+
+        {/* Insights Tab */}
+        <button
+          type="button"
+          onClick={() => setActiveNavTab('insights')}
+          className={`flex flex-col items-center gap-1 text-[11px] font-semibold transition-colors ${
+            activeNavTab === 'insights' ? 'text-blue-600 font-bold' : 'text-slate-500'
+          }`}
+        >
+          <SparklesIcon size="sm" />
+          <span>{language === 'id' ? 'Refleksi' : 'Insights'}</span>
         </button>
       </nav>
     </>

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/network_client.dart';
 import '../../../data/auth_state.dart';
 import '../dashboard/focient_dashboard_screen.dart';
 import '../onboarding/focient_onboarding_flow.dart';
@@ -43,6 +44,18 @@ class _FocientAuthFlowState extends ConsumerState<FocientAuthFlow> {
   void initState() {
     super.initState();
     _activeView = widget.initialView;
+    focientNetworkClient.onAuthExpired = () {
+      if (mounted) {
+        ref.read(authProvider.notifier).logout();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Session expired. Please log in again.'),
+            backgroundColor: Color(0xFFE11D48),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    };
   }
 
   @override

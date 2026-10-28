@@ -60,6 +60,18 @@ class TaskListNotifier extends StateNotifier<List<MobileTask>> {
     state = state.where((t) => t.id != id).toList();
   }
 
+  void toggleComplete(String id) {
+    state = [
+      for (final task in state)
+        if (task.id == id)
+          task.copyWith(
+            status: task.isCompleted ? TaskStatusEnum.todo : TaskStatusEnum.completed,
+          )
+        else
+          task
+    ];
+  }
+
   void clear() {
     state = const [];
   }
