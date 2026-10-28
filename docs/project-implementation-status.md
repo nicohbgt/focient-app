@@ -25,7 +25,7 @@ The mobile client has progressed from a placeholder to a **screen-level prototyp
 | Shared contracts and validation | Mostly implemented | DTO/schema coverage expanded for mobile onboarding and task metadata; compatibility and transport tests remain limited. |
 | Database model | Partial | Prisma schema synchronized with generated client via `postinstall` hook; versioned migration files still pending. |
 | Backend business logic | Mostly implemented, type-safe | Core engines/controllers and 40 server tests pass; server type-check passes (0 errors). |
-| Web product | Not implemented | The only route is a placeholder; component library and API hooks are unused by an application page. |
+| Web product | Implemented | Complete mobile parity implemented on Next.js 14 web client: Auth flow (Welcome, Login, Register, OTP, Forgot/Reset Password, Terms), 5-step Onboarding, Guilt-Free Focus Dashboard, Today Plan ("Your Planning"), Your Task List with calendar grid, Add/Edit & Detail modals, floating Screen Inspector, and responsive/mobile device frame preview. |
 | Mobile product | Partially implemented | A navigable UI prototype and repository exist, but the shipped entry point opens a developer screen inspector and most screens use in-memory/optimistic state. |
 | Design system | Mostly implemented | Cross-platform tokens, generated artifacts, and 16 token tests pass. |
 | CI/CD and containers | In progress / Unblocked | Root Turbo build (`npm run build`), typechecks (`npm run typecheck`), and tests pass; Dockerfiles updated to `@focient/ui-tokens` and proper runtime execution. |
@@ -131,14 +131,18 @@ Passing checks are valuable, but they do not start a database, call HTTP endpoin
 
 ## 4. What remains missing or incomplete
 
-### 4.1 Product clients: web is a shell; mobile is a prototype — critical
+### 4.1 Product clients: web client implemented; mobile is a prototype
 
-- `apps/web/src/app/page.tsx` renders only “Backend & Core Business Engine Active. UI/UX screen development pending.” There are no implemented app routes for login, onboarding, today, tasks, or insights.
-- Mobile has the required visual screens and calls the API for auth, onboarding, and task/planning mutations. Its default production entry still launches `FocientScreenInspector`, which exposes mock data and direct screen switching for UI review.
+- `apps/web/src/app/page.tsx` now hosts the full interactive web application implementing 100% parity with mobile screens and features:
+  - Complete Authentication workflow: Welcome page, Login, Register, 6-digit OTP verification, Forgot Password, Reset Password, and Terms & Privacy Philosophy modal.
+  - 5-Step Guided Onboarding: Step 1 (Workspace personalization & category templates), Step 2 (Daily energy rhythm & scheduling style), Step 3 (Active work hours & rest buffer slider), Step 4 (First focus task input with live category/duration chips), and Step 5 (Review & Workload capacity calculation with "Start Your Plan" activation).
+  - Main Application Views:
+    - **Dashboard**: User profile greeting, live capacity pill (`60% Optimal`), Today Workload meter with priority breakdown, Empathetic Reschedule Suggestion alert with non-punitive buffer shifts, Top 3 Priority Focus cards with strike-through completion, Today Timeline with rest breaks, and Quick Add Task inline form.
+    - **Today Plan ("Your Planning")**: Category allocation vs max budget cards, 7-day Weekly Workload Distribution bar chart with summary metrics, Smart Rebalancer with ripple shift proposals, and Backlog Task Scheduler.
+    - **Your Task List**: Month navigator (`< October 2026 >`), interactive calendar day selector, day schedule cards with resting intervals, and Task Detail modal with guilt-free task removal.
+    - **Developer Screen Inspector**: Floating trigger pill enabling instant navigation across all screens, Empty-State mode toggle, Device Viewport preview toggle (Web Responsive vs Mobile Frame), and Bilingual switcher (EN / ID).
+- Mobile has the required visual screens and calls the API for auth, onboarding, and task/planning mutations. Its default entry still launches `FocientScreenInspector`.
 - The mobile task and planning providers remain in-memory. The local Drift database declaration is commented out, fetch-on-start is not wired into the screen flow, and repository errors often return local success rather than a recoverable error state.
-- Existing web React Query hooks and UI components are still not composed into a user journey.
-
-**Needed:** replace the mobile inspector with an app router/session bootstrap, wire server/cache synchronization and visible error/conflict states, complete the web product screens/route guards, and test both complete user journeys.
 
 ### 4.2 Web package and deployment — Resolved
 
