@@ -5,6 +5,7 @@ import '../../../data/workspace_category.dart';
 import '../../riverpod_providers.dart';
 import '../auth/focient_auth_flow.dart';
 import '../dashboard/focient_dashboard_screen.dart';
+import '../plan/focient_today_plan_screen.dart';
 import 'focient_onboarding_review_screen.dart';
 import 'focient_onboarding_rhythm_screen.dart';
 import 'focient_onboarding_task_screen.dart';
@@ -19,6 +20,7 @@ enum InspectorView {
   step4Task,
   step5Review,
   dashboard,
+  todayPlan,
 }
 
 /// Developer Screen Inspector Overlay
@@ -115,6 +117,14 @@ class _FocientScreenInspectorState extends ConsumerState<FocientScreenInspector>
 
       case InspectorView.dashboard:
         return const FocientDashboardScreen();
+
+      case InspectorView.todayPlan:
+        return FocientTodayPlanScreen(
+          onBack: () => setState(() => _activeView = InspectorView.dashboard),
+          onNavigateTab: (idx) {
+            if (idx == 0) setState(() => _activeView = InspectorView.dashboard);
+          },
+        );
     }
   }
 
@@ -228,8 +238,10 @@ class _FocientScreenInspectorState extends ConsumerState<FocientScreenInspector>
                                   setState(() => _startFromEmptyState = val);
                                   if (val) {
                                     ref.read(taskListProvider.notifier).clear();
+                                    ref.read(planningProvider.notifier).resetToEmpty();
                                   } else {
                                     ref.read(taskListProvider.notifier).seedSampleTasks();
+                                    ref.read(planningProvider.notifier).seedSamplePlanning();
                                   }
                                 },
                               ),
@@ -246,6 +258,7 @@ class _FocientScreenInspectorState extends ConsumerState<FocientScreenInspector>
                         _menuItem('Step 5: Review & Workload', InspectorView.step5Review),
                         const Divider(height: 1),
                         _menuItem('Dashboard (Guilt-Free Focus)', InspectorView.dashboard),
+                        _menuItem('Today Plan (Your Planning)', InspectorView.todayPlan),
                       ],
                     ),
                   ),
@@ -311,6 +324,8 @@ class _FocientScreenInspectorState extends ConsumerState<FocientScreenInspector>
         return 'Step 5';
       case InspectorView.dashboard:
         return 'Dashboard';
+      case InspectorView.todayPlan:
+        return 'Today Plan';
     }
   }
 }

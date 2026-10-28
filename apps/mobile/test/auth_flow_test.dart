@@ -20,6 +20,8 @@ import 'package:focient_mobile/presentation/organism/focient_onboarding_task_car
 import 'package:focient_mobile/presentation/primitive/focient_rest_time_slider.dart';
 import 'package:focient_mobile/data/onboarding_task.dart';
 import 'package:focient_mobile/presentation/screens/dashboard/focient_dashboard_screen.dart';
+import 'package:focient_mobile/presentation/screens/plan/focient_today_plan_screen.dart';
+import 'package:focient_mobile/data/planning_state.dart';
 import 'package:focient_mobile/presentation/riverpod_providers.dart';
 
 class TestRealAuthNotifier extends AuthNotifier {
@@ -1176,6 +1178,203 @@ void main() {
 
       // Total tasks increments to 1 Task
       expect(find.text('1 Tasks'), findsAtLeastNWidgets(1));
+    });
+  });
+
+  group('FoCient Today Plan Screen Widget Tests', () {
+    testWidgets('Renders all Planning screen elements matching mockup specifications', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            planningProvider.overrideWith((ref) {
+              final notifier = PlanningNotifier(PlanningState.populatedSample());
+              return notifier;
+            }),
+          ],
+          child: const MaterialApp(
+            home: FocientTodayPlanScreen(),
+          ),
+        ),
+      );
+
+      // Top App Bar
+      expect(find.text('Your Planning'), findsOneWidget);
+      expect(find.text('60%'), findsNWidgets(2)); // Both bell pill and Monday bar are 60%
+
+      // Section 1: Task Categories
+      expect(find.text('Task Categories'), findsOneWidget);
+      expect(find.text('All Task'), findsOneWidget);
+      expect(find.text('Total: 10h'), findsOneWidget);
+      expect(find.text('Project'), findsAtLeastNWidgets(1));
+      expect(find.text('2h / max 6h'), findsOneWidget);
+      expect(find.text('Personal'), findsOneWidget);
+      expect(find.text('30min / max 2h'), findsOneWidget);
+
+      // Section 2: Weekly Workload Distribution
+      expect(find.text('Weekly Workload Distribution'), findsOneWidget);
+      expect(find.text('Monday, October 5th 2026'), findsOneWidget);
+      expect(find.text('80%'), findsOneWidget);
+      expect(find.text('85%'), findsOneWidget);
+      expect(find.text('56%'), findsOneWidget);
+      expect(find.text('62%'), findsOneWidget);
+      expect(find.text('88%'), findsOneWidget);
+      expect(find.text('41%'), findsOneWidget);
+
+      // Metrics
+      expect(find.text('Active Hours Allocated'), findsOneWidget);
+      expect(find.text('5.5 Hours'), findsOneWidget);
+      expect(find.text('Buffer Hours Allocated'), findsOneWidget);
+      expect(find.text('45 Minutes'), findsOneWidget);
+      expect(find.text('On Scheduled Task'), findsOneWidget);
+      expect(find.text('54 Task'), findsOneWidget);
+
+      // Section 3: Smart Rebalancer
+      expect(find.text('Smart Rebalancer'), findsOneWidget);
+      expect(find.textContaining('Your workload at Wednesday reach 85%'), findsOneWidget);
+      expect(find.text('Show More'), findsOneWidget);
+      expect(find.text('Implement Typography Token'), findsOneWidget);
+      expect(find.text('Implement Color Palette Token'), findsOneWidget);
+      expect(find.text('Reschedule Task'), findsOneWidget);
+      expect(find.text('Keep The Schedule'), findsOneWidget);
+
+      // Section 4: Backlog Scheduler
+      await tester.ensureVisible(find.text('Backlog Scheduler'));
+      expect(find.text('Backlog Scheduler'), findsOneWidget);
+      expect(find.text('Draw and Visualize the Architecture'), findsOneWidget);
+      expect(find.text('Make the DFD and ERD'), findsOneWidget);
+      expect(find.text('Not yet scheduled'), findsAtLeastNWidgets(2));
+
+      // Bottom Navigation Bar
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Plan'), findsOneWidget);
+      expect(find.text('Add Task'), findsOneWidget);
+      expect(find.text('Task List'), findsOneWidget);
+      expect(find.text('Insights'), findsOneWidget);
+    });
+
+    testWidgets('Toggles Smart Rebalancer between compact view (Image 1) and detailed cards (Image 2)', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            planningProvider.overrideWith((ref) {
+              final notifier = PlanningNotifier(PlanningState.populatedSample());
+              return notifier;
+            }),
+          ],
+          child: const MaterialApp(
+            home: FocientTodayPlanScreen(),
+          ),
+        ),
+      );
+
+      // Starts in compact view (Show More)
+      expect(find.text('Show More'), findsOneWidget);
+      expect(find.text('Previous Schedule'), findsNothing);
+
+      // Tap Show More to toggle to detailed cards (Image 2)
+      await tester.ensureVisible(find.text('Show More'));
+      await tester.tap(find.text('Show More'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Show Less'), findsOneWidget);
+      expect(find.text('Previous Schedule'), findsAtLeastNWidgets(1));
+      expect(find.text('Wednesday, 12:00'), findsOneWidget);
+      expect(find.text('Thursday, 10:30'), findsOneWidget);
+      expect(find.text('45" Task'), findsAtLeastNWidgets(2));
+      expect(find.text('10" Rest'), findsAtLeastNWidgets(2));
+
+      // Tap Show Less to return to compact bullet view (Image 1)
+      await tester.tap(find.text('Show Less'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Show More'), findsOneWidget);
+      expect(find.text('Previous Schedule'), findsNothing);
+    });
+
+    testWidgets('Reschedule Task applies rebalancing and updates Wednesday workload from 85% to 65%', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            planningProvider.overrideWith((ref) {
+              final notifier = PlanningNotifier(PlanningState.populatedSample());
+              return notifier;
+            }),
+          ],
+          child: const MaterialApp(
+            home: FocientTodayPlanScreen(),
+          ),
+        ),
+      );
+
+      // Initial Wednesday is 85%
+      expect(find.text('85%'), findsOneWidget);
+
+      // Tap Reschedule Task
+      await tester.ensureVisible(find.text('Reschedule Task'));
+      await tester.tap(find.text('Reschedule Task'));
+      await tester.pumpAndSettle();
+
+      // Wednesday updated to 65%, Thursday updated to 75%
+      expect(find.text('65%'), findsOneWidget);
+      expect(find.text('75%'), findsOneWidget);
+      expect(find.text('85%'), findsNothing);
+      expect(find.textContaining('Jadwal berhasil diseimbangkan!'), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('Backlog Scheduler modal schedules task into active day', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            planningProvider.overrideWith((ref) {
+              final notifier = PlanningNotifier(PlanningState.populatedSample());
+              return notifier;
+            }),
+          ],
+          child: const MaterialApp(
+            home: FocientTodayPlanScreen(),
+          ),
+        ),
+      );
+
+      // Initial scheduled tasks count: 54 Task
+      expect(find.text('54 Task'), findsOneWidget);
+
+      // Tap on backlog item
+      await tester.ensureVisible(find.text('Draw and Visualize the Architecture'));
+      await tester.tap(find.text('Draw and Visualize the Architecture'));
+      await tester.pumpAndSettle();
+
+      // Bottom sheet appears
+      expect(find.text('Jadwalkan Tugas Backlog'), findsOneWidget);
+      expect(find.text('Jadwalkan Hari Ini (15:00)'), findsOneWidget);
+
+      // Tap schedule option
+      await tester.tap(find.text('Jadwalkan Hari Ini (15:00)'));
+      await tester.pumpAndSettle();
+
+      // On Scheduled Task increments to 55 Task
+      await tester.ensureVisible(find.text('55 Task'));
+      expect(find.text('55 Task'), findsOneWidget);
+    });
+
+    testWidgets('Empty state renders gracefully with empty allocations and guidance', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            planningProvider.overrideWith((ref) => PlanningNotifier(PlanningState.empty())),
+          ],
+          child: const MaterialApp(
+            home: FocientTodayPlanScreen(),
+          ),
+        ),
+      );
+
+      // Renders with 0% and empty guidance
+      expect(find.text('Your Planning'), findsOneWidget);
+      expect(find.text('0%'), findsAtLeastNWidgets(1));
+      expect(find.text('0.0 Hours'), findsOneWidget);
+      expect(find.text('0 Task'), findsOneWidget);
+      expect(find.textContaining('Belum ada tugas di backlog'), findsOneWidget);
     });
   });
 }

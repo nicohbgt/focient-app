@@ -8,6 +8,7 @@ import '../../primitive/focient_button.dart';
 import '../../primitive/focient_input_field.dart';
 import '../../riverpod_providers.dart';
 import '../onboarding/create_task_bottom_sheet.dart';
+import '../plan/focient_today_plan_screen.dart';
 
 /// FoCient Main Dashboard Screen
 ///
@@ -168,6 +169,13 @@ class _FocientDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
+    if (_activeNavIndex == 1) {
+      return FocientTodayPlanScreen(
+        onBack: () => setState(() => _activeNavIndex = 0),
+        onNavigateTab: (idx) => setState(() => _activeNavIndex = idx),
+      );
+    }
+
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final tasks = ref.watch(taskListProvider);

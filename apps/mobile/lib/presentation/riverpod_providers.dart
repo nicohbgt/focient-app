@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../data/planning_state.dart';
 import '../data/task_state.dart';
 
 /// Data-driven Task List Provider starting in a pure EMPTY STATE.
@@ -260,3 +261,84 @@ final dailyCapacityProvider = Provider<Map<String, dynamic>>((ref) {
     'status': status,
   };
 });
+
+/// Data-driven Planning Provider managing "Your Planning" screen state.
+/// Starts in empty state by default; supports seeding populated state for mockups.
+final planningProvider =
+    StateNotifierProvider<PlanningNotifier, PlanningState>((ref) {
+  return PlanningNotifier(PlanningState.empty());
+});
+
+class PlanningNotifier extends StateNotifier<PlanningState> {
+  PlanningNotifier([PlanningState? initialState])
+      : super(initialState ?? PlanningState.empty());
+
+  void setPlanningState(PlanningState newState) {
+    state = newState;
+  }
+
+  void toggleRebalancerDetail() {
+    state = state.copyWith(
+      showDetailedRebalancer: !state.showDetailedRebalancer,
+    );
+  }
+
+  void rescheduleOverloadedTasks() {
+    if (state.isRebalanced) return;
+
+    // Drop Wednesday from 85% to 65% (Optimal)
+    // Rise Thursday from 56% to 75% (Emerald Green)
+    final updatedDistribution = state.weeklyDistribution.map((d) {
+      if (d.dayKey == 'Wed') {
+        return d.copyWith(percentage: 65);
+      } else if (d.dayKey == 'Thu') {
+        return d.copyWith(percentage: 75);
+      }
+      return d;
+    }).toList();
+
+    state = state.copyWith(
+      weeklyDistribution: updatedDistribution,
+      isRebalanced: true,
+      isScheduleKept: false,
+    );
+  }
+
+  void keepCurrentSchedule() {
+    state = state.copyWith(
+      isScheduleKept: true,
+      isRebalanced: false,
+    );
+  }
+
+  void scheduleBacklogTask(String id, String targetTime) {
+    final updated = state.backlogTasks.map((t) {
+      if (t.id == id) {
+        return t.copyWith(isScheduled: true, scheduledTime: targetTime);
+      }
+      return t;
+    }).toList();
+
+    state = state.copyWith(
+      backlogTasks: updated,
+      metrics: state.metrics.copyWith(
+        onScheduledTaskCount: state.metrics.onScheduledTaskCount + 1,
+      ),
+    );
+  }
+
+  void addBacklogTask(BacklogTaskItem item) {
+    state = state.copyWith(
+      backlogTasks: [...state.backlogTasks, item],
+    );
+  }
+
+  void seedSamplePlanning() {
+    state = PlanningState.populatedSample();
+  }
+
+  void resetToEmpty() {
+    state = PlanningState.empty();
+  }
+}
+
