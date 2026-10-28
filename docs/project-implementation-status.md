@@ -21,14 +21,14 @@ The mobile client has progressed from a placeholder to a **screen-level prototyp
 
 | Area | Status | Evidence-based assessment |
 | --- | --- | --- |
-| Monorepo organisation | Partial | Four intended workspaces exist, but package-manager and package-name conventions conflict. |
+| Monorepo organisation | Implemented | Unified on npm workspaces (`packageManager: npm@11.6.0`), redundant `pnpm-workspace.yaml` removed, naming standardized on `@focient/ui-tokens`, and nested locks removed. |
 | Shared contracts and validation | Mostly implemented | DTO/schema coverage expanded for mobile onboarding and task metadata; compatibility and transport tests remain limited. |
-| Database model | Partial | Prisma schema now includes recent fields, but no migration files are committed and generated-client synchronization is broken. |
-| Backend business logic | Mostly implemented, currently not type-safe | Core engines/controllers and 40 server tests exist; server type-check currently fails against a stale Prisma client. |
+| Database model | Partial | Prisma schema synchronized with generated client via `postinstall` hook; versioned migration files still pending. |
+| Backend business logic | Mostly implemented, type-safe | Core engines/controllers and 40 server tests pass; server type-check passes (0 errors). |
 | Web product | Not implemented | The only route is a placeholder; component library and API hooks are unused by an application page. |
 | Mobile product | Partially implemented | A navigable UI prototype and repository exist, but the shipped entry point opens a developer screen inspector and most screens use in-memory/optimistic state. |
 | Design system | Mostly implemented | Cross-platform tokens, generated artifacts, and 16 token tests pass. |
-| CI/CD and containers | Blocked | Root Turbo build fails; Dockerfiles reference a non-existent package and do not produce runtime app artifacts. |
+| CI/CD and containers | In progress / Unblocked | Root Turbo build (`npm run build`), typechecks (`npm run typecheck`), and tests pass; Dockerfiles updated to `@focient/ui-tokens` and proper runtime execution. |
 | Production integrations | Not implemented / simulated | Cache, queue, FCM, AI, and Google login contain stubs or non-production behaviour. |
 
 ## 2. Repository map and responsibilities
@@ -123,8 +123,9 @@ The mobile screens are a **connected prototype**, not yet a production workflow:
 | `npm run test:server` | Pass — 40 tests | Deterministic engines, validation/system-flow calculations, PRD-alignment rules |
 | `npm run test:web` | Pass — 72 tests | Static copy, component presence/CSS rules, contract validation, state specifications |
 | `npm run typecheck:contracts` | Pass | Shared TypeScript contracts |
-| `npm run typecheck:server` | **Fail** | Prisma client lacks current schema fields `User.username` and `Task.focusType`; generation is not part of this verification path |
+| `npm run typecheck:server` | Pass | Prisma client synchronized via `postinstall: prisma generate`; 0 type errors |
 | `npm run typecheck:web` | Pass | Web TypeScript source |
+| `npm run build` | Pass | Root Turborepo build passes across all workspaces in 40s |
 
 Passing checks are valuable, but they do not start a database, call HTTP endpoints, render the client routes, or build container images. They should therefore be read as **unit/contract confidence**, not end-to-end release evidence.
 
@@ -139,15 +140,13 @@ Passing checks are valuable, but they do not start a database, call HTTP endpoin
 
 **Needed:** replace the mobile inspector with an app router/session bootstrap, wire server/cache synchronization and visible error/conflict states, complete the web product screens/route guards, and test both complete user journeys.
 
-### 4.2 Web package and deployment are blocked — critical
+### 4.2 Web package and deployment — Resolved
 
-- `npm run build` at the root fails because `package.json` has no `packageManager` or `devEngines.packageManager`, which Turbo requires in this setup.
-- `npm run build --prefix apps/web` fails because `next` is not present in the installed executable path. The repository combines npm workspaces, `package-lock.json`, and a `pnpm-workspace.yaml`; one package-manager workflow must be selected and made reproducible.
-- Both Dockerfiles copy `packages/ui-token/package.json`, but the real directory/package is `packages/ui-tokens`.
-- The web Dockerfile does not run `next build`; it copies TypeScript/React source to Nginx’s static directory, which cannot run a Next application.
-- `apps/web/src/app/layout.tsx` imports `../../components/components.css`, a path that does not exist. The valid component CSS is under `src/components` (and duplicated under `src/component`).
-
-**Needed:** normalize package naming, lock one package manager, make a clean install work, fix source imports, build Next output correctly (either a Next runtime or intentional static export), repair Dockerfiles, and make the root build green.
+- **Package manager locked:** Standardized strictly on npm workspaces (`packageManager: npm@11.6.0` in root `package.json`), removed redundant `pnpm-workspace.yaml`, and cleaned up orphaned nested lockfiles/symlinks (`apps/web/package-lock.json`, `packages/contracts/package-lock.json`).
+- **Package naming aligned:** Standardized package references to `@focient/ui-tokens` across `apps/web/package.json`, `next.config.mjs`, and documentation.
+- **Source import repaired:** Fixed invalid `../../components/components.css` import in `apps/web/src/app/layout.tsx` to `../components/components.css`.
+- **Dockerfiles repaired:** Both `apps/server/Dockerfile` and `apps/web/Dockerfile` now reference `packages/ui-tokens`, invoke `npm ci`, run `prisma generate`, and build production Next.js runtime containers rather than copying raw source into Nginx.
+- **Reproducible build pipeline verified:** `postinstall` automatically triggers `npm run db:generate --prefix packages/database`. Root `npm run build` (Turborepo), `npm run typecheck`, and `npm test` execute cleanly across all packages (`@focient/contracts`, `@focient/database`, `@focient/server`, `@focient/ui-tokens`, `@focient/web`).
 
 ### 4.3 Authentication and secret handling are unsafe for production — critical
 

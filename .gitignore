@@ -2,6 +2,9 @@ node_modules/
 .pnpm-store/
 dist/
 .turbo/
+.next/
+*.tsbuildinfo
+next-env.d.ts
 
 # Dart & Flutter
 .dart_tool/
