@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import '../../components/components.css';
+import '../components/components.css';
 
 export const metadata: Metadata = {
   title: 'FoCient — Focus & Efficient Guilt-Free Productivity',

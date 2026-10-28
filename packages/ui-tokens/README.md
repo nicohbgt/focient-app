@@ -9,13 +9,13 @@ CSS, JavaScript, TypeScript, and Flutter files are generated from these sources 
 Import the stylesheets once in the application entry point:
 
 ```ts
-import '@focient/ui-token/color-token.css';
-import '@focient/ui-token/spacing-token.css';
-import '@focient/ui-token/icon-token.css';
-import '@focient/ui-token/typography-token.css';
-import '@focient/ui-token/border-radius-token.css';
-import '@focient/ui-token/animation-token.css';
-import '@focient/ui-token/shadow-token.css';
+import '@focient/ui-tokens/color-token.css';
+import '@focient/ui-tokens/spacing-token.css';
+import '@focient/ui-tokens/icon-token.css';
+import '@focient/ui-tokens/typography-token.css';
+import '@focient/ui-tokens/border-radius-token.css';
+import '@focient/ui-tokens/animation-token.css';
+import '@focient/ui-tokens/shadow-token.css';
 ```
 
 Use a semantic CSS custom property in components. Do not place a hex color literal in a component.
@@ -38,9 +38,9 @@ Use a semantic CSS custom property in components. Do not place a hex color liter
 
 For typed token maps:
 ```ts
-import { colorTokens } from '@focient/ui-token/color-token';
-import { animationTokens } from '@focient/ui-token/animation-token';
-import { shadowTokens } from '@focient/ui-token/shadow-token';
+import { colorTokens } from '@focient/ui-tokens/color-token';
+import { animationTokens } from '@focient/ui-tokens/animation-token';
+import { shadowTokens } from '@focient/ui-tokens/shadow-token';
 ```
 
 Use spacing variables instead of literal margins, padding, or gaps:
@@ -52,7 +52,7 @@ Use spacing variables instead of literal margins, padding, or gaps:
 }
 ```
 
-For a typed spacing map, import `@focient/ui-token/spacing-token`.
+For a typed spacing map, import `@focient/ui-tokens/spacing-token`.
 
 Use the typography tokens for a responsive type scale. Mobile values are the default; desktop values apply at 64rem (1024px with the 16px base):
 
@@ -83,7 +83,7 @@ Add the local package to the mobile app while the monorepo is in development:
 ```yaml
 dependencies:
   focient_ui_tokens:
-    path: ../../packages/ui-token
+    path: ../../packages/ui-tokens
 ```
 
 Then use the semantic token directly in widgets:

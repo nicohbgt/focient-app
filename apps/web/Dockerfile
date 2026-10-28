@@ -2,23 +2,32 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json turbo.json pnpm-workspace.yaml ./
-COPY packages/ui-token/package.json ./packages/ui-token/
+COPY package.json package-lock.json turbo.json ./
+COPY packages/ui-tokens/package.json ./packages/ui-tokens/
 COPY packages/contracts/package.json ./packages/contracts/
 COPY apps/web/package.json ./apps/web/
 
-RUN npm install
+RUN npm ci
 
 COPY packages/ ./packages/
 COPY apps/web/ ./apps/web/
 
 WORKDIR /app/apps/web
-RUN npm run typecheck
+RUN npm run build
 
-FROM nginx:alpine AS runner
+FROM node:20-alpine AS runner
 
-COPY --from=builder /app/apps/web/src /usr/share/nginx/html
+WORKDIR /app
 
-EXPOSE 80
+ENV NODE_ENV=production
+ENV PORT=3000
 
-CMD ["nginx", "-g", "daemon off;"]
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/apps/web/.next ./apps/web/.next
+COPY --from=builder /app/apps/web/package.json ./apps/web/
+
+EXPOSE 3000
+
+CMD ["npm", "start", "--prefix", "apps/web"]

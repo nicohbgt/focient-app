@@ -3,11 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "description": "FoCient - Intelligent focus management & guilt-free adaptive rescheduling system",
+  "packageManager": "npm@11.6.0",
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/server",
+    "apps/web",
+    "packages/contracts",
+    "packages/database",
+    "packages/ui-tokens"
   ],
   "scripts": {
+    "postinstall": "npm run db:generate --prefix packages/database",
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "test": "turbo run test",
