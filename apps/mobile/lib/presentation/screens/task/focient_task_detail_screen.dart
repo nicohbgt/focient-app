@@ -45,14 +45,14 @@ class _FocientTaskDetailScreenState extends ConsumerState<FocientTaskDetailScree
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Batalkan Tugas?'),
+        title: const Text('Cancel Task?'),
         content: const Text(
-          'Tugas ini akan dihapus dari jadwal tanpa rasa bersalah. Anda selalu dapat menambahkannya kembali nanti.',
+          'This task will be removed from your schedule without guilt. You can always add it back later.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Batal'),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -66,7 +66,7 @@ class _FocientTaskDetailScreenState extends ConsumerState<FocientTaskDetailScree
               ref.read(focientRepositoryProvider).deleteTask(_currentTask.id);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Tugas "${_currentTask.title}" dibatalkan tanpa rasa bersalah.'),
+                  content: Text('Task "${_currentTask.title}" cancelled without guilt.'),
                   backgroundColor: const Color(0xFF475569),
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -80,7 +80,7 @@ class _FocientTaskDetailScreenState extends ConsumerState<FocientTaskDetailScree
                 Navigator.of(context).pop();
               }
             },
-            child: const Text('Hapus Tugas'),
+            child: const Text('Delete Task'),
           ),
         ],
       ),

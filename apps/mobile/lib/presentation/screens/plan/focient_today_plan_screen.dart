@@ -43,7 +43,7 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
-          'Jadwal berhasil diseimbangkan! 2 tugas dipindahkan ke Kamis pagi. Beban hari Rabu berkurang menjadi 65% (Optimal).',
+          'Schedule rebalanced successfully! 2 tasks moved to Thursday morning. Wednesday workload reduced to 65% (Optimal).',
         ),
         backgroundColor: Color(0xFF059669),
         behavior: SnackBarBehavior.floating,
@@ -57,7 +57,7 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
-          'Jadwal asli tetap dipertahankan tanpa rasa bersalah. Anda dapat menyesuaikannya kapan saja.',
+          'Current schedule kept without guilt. You can adjust anytime.',
         ),
         backgroundColor: Color(0xFF475569),
         behavior: SnackBarBehavior.floating,
@@ -74,63 +74,67 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Jadwalkan Tugas Backlog',
-                style: TextStyle(
-                  fontFamily: FocientTypographyTokens.fontFamily,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
+        return SafeArea(
+          top: false,
+          bottom: true,
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Schedule Backlog Task',
+                  style: TextStyle(
+                    fontFamily: FocientTypographyTokens.fontFamily,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                task.title,
-                style: TextStyle(
-                  fontFamily: FocientTypographyTokens.fontFamily,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF334155),
+                const SizedBox(height: 8),
+                Text(
+                  task.title,
+                  style: TextStyle(
+                    fontFamily: FocientTypographyTokens.fontFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF334155),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: const Icon(Icons.today_rounded, color: Color(0xFF0284C7)),
-                title: const Text('Jadwalkan Hari Ini (15:00)'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  ref.read(planningProvider.notifier).scheduleBacklogTask(task.id, 'Today, 15:00');
-                  ref.read(focientRepositoryProvider).scheduleBacklogTask(taskId: task.id, targetTime: 'Today, 15:00');
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Tugas "${task.title}" dijadwalkan ke jam 15:00!'),
-                      backgroundColor: const Color(0xFF059669),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.next_plan_rounded, color: Color(0xFF7C3AED)),
-                title: const Text('Jadwalkan Besok Pagi (10:00)'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  ref.read(planningProvider.notifier).scheduleBacklogTask(task.id, 'Tomorrow, 10:00');
-                  ref.read(focientRepositoryProvider).scheduleBacklogTask(taskId: task.id, targetTime: 'Tomorrow, 10:00');
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Tugas "${task.title}" dijadwalkan ke Besok jam 10:00!'),
-                      backgroundColor: const Color(0xFF059669),
-                    ),
-                  );
-                },
-              ),
-            ],
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: const Icon(Icons.today_rounded, color: Color(0xFF0284C7)),
+                  title: const Text('Schedule for Today (15:00)'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ref.read(planningProvider.notifier).scheduleBacklogTask(task.id, 'Today, 15:00');
+                    ref.read(focientRepositoryProvider).scheduleBacklogTask(taskId: task.id, targetTime: 'Today, 15:00');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Task "${task.title}" scheduled for 15:00!'),
+                        backgroundColor: const Color(0xFF059669),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.next_plan_rounded, color: Color(0xFF7C3AED)),
+                  title: const Text('Schedule for Tomorrow (10:00)'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ref.read(planningProvider.notifier).scheduleBacklogTask(task.id, 'Tomorrow, 10:00');
+                    ref.read(focientRepositoryProvider).scheduleBacklogTask(taskId: task.id, targetTime: 'Tomorrow, 10:00');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Task "${task.title}" scheduled for Tomorrow at 10:00!'),
+                        backgroundColor: const Color(0xFF059669),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -164,7 +168,9 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
 
     return Scaffold(
       backgroundColor: bgColor,
+      bottomNavigationBar: widget.showBottomNav ? _buildBottomNavBar(isDark: isDark) : null,
       body: SafeArea(
+        bottom: !widget.showBottomNav,
         child: Column(
           children: [
             // Top App Bar
@@ -229,10 +235,6 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
                 ),
               ),
             ),
-
-            // Bottom Navigation Bar
-            if (widget.showBottomNav)
-              _buildBottomNavBar(isDark: isDark),
           ],
         ),
       ),
@@ -623,7 +625,7 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
                 border: Border.all(color: const Color(0xFFA7F3D0)),
               ),
               child: Text(
-                'Jadwal berhasil diseimbangkan! Beban kerja hari Rabu menjadi 65% (Optimal) setelah memindahkan 2 tugas ke Kamis pagi.',
+                'Schedule rebalanced successfully! Wednesday workload is now 65% (Optimal) after moving 2 tasks to Thursday morning.',
                 style: TextStyle(
                   fontFamily: FocientTypographyTokens.fontFamily,
                   fontSize: 12.5,
@@ -642,7 +644,7 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
                 border: Border.all(color: const Color(0xFFCBD5E1)),
               ),
               child: Text(
-                'Jadwal asli tetap dipertahankan tanpa rasa bersalah. Anda dapat menyesuaikannya kapan saja.',
+                'Current schedule kept without guilt. You can adjust anytime.',
                 style: TextStyle(
                   fontFamily: FocientTypographyTokens.fontFamily,
                   fontSize: 12.5,
@@ -935,7 +937,7 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
               ),
               child: Center(
                 child: Text(
-                  'Belum ada tugas di backlog. Tambahkan tugas baru untuk merencanakan pekerjaan masa depan.',
+                  'No tasks in backlog yet. Add a new task to plan ahead for future work.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: FocientTypographyTokens.fontFamily,
@@ -1078,7 +1080,6 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
     ];
 
     return Container(
-      height: 64,
       decoration: BoxDecoration(
         color: isDark ? FocientColorDarkTokens.neutralSurfaceCard : Colors.white,
         border: Border(
@@ -1088,64 +1089,71 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
           ),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: navItems.asMap().entries.map((entry) {
-          final idx = entry.key;
-          final (iconOutlined, iconFilled, label) = entry.value;
-          final isActive = _activeNavIndex == idx;
-          final isCenterAdd = idx == 2;
+      child: SafeArea(
+        top: false,
+        bottom: true,
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: navItems.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final (iconOutlined, iconFilled, label) = entry.value;
+              final isActive = _activeNavIndex == idx;
+              final isCenterAdd = idx == 2;
 
-          return InkWell(
-            onTap: () {
-              if (idx == 0) {
-                // Return to Home
-                if (widget.onNavigateTab != null) {
-                  widget.onNavigateTab!(0);
-                } else if (widget.onBack != null) {
-                  widget.onBack!();
-                } else if (Navigator.of(context).canPop()) {
-                  Navigator.of(context).pop();
-                }
-                return;
-              }
+              return InkWell(
+                onTap: () {
+                  if (idx == 0) {
+                    // Return to Home
+                    if (widget.onNavigateTab != null) {
+                      widget.onNavigateTab!(0);
+                    } else if (widget.onBack != null) {
+                      widget.onBack!();
+                    } else if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    }
+                    return;
+                  }
 
-              if (widget.onNavigateTab != null) {
-                widget.onNavigateTab!(idx);
-                return;
-              }
+                  if (widget.onNavigateTab != null) {
+                    widget.onNavigateTab!(idx);
+                    return;
+                  }
 
-              setState(() => _activeNavIndex = idx);
-            },
-            child: SizedBox(
-              width: 58,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    isActive ? iconFilled : iconOutlined,
-                    size: isCenterAdd ? 24 : 20,
-                    color: isActive
-                        ? const Color(0xFF0F172A)
-                        : const Color(0xFF64748B),
+                  setState(() => _activeNavIndex = idx);
+                },
+                child: SizedBox(
+                  width: 58,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isActive ? iconFilled : iconOutlined,
+                        size: isCenterAdd ? 24 : 20,
+                        color: isActive
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFF64748B),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 10,
+                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                          color: isActive
+                              ? const Color(0xFF0F172A)
+                              : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 10,
-                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                      color: isActive
-                          ? const Color(0xFF0F172A)
-                          : const Color(0xFF64748B),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
       ),
     );
   }

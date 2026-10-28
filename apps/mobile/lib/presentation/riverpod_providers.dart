@@ -2,6 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/planning_state.dart';
 import '../data/task_state.dart';
+import 'focient_copywriting.dart';
+
+/// Application Language State Provider.
+/// Defaults to English (en) as primary language.
+final languageProvider =
+    StateNotifierProvider<LanguageNotifier, FoCientLanguage>((ref) {
+  return LanguageNotifier(FoCientLanguage.en);
+});
+
+class LanguageNotifier extends StateNotifier<FoCientLanguage> {
+  LanguageNotifier([FoCientLanguage initial = FoCientLanguage.en])
+      : super(initial);
+
+  void setLanguage(FoCientLanguage lang) {
+    state = lang;
+  }
+
+  void toggleLanguage() {
+    state = state == FoCientLanguage.en ? FoCientLanguage.id : FoCientLanguage.en;
+  }
+}
+
+/// Reactive Copywriting Provider based on current App Language
+final copywritingProvider = Provider<FoCientCopywriting>((ref) {
+  final lang = ref.watch(languageProvider);
+  return FoCientCopywriting.of(lang);
+});
 
 /// Data-driven Task List Provider starting in a pure EMPTY STATE.
 /// Tasks are dynamically populated during user onboarding or loaded via API/local cache.

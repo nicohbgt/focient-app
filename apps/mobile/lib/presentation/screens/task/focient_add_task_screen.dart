@@ -96,7 +96,7 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Beri nama tugas sebelum menyimpannya.'),
+          content: Text('Please enter a task name before saving.'),
           backgroundColor: Color(0xFFE11D48),
           behavior: SnackBarBehavior.floating,
         ),
@@ -144,8 +144,8 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
       SnackBar(
         content: Text(
           isEdit
-              ? 'Tugas "$title" berhasil diperbarui!'
-              : 'Tugas "$title" berhasil ditambahkan ke jadwal!',
+              ? 'Task "$title" updated successfully!'
+              : 'Task "$title" added to schedule successfully!',
         ),
         backgroundColor: const Color(0xFF059669),
         behavior: SnackBarBehavior.floating,

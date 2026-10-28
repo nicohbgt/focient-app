@@ -117,7 +117,7 @@ class _FocientOnboardingWorkspaceScreenState
     setState(() {
       _categories.removeAt(index);
       if (_categories.isEmpty) {
-        _categoryError = 'Pilih atau tambahkan minimal 1 kategori.';
+        _categoryError = 'Select or add at least 1 category.';
       }
     });
   }
@@ -128,14 +128,14 @@ class _FocientOnboardingWorkspaceScreenState
 
     if (username.isEmpty || username.length < 2) {
       setState(() {
-        _usernameError = 'Username minimal 2 karakter.';
+        _usernameError = 'Username must be at least 2 characters.';
       });
       hasError = true;
     }
 
     if (_categories.isEmpty) {
       setState(() {
-        _categoryError = 'Pilih atau tambahkan minimal 1 kategori.';
+        _categoryError = 'Select or add at least 1 category.';
       });
       hasError = true;
     }

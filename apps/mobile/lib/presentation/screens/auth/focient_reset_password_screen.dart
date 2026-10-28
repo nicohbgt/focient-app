@@ -107,9 +107,10 @@ class _FocientResetPasswordScreenState
     return Scaffold(
       backgroundColor: isDark
           ? FocientColorDarkTokens.neutralBgCanvas
-          : FocientColorTokens.neutralSurfaceCard,
+          : FocientColorTokens.neutralBgCanvas,
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 440),
             child: SingleChildScrollView(
@@ -118,7 +119,7 @@ class _FocientResetPasswordScreenState
                 vertical: FocientSpacingTokens.space4,
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Top Row: Back button (<)
                   Align(
@@ -136,39 +137,36 @@ class _FocientResetPasswordScreenState
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
 
-                  // Title: "Reset Password"
+                  // Title: "Reset Password" - Left/Start Aligned
                   Text(
                     'Reset Password',
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.start,
                     style: TextStyle(
                       fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 24,
+                      fontSize: 26,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.5,
                       color: titleColor,
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
 
-                  // Subtitle
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text(
-                      'Set your new password to regain access to your account',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: FocientTypographyTokens.fontFamily,
-                        fontSize: 14,
-                        height: 1.4,
-                        color: subtitleColor,
-                      ),
+                  // Subtitle - Left/Start Aligned
+                  Text(
+                    'Set your new password to regain access to your account',
+                    textAlign: TextAlign.start,
+                    style: TextStyle(
+                      fontFamily: FocientTypographyTokens.fontFamily,
+                      fontSize: 14,
+                      height: 1.4,
+                      color: subtitleColor,
                     ),
                   ),
 
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 32),
 
                   // Field 1: New Password
                   FocientInputField(

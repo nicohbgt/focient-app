@@ -52,7 +52,7 @@ class FocientNetworkClient {
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(
-        'Gagal terhubung ke server FoCient. Periksa koneksi internet Anda.',
+        'Unable to connect to FoCient server. Please check your internet connection.',
       );
     }
   }
@@ -69,7 +69,7 @@ class FocientNetworkClient {
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(
-        'Gagal terhubung ke server FoCient. Periksa koneksi internet Anda.',
+        'Unable to connect to FoCient server. Please check your internet connection.',
       );
     }
   }
@@ -86,7 +86,7 @@ class FocientNetworkClient {
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(
-        'Gagal terhubung ke server FoCient. Periksa koneksi internet Anda.',
+        'Unable to connect to FoCient server. Please check your internet connection.',
       );
     }
   }
@@ -103,7 +103,7 @@ class FocientNetworkClient {
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(
-        'Gagal terhubung ke server FoCient. Periksa koneksi internet Anda.',
+        'Unable to connect to FoCient server. Please check your internet connection.',
       );
     }
   }
@@ -119,7 +119,7 @@ class FocientNetworkClient {
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(
-        'Gagal terhubung ke server FoCient. Periksa koneksi internet Anda.',
+        'Unable to connect to FoCient server. Please check your internet connection.',
       );
     }
   }
@@ -131,7 +131,7 @@ class FocientNetworkClient {
     }
 
     // Parse structured server error response
-    String errorMessage = 'Terjadi kesalahan pada server (${response.statusCode})';
+    String errorMessage = 'A server error occurred (${response.statusCode})';
     try {
       if (response.body.isNotEmpty) {
         final parsed = jsonDecode(response.body);

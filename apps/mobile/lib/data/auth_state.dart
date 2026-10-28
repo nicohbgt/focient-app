@@ -272,7 +272,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final trimmedCode = code.trim();
     if (trimmedCode.length != 6) {
       state = state.copyWith(
-        errorMessage: 'Masukkan 6 digit kode OTP yang valid.',
+        errorMessage: 'Please enter a valid 6-digit OTP code.',
       );
       return false;
     }
@@ -321,7 +321,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
           return true;
         } else {
-          throw ApiException('Format respons server tidak valid.');
+          throw ApiException('Invalid server response format.');
         }
       }
     } catch (e) {
@@ -416,7 +416,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
         return true;
       } else {
-        throw ApiException('Kredensial atau format respons tidak valid.');
+        throw ApiException('Invalid credentials or response format.');
       }
     } catch (e) {
       state = state.copyWith(
@@ -445,7 +445,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final idToken = googleAuth.idToken ?? googleAuth.accessToken;
 
       if (idToken == null || idToken.isEmpty) {
-        throw ApiException('Gagal memperoleh token otentikasi Google.');
+        throw ApiException('Failed to retrieve Google authentication token.');
       }
 
       final res = await focientNetworkClient.post('/auth/google', {
@@ -466,7 +466,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
         return true;
       } else {
-        throw ApiException('Verifikasi Google OAuth di server gagal.');
+        throw ApiException('Google OAuth verification failed on server.');
       }
     } catch (e) {
       state = state.copyWith(

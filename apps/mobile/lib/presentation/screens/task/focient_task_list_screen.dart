@@ -114,7 +114,9 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
 
     return Scaffold(
       backgroundColor: bgColor,
+      bottomNavigationBar: widget.showBottomNav ? _buildBottomNavBar(isDark: isDark) : null,
       body: SafeArea(
+        bottom: !widget.showBottomNav,
         child: Column(
           children: [
             // Top App Bar
@@ -205,9 +207,6 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
                 ),
               ),
             ),
-
-            // Bottom Navigation Bar
-            if (widget.showBottomNav) _buildBottomNavBar(isDark: isDark),
           ],
         ),
       ),
@@ -651,7 +650,6 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
     ];
 
     return Container(
-      height: 64,
       decoration: BoxDecoration(
         color: isDark ? FocientColorDarkTokens.neutralSurfaceCard : Colors.white,
         border: Border(
@@ -661,63 +659,70 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
           ),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: navItems.asMap().entries.map((entry) {
-          final idx = entry.key;
-          final (iconOutlined, iconFilled, label) = entry.value;
-          final isActive = _activeNavIndex == idx;
-          final isCenterAdd = idx == 2;
+      child: SafeArea(
+        top: false,
+        bottom: true,
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: navItems.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final (iconOutlined, iconFilled, label) = entry.value;
+              final isActive = _activeNavIndex == idx;
+              final isCenterAdd = idx == 2;
 
-          return InkWell(
-            onTap: () {
-              if (isCenterAdd) {
-                _onOpenAddTask();
-                return;
-              }
+              return InkWell(
+                onTap: () {
+                  if (isCenterAdd) {
+                    _onOpenAddTask();
+                    return;
+                  }
 
-              if (idx == 0) {
-                // Return to Home
-                if (widget.onNavigateTab != null) {
-                  widget.onNavigateTab!(0);
-                } else if (widget.onBack != null) {
-                  widget.onBack!();
-                } else if (Navigator.of(context).canPop()) {
-                  Navigator.of(context).pop();
-                }
-                return;
-              }
+                  if (idx == 0) {
+                    // Return to Home
+                    if (widget.onNavigateTab != null) {
+                      widget.onNavigateTab!(0);
+                    } else if (widget.onBack != null) {
+                      widget.onBack!();
+                    } else if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    }
+                    return;
+                  }
 
-              setState(() => _activeNavIndex = idx);
-              if (widget.onNavigateTab != null) {
-                widget.onNavigateTab!(idx);
-              }
-            },
-            child: SizedBox(
-              width: 58,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    isActive ? iconFilled : iconOutlined,
-                    size: isCenterAdd ? 24 : 20,
-                    color: isActive ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                  setState(() => _activeNavIndex = idx);
+                  if (widget.onNavigateTab != null) {
+                    widget.onNavigateTab!(idx);
+                  }
+                },
+                child: SizedBox(
+                  width: 58,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isActive ? iconFilled : iconOutlined,
+                        size: isCenterAdd ? 24 : 20,
+                        color: isActive ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 10,
+                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                          color: isActive ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 10,
-                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                      color: isActive ? const Color(0xFF0F172A) : const Color(0xFF64748B),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
       ),
     );
   }

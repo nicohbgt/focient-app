@@ -1,26 +1,33 @@
 # FoCient Monorepo — Implementation Status Audit
 
-**Audit date:** 26 October 2026  
-**Scope:** Repository source, package configuration, automated checks, and delivery configuration available in this checkout.  
+**Audit date:** 28 October 2026
+**Scope:** Repository source, package configuration, automated checks, and delivery configuration available in this checkout.
 **Method:** Source-code inspection plus local test/type-check/build commands. This is a code-status assessment, not a product or security certification.
 
 ## 1. Executive summary
 
 FoCient has a **substantial backend domain prototype**: authentication, task/category persistence, workload calculation, Top 3 selection, automatic placement, adaptive rescheduling, daily-plan aggregation, notifications, and insight calculations are implemented as TypeScript source. The deterministic engines are particularly well covered by unit tests.
 
-The repository is **not yet an end-to-end runnable, deployable MVP**. Both product clients currently render a placeholder screen, the web build is not installable from the checked-out dependencies, the production Dockerfiles cannot build the applications they describe, and integrations advertised in the README (Google OAuth verification, Redis/BullMQ, FCM, external calendars, and operational telemetry) are incomplete or simulated.
+The mobile client has progressed from a placeholder to a **screen-level prototype**: authentication, multi-step onboarding, dashboard, Today Plan, task list, add-task, and task-detail screens now exist. However, the repository is **not yet an end-to-end runnable, deployable MVP**. The web client remains a placeholder, the current server type-check fails, the root/web build paths remain blocked, and production integrations are incomplete or simulated.
+
+### Changes since the 26 October audit
+
+- Eight commits added a Flutter platform shell and mobile UI flow, local Riverpod state, REST client/repository, OTP-related auth endpoints, planning endpoints, task metadata, and extra contract/schema fields.
+- Database schema now declares the mobile-related fields (`username`, work-rhythm preferences, task energy/focus/rest metadata, and activity reflection fields), closing much of the earlier *schema-definition* drift.
+- This is not yet a completed database migration: `packages/database/migrations/` has no committed migration files, and the generated Prisma client currently does not contain the new fields.
+- Test counts increased: tokens **11 → 16**, server **34 → 40**, web **27 → 72**.
 
 ### Objective readiness snapshot
 
 | Area | Status | Evidence-based assessment |
 | --- | --- | --- |
 | Monorepo organisation | Partial | Four intended workspaces exist, but package-manager and package-name conventions conflict. |
-| Shared contracts and validation | Partial | Zod schemas and TypeScript DTOs exist; several recently added fields have no persistence or server implementation. |
-| Database model | Partial | Prisma schema covers core entities; there are no committed migrations and some DTO fields are absent from the schema. |
-| Backend business logic | Mostly implemented | Core engines, controllers, and 34 server tests exist; API/database integration tests are absent. |
+| Shared contracts and validation | Mostly implemented | DTO/schema coverage expanded for mobile onboarding and task metadata; compatibility and transport tests remain limited. |
+| Database model | Partial | Prisma schema now includes recent fields, but no migration files are committed and generated-client synchronization is broken. |
+| Backend business logic | Mostly implemented, currently not type-safe | Core engines/controllers and 40 server tests exist; server type-check currently fails against a stale Prisma client. |
 | Web product | Not implemented | The only route is a placeholder; component library and API hooks are unused by an application page. |
-| Mobile product | Not implemented | The Flutter entry point is a placeholder; state uses sample data and the generated Drift source is absent. |
-| Design system | Mostly implemented | Cross-platform tokens, generated artifacts, and 11 token tests pass. |
+| Mobile product | Partially implemented | A navigable UI prototype and repository exist, but the shipped entry point opens a developer screen inspector and most screens use in-memory/optimistic state. |
+| Design system | Mostly implemented | Cross-platform tokens, generated artifacts, and 16 token tests pass. |
 | CI/CD and containers | Blocked | Root Turbo build fails; Dockerfiles reference a non-existent package and do not produce runtime app artifacts. |
 | Production integrations | Not implemented / simulated | Cache, queue, FCM, AI, and Google login contain stubs or non-production behaviour. |
 
@@ -74,7 +81,7 @@ The Prisma schema defines the core relational model:
 - Ownership relations and useful user/date/status indexes.
 - A Prisma client singleton and a development demo seed are present.
 
-This supports the current API’s core task-and-schedule workflow. There is no `migrations/` directory in the checkout, so an environment cannot be reproduced safely through versioned migrations. The package exposes `db:push`, which is suitable for prototyping but not controlled production schema evolution.
+This supports the current API’s core task-and-schedule workflow. The `migrations/` directory exists but has no committed migration files, so an environment cannot be reproduced safely through versioned migrations. The package exposes `db:push`, which is suitable for prototyping but not controlled production schema evolution.
 
 ### 3.3 Server API and deterministic logic — `apps/server`
 
@@ -104,32 +111,33 @@ The business engines are real source code, not UI-only claims:
 - Token source files define colour, dark colour, type, spacing, layout, radius, animation, shadows, and icons.
 - Generated CSS/JS/Dart artifacts and SVG assets are checked against the canonical source.
 - Web primitives and composite widgets exist: buttons, inputs, checkboxes, navigation, task cards/forms, capacity meter, reschedule alert, modals, toasts, and a showcase.
-- Flutter counterparts exist for many primitives and high-level widgets, plus Indonesian/English copywriting and theme support.
+- Flutter now has a platform shell and screens for welcome/login/register/OTP/password reset, five onboarding steps, dashboard, Today Plan, task list, task creation, and task detail. It also has a `FocientRepository` HTTP wrapper and Riverpod state.
 
-These are a **component/design-system implementation**, not a connected product workflow.
+The mobile screens are a **connected prototype**, not yet a production workflow: the default app home is a developer `FocientScreenInspector`, user task/planning state is mostly in memory, and failed repository writes are intentionally treated as optimistic local success.
 
 ### 3.5 Tests that pass in this checkout
 
 | Command | Result | Coverage nature |
 | --- | --- | --- |
-| `npm run test:tokens` | Pass — 11 tests | Generated token fidelity, contrast, typography, icons, motion, shadows |
-| `npm run test:server` | Pass — 34 tests | Deterministic engines, validation/system-flow calculations |
-| `npm run test:web` | Pass — 27 tests | Static copy, component presence/CSS rules, contract validation |
+| `npm run test:tokens` | Pass — 16 tests | Generated token fidelity, contrast, typography, icons, motion, shadows, state tokens |
+| `npm run test:server` | Pass — 40 tests | Deterministic engines, validation/system-flow calculations, PRD-alignment rules |
+| `npm run test:web` | Pass — 72 tests | Static copy, component presence/CSS rules, contract validation, state specifications |
 | `npm run typecheck:contracts` | Pass | Shared TypeScript contracts |
-| `npm run typecheck:server` | Pass | Server TypeScript source |
+| `npm run typecheck:server` | **Fail** | Prisma client lacks current schema fields `User.username` and `Task.focusType`; generation is not part of this verification path |
 | `npm run typecheck:web` | Pass | Web TypeScript source |
 
 Passing checks are valuable, but they do not start a database, call HTTP endpoints, render the client routes, or build container images. They should therefore be read as **unit/contract confidence**, not end-to-end release evidence.
 
 ## 4. What remains missing or incomplete
 
-### 4.1 Product clients are shells, not usable applications — critical
+### 4.1 Product clients: web is a shell; mobile is a prototype — critical
 
 - `apps/web/src/app/page.tsx` renders only “Backend & Core Business Engine Active. UI/UX screen development pending.” There are no implemented app routes for login, onboarding, today, tasks, or insights.
-- `apps/mobile/lib/main.dart` renders the equivalent placeholder message. The Riverpod provider supplies four hard-coded sample tasks rather than synchronizing server or local data.
-- Existing web React Query hooks and UI components are not composed into a user journey; mobile widgets are similarly not connected from the app root.
+- Mobile has the required visual screens and calls the API for auth, onboarding, and task/planning mutations. Its default production entry still launches `FocientScreenInspector`, which exposes mock data and direct screen switching for UI review.
+- The mobile task and planning providers remain in-memory. The local Drift database declaration is commented out, fetch-on-start is not wired into the screen flow, and repository errors often return local success rather than a recoverable error state.
+- Existing web React Query hooks and UI components are still not composed into a user journey.
 
-**Needed:** implement the real screens and route guards, compose the existing components, connect mutations/queries to the API, add loading/empty/error/auth-expired states, and test the complete user journey.
+**Needed:** replace the mobile inspector with an app router/session bootstrap, wire server/cache synchronization and visible error/conflict states, complete the web product screens/route guards, and test both complete user journeys.
 
 ### 4.2 Web package and deployment are blocked — critical
 
@@ -146,6 +154,7 @@ Passing checks are valuable, but they do not start a database, call HTTP endpoin
 - The Google sign-in endpoint merely decodes an input JWT; it does not validate its signature, issuer, audience, expiry, or nonce. It falls back to `mock_google_token` and creates/uses a fixed email if no valid payload can be decoded.
 - JWT has a hard-coded development fallback secret. `docker-compose.yml` also contains a hard-coded production-labelled secret.
 - Session tokens are stored in browser `localStorage`, increasing impact from an XSS vulnerability; there is no refresh/revocation/session lifecycle.
+- The new registration and password-reset OTPs are held in an in-memory `Map` and their codes are written to server stdout. No SMTP/Resend/SendGrid client or mail credentials are configured, so they do not deliver real email and are lost on process restart.
 
 **Needed:** implement provider-side OpenID Connect token verification, reject missing/invalid tokens, require secrets at startup, move production secrets to a secret manager, establish a documented session strategy, and add auth abuse/integration tests.
 
@@ -161,10 +170,10 @@ Passing checks are valuable, but they do not start a database, call HTTP endpoin
 
 ### 4.5 Data lifecycle and contract drift — high
 
-- No committed Prisma migrations are present.
-- `energyLevel`, onboarding `visualGoals`/`motivationType`/`workStyle`, reflection fields, and success-metric fields appear in contracts but not in the Prisma model or service persistence.
+- No committed Prisma migration file is present, even though the Prisma schema changed substantially.
+- The recent schema/service work persists many formerly unimplemented fields, including task energy/focus/rest metadata and user onboarding preferences. The current generated Prisma client is stale, causing server type-check errors; run Prisma generation in a reproducible install/build step before compiling.
 - A `GeneratePlanSchema` and response DTO exist without a server route/implementation.
-- The mobile enum omits server status `NEEDS_ADJUSTMENT` and priority `REGULAR`; its mapper also drops many task fields. That makes a faithful cross-client state representation impossible today.
+- The mobile model still has its own state representation and mapping layer; it needs contract tests to ensure every server enum and new persistence field round-trips correctly.
 - The database seed invokes `ts-node/esm`, but `ts-node` is not declared in the database package dependencies.
 - The task deletion handler removes records but does not send a success response, so a client request can remain unresolved.
 
@@ -174,7 +183,7 @@ Passing checks are valuable, but they do not start a database, call HTTP endpoin
 
 - Server tests test engines and data transformations without a real PostgreSQL/Prisma HTTP request lifecycle.
 - Web tests mostly inspect source/static implementation rules; no browser rendering, accessibility, user-event, or API-mocked integration test exists.
-- Flutter test verification did not produce a result in the available execution window. Independently, the source references `local_database.g.dart`, but this generated file is absent and `drift_dev`/`build_runner` are not declared, so the offline data layer is not reproducibly buildable.
+- Flutter tests did not complete in the available execution window, so mobile verification remains unconfirmed. The Drift implementation is now explicitly commented out rather than generated; offline persistence is therefore deferred, not implemented.
 - No coverage thresholds, lint script, dependency/security scanning, container build validation, or deployed smoke test appears in CI.
 
 **Needed:** add ephemeral PostgreSQL/Redis integration tests, API route tests, Playwright/Cypress browser flows, Flutter analyzer/widget tests and code generation, plus CI jobs for clean install, build, container build, and migration verification.
@@ -190,8 +199,8 @@ Passing checks are valuable, but they do not start a database, call HTTP endpoin
 
 | Priority | Work item | Why it matters | Completion evidence |
 | --- | --- | --- | --- |
-| P0 | Repair workspace, clean install, root build, Next build, and both Dockerfiles | The project cannot currently produce a verified deployable artifact. | Clean clone: install, `npm run build`, and container builds pass. |
-| P0 | Build the web and mobile primary flows | Current clients cannot use the backend. | A user can register/demo, onboard, create/complete tasks, see Today, reschedule, and inspect insights. |
+| P0 | Repair generated Prisma client, workspace, clean install, root build, Next build, and both Dockerfiles | The current server does not type-check and the project cannot produce a verified deployable artifact. | Clean clone: Prisma generation, install, `npm run build`, and container builds pass. |
+| P0 | Turn the mobile prototype into an app and implement the web primary flow | Mobile is still inspector-led/local-first; web cannot use the backend. | A user can register, onboard, create/complete tasks, see Today, reschedule, and inspect insights without mock/inspector paths. |
 | P0 | Replace insecure Google/JWT defaults and externalize secrets | Current auth is not safe to expose. | Valid provider tokens pass; forged/expired tokens fail; startup rejects missing production secrets. |
 | P1 | Version Prisma migrations and align schema/contracts | Prevents lost data and silently dropped fields. | Fresh database migrates and all implemented fields round-trip. |
 | P1 | Add real API/database and browser/mobile tests | Unit tests alone cannot prove product behavior. | CI starts dependencies and executes representative user flows. |
@@ -201,15 +210,15 @@ Passing checks are valuable, but they do not start a database, call HTTP endpoin
 
 ## 6. Suggested implementation sequence
 
-1. **Make the repository reproducible:** select npm or pnpm, repair names/imports/Dockerfiles, add the Turbo package-manager field, and make clean CI install/build pass.
-2. **Close the data contract:** choose which new behavioural fields are in MVP, add migrations and persistence, remove deferred contract surface, and fix mobile enum/mapper parity.
-3. **Deliver one vertical slice:** guest or email login → onboarding → create task → Today Plan → complete/reschedule → insights in web; use the same contracts on mobile.
+1. **Restore a green baseline:** generate Prisma client in the reproducible build path, select npm or pnpm, repair names/imports/Dockerfiles, add the Turbo package-manager field, and make clean CI install/build pass.
+2. **Close the data contract:** add an initial migration, choose which new behavioural fields are in MVP, remove deferred contract surface, and prove mobile/server mapper parity.
+3. **Deliver one production vertical slice:** replace the mobile inspector with session routing and server-backed state; implement the same login → onboarding → task → Today → reschedule → insights journey in web.
 4. **Secure and verify:** implement OAuth verification, secret management, integration tests with PostgreSQL, and browser/mobile tests.
 5. **Add optional integrations only after the vertical slice is stable:** Redis/BullMQ, FCM, calendar, AI, analytics, and error monitoring.
 
 ## 7. Audit limits and working-tree note
 
 - Docker could not be invoked in this environment, so image failure is established by source inspection (and should be confirmed in CI once Docker is available).
-- Flutter test did not complete within the available command window; it is therefore marked unverified rather than failed. The missing generated Drift part and generator dependencies are concrete source-level blockers to investigate.
+- Flutter test did not complete within the available command window; it is therefore marked unverified rather than failed. Offline Drift persistence is intentionally commented out and remains deferred.
 - Uncommitted changes existed outside this audit document in the contracts/database source area. This audit did not modify those files.
 - This document records the checked-out state on the audit date. Update the tables as P0/P1 work lands so it becomes the project’s ongoing delivery dashboard.

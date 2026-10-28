@@ -127,9 +127,10 @@ class _FocientRegisterScreenState extends ConsumerState<FocientRegisterScreen> {
     return Scaffold(
       backgroundColor: isDark
           ? FocientColorDarkTokens.neutralBgCanvas
-          : FocientColorTokens.neutralSurfaceCard,
+          : FocientColorTokens.neutralBgCanvas,
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 440),
             child: SingleChildScrollView(
@@ -140,39 +141,22 @@ class _FocientRegisterScreenState extends ConsumerState<FocientRegisterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (widget.onBack != null) ...[
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.chevron_left_rounded,
-                          size: 32,
-                          color: Color(0xFF64748B),
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        splashRadius: 24,
-                        onPressed: widget.onBack,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ] else
-                    const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-                  // Header Title
+                  // Header Title - Left/Start Aligned (No center)
                   Text(
                     'Start Your Journey Here!',
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.start,
                     style: TextStyle(
                       fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 24,
+                      fontSize: 26,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.5,
                       color: titleColor,
                     ),
                   ),
 
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 32),
 
                   // Field 1: Name
                   FocientInputField(

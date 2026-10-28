@@ -197,7 +197,7 @@ void main() {
   });
 
   group('FoCient Welcome Screen Widget Tests', () {
-    testWidgets('Renders Welcome elements and buttons', (tester) async {
+    testWidgets('Renders Welcome elements and buttons with English default', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: FocientWelcomeScreen(
@@ -211,6 +211,42 @@ void main() {
       expect(find.text('Focus & Efficient'), findsOneWidget);
       expect(find.text('Get Started'), findsOneWidget);
       expect(find.text('Already have an account? Login'), findsOneWidget);
+      expect(find.text('English'), findsOneWidget);
+      expect(find.text('Indonesia'), findsOneWidget);
+    });
+
+    testWidgets('Toggles language between English and Indonesian on Welcome page', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: FocientWelcomeScreen(
+              onGetStarted: () {},
+              onLogin: () {},
+            ),
+          ),
+        ),
+      );
+
+      // Default is English
+      expect(find.text('Focus & Efficient'), findsOneWidget);
+      expect(find.text('Get Started'), findsOneWidget);
+      expect(find.text('Already have an account? Login'), findsOneWidget);
+
+      // Tap Indonesia
+      await tester.tap(find.text('Indonesia'));
+      await tester.pumpAndSettle();
+
+      // UI switches to Indonesian
+      expect(find.text('Fokus & Efisien'), findsOneWidget);
+      expect(find.text('Mulai Sekarang'), findsOneWidget);
+      expect(find.text('Sudah punya akun? Masuk'), findsOneWidget);
+
+      // Tap English switches back
+      await tester.tap(find.text('English'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Focus & Efficient'), findsOneWidget);
+      expect(find.text('Get Started'), findsOneWidget);
     });
   });
 
@@ -633,7 +669,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Shows error message
-      expect(find.text('Username minimal 2 karakter.'), findsOneWidget);
+      expect(find.text('Username must be at least 2 characters.'), findsOneWidget);
     });
   });
 
@@ -1150,7 +1186,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Card turns into calm resolved message
-      expect(find.textContaining('Jadwal hari ini selaras dan bebas benturan'), findsOneWidget);
+      expect(find.textContaining("Today's schedule is calm and collision-free"), findsOneWidget);
     });
 
     testWidgets('Quick Add Task form validates and adds task to dashboard', (tester) async {
@@ -1322,7 +1358,7 @@ void main() {
       expect(find.text('65%'), findsOneWidget);
       expect(find.text('75%'), findsOneWidget);
       expect(find.text('85%'), findsNothing);
-      expect(find.textContaining('Jadwal berhasil diseimbangkan!'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Schedule rebalanced successfully!'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('Backlog Scheduler modal schedules task into active day', (tester) async {
@@ -1349,11 +1385,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Bottom sheet appears
-      expect(find.text('Jadwalkan Tugas Backlog'), findsOneWidget);
-      expect(find.text('Jadwalkan Hari Ini (15:00)'), findsOneWidget);
+      expect(find.text('Schedule Backlog Task'), findsOneWidget);
+      expect(find.text('Schedule for Today (15:00)'), findsOneWidget);
 
       // Tap schedule option
-      await tester.tap(find.text('Jadwalkan Hari Ini (15:00)'));
+      await tester.tap(find.text('Schedule for Today (15:00)'));
       await tester.pumpAndSettle();
 
       // On Scheduled Task increments to 55 Task
@@ -1378,7 +1414,7 @@ void main() {
       expect(find.text('0%'), findsAtLeastNWidgets(1));
       expect(find.text('0.0 Hours'), findsOneWidget);
       expect(find.text('0 Task'), findsOneWidget);
-      expect(find.textContaining('Belum ada tugas di backlog'), findsOneWidget);
+      expect(find.textContaining('No tasks in backlog yet.'), findsOneWidget);
     });
   });
 
@@ -1531,7 +1567,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Snackbar confirmation
-      expect(find.textContaining('berhasil ditambahkan ke jadwal!'), findsOneWidget);
+      expect(find.textContaining('added to schedule successfully!'), findsOneWidget);
     });
 
     testWidgets('Task Detail allows Edit Task and Cancel Task', (tester) async {
@@ -1586,8 +1622,8 @@ void main() {
       await tester.tap(find.text('Cancel Task'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Batalkan Tugas?'), findsOneWidget);
-      expect(find.text('Hapus Tugas'), findsOneWidget);
+      expect(find.text('Cancel Task?'), findsOneWidget);
+      expect(find.text('Delete Task'), findsOneWidget);
     });
   });
 }

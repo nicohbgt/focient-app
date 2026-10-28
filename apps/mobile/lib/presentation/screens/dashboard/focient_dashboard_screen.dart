@@ -73,7 +73,7 @@ class _FocientDashboardScreenState
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Beri nama tugas singkat agar fokus kerjamu lebih terarah.'),
+          content: Text('Give your task a short title to guide your focus.'),
           backgroundColor: Color(0xFFE11D48),
           behavior: SnackBarBehavior.floating,
         ),
@@ -106,7 +106,7 @@ class _FocientDashboardScreenState
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Tugas "$title" berhasil ditambahkan ke jadwal hari ini!'),
+        content: Text('Task "$title" added to today\'s schedule successfully!'),
         backgroundColor: const Color(0xFF059669),
         behavior: SnackBarBehavior.floating,
       ),
@@ -121,7 +121,7 @@ class _FocientDashboardScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
-          'Jadwal disesuaikan tanpa rasa bersalah! Tugas dijadwalkan ulang setelah "Implement Color Palette Token" dengan buffer istirahat 10 menit.',
+          'Schedule adjusted without guilt! Rescheduled after "Implement Color Palette Token" with a 10-minute rest buffer.',
         ),
         backgroundColor: Color(0xFF059669),
         behavior: SnackBarBehavior.floating,
@@ -137,7 +137,7 @@ class _FocientDashboardScreenState
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Penyesuaian jadwal ditunda. Sistem akan memantau waktu luang Anda.'),
+        content: Text('Schedule adjustment postponed. The system will monitor your available time.'),
         backgroundColor: Color(0xFF475569),
         behavior: SnackBarBehavior.floating,
       ),
@@ -661,7 +661,7 @@ class _FocientDashboardScreenState
             SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Jadwal hari ini selaras dan bebas benturan. Ritme kerja optimal!',
+                'Today\'s schedule is calm and collision-free. Optimal work rhythm!',
                 style: TextStyle(
                   fontFamily: FocientTypographyTokens.fontFamily,
                   fontSize: 13,
@@ -1491,7 +1491,6 @@ class _FocientDashboardScreenState
     ];
 
     return Container(
-      height: 64,
       decoration: BoxDecoration(
         color: isDark ? FocientColorDarkTokens.neutralSurfaceCard : Colors.white,
         border: Border(
@@ -1501,47 +1500,54 @@ class _FocientDashboardScreenState
           ),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: navItems.asMap().entries.map((entry) {
-          final idx = entry.key;
-          final (iconOutlined, iconFilled, label) = entry.value;
-          final isActive = _activeNavIndex == idx;
-          final isCenterAdd = idx == 2;
+      child: SafeArea(
+        top: false,
+        bottom: true,
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: navItems.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final (iconOutlined, iconFilled, label) = entry.value;
+              final isActive = _activeNavIndex == idx;
+              final isCenterAdd = idx == 2;
 
-          return InkWell(
-            onTap: () {
-              setState(() => _activeNavIndex = idx);
-            },
-            child: SizedBox(
-              width: 58,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    isActive ? iconFilled : iconOutlined,
-                    size: isCenterAdd ? 24 : 20,
-                    color: isActive
-                        ? const Color(0xFF0F172A)
-                        : const Color(0xFF64748B),
+              return InkWell(
+                onTap: () {
+                  setState(() => _activeNavIndex = idx);
+                },
+                child: SizedBox(
+                  width: 58,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isActive ? iconFilled : iconOutlined,
+                        size: isCenterAdd ? 24 : 20,
+                        color: isActive
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFF64748B),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 10,
+                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                          color: isActive
+                              ? const Color(0xFF0F172A)
+                              : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 10,
-                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                      color: isActive
-                          ? const Color(0xFF0F172A)
-                          : const Color(0xFF64748B),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
       ),
     );
   }

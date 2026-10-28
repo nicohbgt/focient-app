@@ -120,7 +120,7 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
     final title = _nameController.text.trim();
     if (title.isEmpty) {
       setState(() {
-        _errorMessage = 'Nama task tidak boleh kosong';
+        _errorMessage = 'Task name cannot be empty';
       });
       return;
     }
@@ -146,7 +146,6 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     final sheetBg = isDark
         ? FocientColorDarkTokens.neutralSurfaceCard
@@ -173,13 +172,20 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
         color: sheetBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottomInset),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Drag handle pill
+      child: SafeArea(
+        top: false,
+        bottom: true,
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag handle pill
             Center(
               child: Container(
                 width: 44,
@@ -643,6 +649,8 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }

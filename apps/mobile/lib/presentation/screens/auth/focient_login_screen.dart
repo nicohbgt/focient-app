@@ -83,74 +83,80 @@ class _FocientLoginScreenState extends ConsumerState<FocientLoginScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark
-                ? FocientColorDarkTokens.neutralSurfaceCard
-                : FocientColorTokens.neutralSurfaceCard,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(FocientBorderRadiusTokens.radiusXl),
-            ),
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: isDark
+              ? FocientColorDarkTokens.neutralSurfaceCard
+              : FocientColorTokens.neutralSurfaceCard,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(FocientBorderRadiusTokens.radiusXl),
           ),
-          padding: const EdgeInsets.all(FocientSpacingTokens.space6),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(2),
+        ),
+        child: SafeArea(
+          top: false,
+          bottom: true,
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(FocientSpacingTokens.space6),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFCBD5E1),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Reset Password',
+                    style: TextStyle(
+                      fontFamily: FocientTypographyTokens.fontFamily,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Enter your email address and we’ll send you a 6-digit verification code to reset your password.',
+                    style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+                  ),
+                  const SizedBox(height: 20),
+                  FocientInputField(
+                    controller: forgotEmailController,
+                    label: 'Email Address',
+                    hintText: 'Input your email here',
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FocientButton(
+                      onPressed: () {
+                        final email = forgotEmailController.text.trim();
+                        if (email.isNotEmpty) {
+                          Navigator.of(ctx).pop();
+                          ref.read(authProvider.notifier).initiateRegistration(
+                                name: 'FoCient Member',
+                                email: email,
+                                password: 'TempPassword123!',
+                              );
+                        }
+                      },
+                      child: const Text('Send Recovery Code'),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Reset Password',
-                style: TextStyle(
-                  fontFamily: FocientTypographyTokens.fontFamily,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Enter your email address and we’ll send you a 6-digit verification code to reset your password.',
-                style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
-              ),
-              const SizedBox(height: 20),
-              FocientInputField(
-                controller: forgotEmailController,
-                label: 'Email Address',
-                hintText: 'Input your email here',
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FocientButton(
-                  onPressed: () {
-                    final email = forgotEmailController.text.trim();
-                    if (email.isNotEmpty) {
-                      Navigator.of(ctx).pop();
-                      ref.read(authProvider.notifier).initiateRegistration(
-                            name: 'FoCient Member',
-                            email: email,
-                            password: 'TempPassword123!',
-                          );
-                    }
-                  },
-                  child: const Text('Send Recovery Code'),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -185,9 +191,10 @@ class _FocientLoginScreenState extends ConsumerState<FocientLoginScreen> {
     return Scaffold(
       backgroundColor: isDark
           ? FocientColorDarkTokens.neutralBgCanvas
-          : FocientColorTokens.neutralSurfaceCard,
+          : FocientColorTokens.neutralBgCanvas,
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 440),
             child: SingleChildScrollView(
@@ -198,32 +205,15 @@ class _FocientLoginScreenState extends ConsumerState<FocientLoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (widget.onBack != null) ...[
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.chevron_left_rounded,
-                          size: 32,
-                          color: Color(0xFF64748B),
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        splashRadius: 24,
-                        onPressed: widget.onBack,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ] else
-                    const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-                  // Header Title
+                  // Header Title - Left/Start Aligned (No center)
                   Text(
                     'Welcome Back!',
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.start,
                     style: TextStyle(
                       fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 24,
+                      fontSize: 26,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.5,
                       color: titleColor,
@@ -234,7 +224,7 @@ class _FocientLoginScreenState extends ConsumerState<FocientLoginScreen> {
 
                   Text(
                     'Log in to continue your guilt-free focus rhythm',
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.start,
                     style: TextStyle(
                       fontFamily: FocientTypographyTokens.fontFamily,
                       fontSize: 14,
@@ -242,7 +232,7 @@ class _FocientLoginScreenState extends ConsumerState<FocientLoginScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 32),
 
                   // Email Field
                   FocientInputField(

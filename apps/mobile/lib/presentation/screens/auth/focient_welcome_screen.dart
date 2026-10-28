@@ -1,23 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
+import '../../focient_copywriting.dart';
 import '../../primitive/focient_button.dart';
+import '../../riverpod_providers.dart';
 
 /// FoCient Welcome / Onboarding Landing Page
 ///
-/// Serves as the introductory entrypoint in the auth journey:
-/// flow: welcome page -> register / login
-class FocientWelcomeScreen extends StatelessWidget {
+/// Features:
+/// - Language switcher toggle (English vs Indonesian) with interactive state update.
+/// - Adaptive value pillars and brand tagline.
+/// - Primary and Secondary CTA navigations into Register / Login flows.
+class FocientWelcomeScreen extends ConsumerWidget {
   final VoidCallback onGetStarted;
   final VoidCallback onLogin;
+  final FoCientLanguage? initialLanguage;
+  final ValueChanged<FoCientLanguage>? onLanguageChanged;
 
   const FocientWelcomeScreen({
     super.key,
     required this.onGetStarted,
     required this.onLogin,
+    this.initialLanguage,
+    this.onLanguageChanged,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    FoCientLanguage activeLanguage = initialLanguage ?? FoCientLanguage.en;
+    try {
+      activeLanguage = initialLanguage ?? ref.watch(languageProvider);
+    } catch (_) {
+      activeLanguage = initialLanguage ?? FoCientLanguage.en;
+    }
+    final copy = FoCientCopywriting.of(activeLanguage);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final titleColor = isDark
@@ -44,7 +60,53 @@ class FocientWelcomeScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 20),
+                  // Top Language Switcher Bar
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildLanguageChip(
+                              label: 'English',
+                              isSelected: activeLanguage == FoCientLanguage.en,
+                              onTap: () {
+                                try {
+                                  ref.read(languageProvider.notifier).setLanguage(FoCientLanguage.en);
+                                } catch (_) {}
+                                onLanguageChanged?.call(FoCientLanguage.en);
+                              },
+                              isDark: isDark,
+                            ),
+                            const SizedBox(width: 4),
+                            _buildLanguageChip(
+                              label: 'Indonesia',
+                              isSelected: activeLanguage == FoCientLanguage.id,
+                              onTap: () {
+                                try {
+                                  ref.read(languageProvider.notifier).setLanguage(FoCientLanguage.id);
+                                } catch (_) {}
+                                onLanguageChanged?.call(FoCientLanguage.id);
+                              },
+                              isDark: isDark,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
 
                   // Brand Emblem
                   Container(
@@ -88,7 +150,7 @@ class FocientWelcomeScreen extends StatelessWidget {
 
                   // Tagline
                   Text(
-                    'Focus & Efficient',
+                    copy.welcomeTagline,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: FocientTypographyTokens.fontFamily,
@@ -104,7 +166,7 @@ class FocientWelcomeScreen extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      'Guilt-free productivity and adaptive cognitive rhythm for your best work.',
+                      copy.welcomeSubtitle,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: FocientTypographyTokens.fontFamily,
@@ -120,19 +182,19 @@ class FocientWelcomeScreen extends StatelessWidget {
                   // Value Pillars
                   _buildPillar(
                     icon: Icons.check_circle_outline_rounded,
-                    text: 'Single-task flow without guilt or burnout',
+                    text: copy.welcomePillar1,
                     isDark: isDark,
                   ),
                   const SizedBox(height: 12),
                   _buildPillar(
                     icon: Icons.sync_rounded,
-                    text: 'Guilt-free adaptive rescheduling',
+                    text: copy.welcomePillar2,
                     isDark: isDark,
                   ),
                   const SizedBox(height: 12),
                   _buildPillar(
                     icon: Icons.speed_rounded,
-                    text: 'Daily work capacity limits (max 8h standard)',
+                    text: copy.welcomePillar3,
                     isDark: isDark,
                   ),
 
@@ -144,9 +206,9 @@ class FocientWelcomeScreen extends StatelessWidget {
                     height: 48,
                     child: FocientButton(
                       onPressed: onGetStarted,
-                      child: const Text(
-                        'Get Started',
-                        style: TextStyle(
+                      child: Text(
+                        copy.getStarted,
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
@@ -164,7 +226,7 @@ class FocientWelcomeScreen extends StatelessWidget {
                       variant: FocientButtonVariant.outline,
                       onPressed: onLogin,
                       child: Text(
-                        'Already have an account? Login',
+                        copy.alreadyHaveAccountLogin,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -178,6 +240,48 @@ class FocientWelcomeScreen extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF2563EB)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: FocientTypographyTokens.fontFamily,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected
+                ? Colors.white
+                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
           ),
         ),
       ),
