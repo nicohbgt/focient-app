@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/onboarding_task.dart';
+import '../../../data/task_state.dart';
 import '../../../data/workspace_category.dart';
 import '../../riverpod_providers.dart';
 import '../auth/focient_auth_flow.dart';
 import '../dashboard/focient_dashboard_screen.dart';
 import '../plan/focient_today_plan_screen.dart';
+import '../task/focient_add_task_screen.dart';
+import '../task/focient_task_detail_screen.dart';
+import '../task/focient_task_list_screen.dart';
 import 'focient_onboarding_review_screen.dart';
 import 'focient_onboarding_rhythm_screen.dart';
 import 'focient_onboarding_task_screen.dart';
@@ -21,6 +25,9 @@ enum InspectorView {
   step5Review,
   dashboard,
   todayPlan,
+  taskList,
+  addTask,
+  taskDetail,
 }
 
 /// Developer Screen Inspector Overlay
@@ -123,7 +130,49 @@ class _FocientScreenInspectorState extends ConsumerState<FocientScreenInspector>
           onBack: () => setState(() => _activeView = InspectorView.dashboard),
           onNavigateTab: (idx) {
             if (idx == 0) setState(() => _activeView = InspectorView.dashboard);
+            if (idx == 2) setState(() => _activeView = InspectorView.addTask);
+            if (idx == 3) setState(() => _activeView = InspectorView.taskList);
           },
+        );
+
+      case InspectorView.taskList:
+        return FocientTaskListScreen(
+          onBack: () => setState(() => _activeView = InspectorView.dashboard),
+          onNavigateTab: (idx) {
+            if (idx == 0) setState(() => _activeView = InspectorView.dashboard);
+            if (idx == 1) setState(() => _activeView = InspectorView.todayPlan);
+            if (idx == 2) setState(() => _activeView = InspectorView.addTask);
+          },
+        );
+
+      case InspectorView.addTask:
+        return FocientAddTaskScreen(
+          onBack: () => setState(() => _activeView = InspectorView.taskList),
+          onTaskSaved: (_) => setState(() => _activeView = InspectorView.taskList),
+        );
+
+      case InspectorView.taskDetail:
+        final allTasks = ref.watch(taskListProvider);
+        final sampleTask = allTasks.firstWhere(
+          (t) => t.title.contains('Project Progress'),
+          orElse: () => MobileTask(
+            id: 't-detail-sample',
+            title: 'Project Progress Discussion',
+            durationMinutes: 60,
+            priority: TaskPriorityEnum.top3,
+            energyLevel: EnergyLevelEnum.high,
+            categoryName: 'Meeting',
+            categoryColor: const Color(0xFFD97706),
+            restMinutes: 10,
+            dateDisplay: 'October, 3rd 2026',
+            startHourDisplay: '11:40',
+            focusType: 'Deep Focus',
+          ),
+        );
+        return FocientTaskDetailScreen(
+          task: sampleTask,
+          onBack: () => setState(() => _activeView = InspectorView.taskList),
+          onTaskDeleted: () => setState(() => _activeView = InspectorView.taskList),
         );
     }
   }
@@ -259,6 +308,10 @@ class _FocientScreenInspectorState extends ConsumerState<FocientScreenInspector>
                         const Divider(height: 1),
                         _menuItem('Dashboard (Guilt-Free Focus)', InspectorView.dashboard),
                         _menuItem('Today Plan (Your Planning)', InspectorView.todayPlan),
+                        const Divider(height: 1),
+                        _menuItem('Your Task List', InspectorView.taskList),
+                        _menuItem('Add Your Task', InspectorView.addTask),
+                        _menuItem('Task Detail', InspectorView.taskDetail),
                       ],
                     ),
                   ),
@@ -326,6 +379,12 @@ class _FocientScreenInspectorState extends ConsumerState<FocientScreenInspector>
         return 'Dashboard';
       case InspectorView.todayPlan:
         return 'Today Plan';
+      case InspectorView.taskList:
+        return 'Task List';
+      case InspectorView.addTask:
+        return 'Add Task';
+      case InspectorView.taskDetail:
+        return 'Task Detail';
     }
   }
 }

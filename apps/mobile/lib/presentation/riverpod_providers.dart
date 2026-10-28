@@ -22,6 +22,13 @@ class TaskListNotifier extends StateNotifier<List<MobileTask>> {
     state = [...state, task];
   }
 
+  void updateTask(MobileTask updatedTask) {
+    state = [
+      for (final task in state)
+        if (task.id == updatedTask.id) updatedTask else task
+    ];
+  }
+
   void removeTask(String id) {
     state = state.where((t) => t.id != id).toList();
   }
@@ -200,6 +207,67 @@ class TaskListNotifier extends StateNotifier<List<MobileTask>> {
         startHourDisplay: '17:40',
         focusType: 'Light',
       ),
+      // October 3rd, 2026 tasks matching mockups
+      MobileTask(
+        id: 't-oct3-1',
+        title: '30min Incline Walking Cardio',
+        durationMinutes: 30,
+        priority: TaskPriorityEnum.normal,
+        energyLevel: EnergyLevelEnum.medium,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Personal',
+        categoryColor: const Color(0xFF0D9488),
+        restMinutes: 10,
+        dateDisplay: 'October, 3rd 2026',
+        startHourDisplay: '08:30',
+        focusType: 'Medium',
+        needRestAfter: true,
+      ),
+      MobileTask(
+        id: 't-oct3-2',
+        title: '45min Leg Day - Strength',
+        durationMinutes: 45,
+        priority: TaskPriorityEnum.normal,
+        energyLevel: EnergyLevelEnum.high,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Personal',
+        categoryColor: const Color(0xFF0D9488),
+        restMinutes: 15,
+        dateDisplay: 'October, 3rd 2026',
+        startHourDisplay: '09:10',
+        focusType: 'Deep Focus',
+        needRestAfter: true,
+      ),
+      MobileTask(
+        id: 't-oct3-3',
+        title: 'Have a Brunch',
+        durationMinutes: 20,
+        priority: TaskPriorityEnum.low,
+        energyLevel: EnergyLevelEnum.low,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Personal',
+        categoryColor: const Color(0xFF0D9488),
+        restMinutes: 10,
+        dateDisplay: 'October, 3rd 2026',
+        startHourDisplay: '10:10',
+        focusType: 'Light',
+        needRestAfter: true,
+      ),
+      MobileTask(
+        id: 't-oct3-4',
+        title: 'Project Progress Discussion',
+        durationMinutes: 60,
+        priority: TaskPriorityEnum.top3,
+        energyLevel: EnergyLevelEnum.high,
+        status: TaskStatusEnum.todo,
+        categoryName: 'Meeting',
+        categoryColor: const Color(0xFFD97706),
+        restMinutes: 10,
+        dateDisplay: 'October, 3rd 2026',
+        startHourDisplay: '11:40',
+        focusType: 'Deep Focus',
+        needRestAfter: true,
+      ),
     ];
   }
 
@@ -228,16 +296,28 @@ class TaskListNotifier extends StateNotifier<List<MobileTask>> {
 final top3TasksProvider = Provider<List<MobileTask>>((ref) {
   final tasks = ref.watch(taskListProvider);
   return tasks
-      .where((t) => t.priority == TaskPriorityEnum.top3 && !t.isCompleted)
+      .where((t) =>
+          t.priority == TaskPriorityEnum.top3 &&
+          !t.isCompleted &&
+          !t.isBacklog &&
+          (t.dateDisplay.contains('5th') ||
+              t.dateDisplay.contains('10th') ||
+              !t.dateDisplay.contains('3rd')))
       .take(3)
       .toList();
 });
 
 final dailyCapacityProvider = Provider<Map<String, dynamic>>((ref) {
-  final tasks = ref.watch(taskListProvider);
-  final allocated = tasks
-      .where((t) => !t.isCompleted)
-      .fold<int>(0, (sum, t) => sum + t.durationMinutes);
+  final allTasks = ref.watch(taskListProvider);
+  final tasks = allTasks
+      .where((t) =>
+          !t.isCompleted &&
+          !t.isBacklog &&
+          (t.dateDisplay.contains('5th') ||
+              t.dateDisplay.contains('10th') ||
+              !t.dateDisplay.contains('3rd')))
+      .toList();
+  final allocated = tasks.fold<int>(0, (sum, t) => sum + t.durationMinutes);
   const capacity = 480;
   final percentage = capacity > 0 ? ((allocated / capacity) * 100).round() : 0;
 

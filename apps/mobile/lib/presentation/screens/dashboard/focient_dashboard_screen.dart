@@ -9,6 +9,8 @@ import '../../primitive/focient_input_field.dart';
 import '../../riverpod_providers.dart';
 import '../onboarding/create_task_bottom_sheet.dart';
 import '../plan/focient_today_plan_screen.dart';
+import '../task/focient_add_task_screen.dart';
+import '../task/focient_task_list_screen.dart';
 
 /// FoCient Main Dashboard Screen
 ///
@@ -175,6 +177,18 @@ class _FocientDashboardScreenState
         onNavigateTab: (idx) => setState(() => _activeNavIndex = idx),
       );
     }
+    if (_activeNavIndex == 2) {
+      return FocientAddTaskScreen(
+        onBack: () => setState(() => _activeNavIndex = 0),
+        onTaskSaved: (_) => setState(() => _activeNavIndex = 3),
+      );
+    }
+    if (_activeNavIndex == 3) {
+      return FocientTaskListScreen(
+        onBack: () => setState(() => _activeNavIndex = 0),
+        onNavigateTab: (idx) => setState(() => _activeNavIndex = idx),
+      );
+    }
 
     final authState = ref.watch(authProvider);
     final user = authState.user;
@@ -202,28 +216,36 @@ class _FocientDashboardScreenState
         : const Color(0xFF64748B);
 
     // --- Dynamic Workload & Priority Computation ---
-    final totalTasksCount = tasks.length;
-    final highPriorityCount = tasks
+    final todayTasks = tasks
+        .where((t) =>
+            !t.isBacklog &&
+            (t.dateDisplay.contains('5th') ||
+                t.dateDisplay.contains('10th') ||
+                !t.dateDisplay.contains('3rd')))
+        .toList();
+
+    final totalTasksCount = todayTasks.length;
+    final highPriorityCount = todayTasks
         .where((t) => t.priority == TaskPriorityEnum.top3 || t.energyLevel == EnergyLevelEnum.high)
         .length;
-    final mediumPriorityCount = tasks
+    final mediumPriorityCount = todayTasks
         .where((t) => t.priority == TaskPriorityEnum.normal || t.energyLevel == EnergyLevelEnum.medium)
         .length;
-    final lowPriorityCount = tasks
+    final lowPriorityCount = todayTasks
         .where((t) => t.priority == TaskPriorityEnum.low || t.energyLevel == EnergyLevelEnum.low)
         .length;
 
-    final allocatedMinutes = tasks
+    final allocatedMinutes = todayTasks
         .where((t) => !t.isCompleted)
         .fold<int>(0, (sum, t) => sum + t.durationMinutes);
 
     const capacityMinutes = 480;
-    final workloadPercent = tasks.isEmpty
+    final workloadPercent = todayTasks.isEmpty
         ? 0
         : ((allocatedMinutes / capacityMinutes) * 100).round().clamp(0, 100);
 
     String workloadStatus;
-    if (tasks.isEmpty || workloadPercent == 0) {
+    if (todayTasks.isEmpty || workloadPercent == 0) {
       workloadStatus = 'Empty Plan';
     } else if (workloadPercent < 50) {
       workloadStatus = 'Light';
@@ -235,7 +257,7 @@ class _FocientDashboardScreenState
       workloadStatus = 'Overload';
     }
 
-    final top3Tasks = tasks
+    final top3Tasks = todayTasks
         .where((t) => t.priority == TaskPriorityEnum.top3 && !t.isCompleted)
         .toList();
 
@@ -1487,18 +1509,6 @@ class _FocientDashboardScreenState
 
           return InkWell(
             onTap: () {
-              if (isCenterAdd) {
-                CreateTaskBottomSheet.show(
-                  context,
-                  availableCategories: const [
-                    WorkspaceCategory(name: 'Strategic', color: Color(0xFF7C3AED), colorHex: '#7C3AED'),
-                    WorkspaceCategory(name: 'Execution', color: Color(0xFF0284C7), colorHex: '#0284C7'),
-                    WorkspaceCategory(name: 'Meeting', color: Color(0xFFB45309), colorHex: '#B45309'),
-                    WorkspaceCategory(name: 'Operation', color: Color(0xFF0D9488), colorHex: '#0D9488'),
-                  ],
-                );
-                return;
-              }
               setState(() => _activeNavIndex = idx);
             },
             child: SizedBox(

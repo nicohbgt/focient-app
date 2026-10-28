@@ -1094,19 +1094,6 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
 
           return InkWell(
             onTap: () {
-              if (isCenterAdd) {
-                CreateTaskBottomSheet.show(
-                  context,
-                  availableCategories: const [
-                    WorkspaceCategory(name: 'Strategic', color: Color(0xFF7C3AED), colorHex: '#7C3AED'),
-                    WorkspaceCategory(name: 'Execution', color: Color(0xFF0284C7), colorHex: '#0284C7'),
-                    WorkspaceCategory(name: 'Meeting', color: Color(0xFFB45309), colorHex: '#B45309'),
-                    WorkspaceCategory(name: 'Operation', color: Color(0xFF0D9488), colorHex: '#0D9488'),
-                  ],
-                );
-                return;
-              }
-
               if (idx == 0) {
                 // Return to Home
                 if (widget.onNavigateTab != null) {
@@ -1119,10 +1106,12 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
                 return;
               }
 
-              setState(() => _activeNavIndex = idx);
               if (widget.onNavigateTab != null) {
                 widget.onNavigateTab!(idx);
+                return;
               }
+
+              setState(() => _activeNavIndex = idx);
             },
             child: SizedBox(
               width: 58,

@@ -21,7 +21,11 @@ import 'package:focient_mobile/presentation/primitive/focient_rest_time_slider.d
 import 'package:focient_mobile/data/onboarding_task.dart';
 import 'package:focient_mobile/presentation/screens/dashboard/focient_dashboard_screen.dart';
 import 'package:focient_mobile/presentation/screens/plan/focient_today_plan_screen.dart';
+import 'package:focient_mobile/presentation/screens/task/focient_add_task_screen.dart';
+import 'package:focient_mobile/presentation/screens/task/focient_task_detail_screen.dart';
+import 'package:focient_mobile/presentation/screens/task/focient_task_list_screen.dart';
 import 'package:focient_mobile/data/planning_state.dart';
+import 'package:focient_mobile/data/task_state.dart';
 import 'package:focient_mobile/presentation/riverpod_providers.dart';
 
 class TestRealAuthNotifier extends AuthNotifier {
@@ -1375,6 +1379,215 @@ void main() {
       expect(find.text('0.0 Hours'), findsOneWidget);
       expect(find.text('0 Task'), findsOneWidget);
       expect(find.textContaining('Belum ada tugas di backlog'), findsOneWidget);
+    });
+  });
+
+  group('FoCient Task List, Add Task, and Task Detail Feature Tests', () {
+    testWidgets('Task List renders October 2026 calendar and October 3rd schedule items', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            taskListProvider.overrideWith((ref) {
+              final notifier = TaskListNotifier([]);
+              notifier.seedSampleTasks();
+              return notifier;
+            }),
+          ],
+          child: const MaterialApp(
+            home: FocientTaskListScreen(),
+          ),
+        ),
+      );
+
+      // Top bar & month navigation
+      expect(find.text('Your Task List'), findsOneWidget);
+      expect(find.text('October 2026'), findsOneWidget);
+      expect(find.text('October, 3rd 2026'), findsOneWidget);
+
+      // Tasks on October 3rd
+      expect(find.text('30min Incline Walking Cardio'), findsOneWidget);
+      expect(find.text('45min Leg Day - Strength'), findsOneWidget);
+      expect(find.text('Have a Brunch'), findsOneWidget);
+      expect(find.text('Project Progress Discussion'), findsOneWidget);
+
+      // Resting buffers
+      expect(find.textContaining('Resting After "30min Incline'), findsOneWidget);
+      expect(find.textContaining('Resting After "45min Leg Da'), findsOneWidget);
+    });
+
+    testWidgets('Flow 1: Task List -> Task Detail when selecting a task', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            taskListProvider.overrideWith((ref) {
+              final notifier = TaskListNotifier([]);
+              notifier.seedSampleTasks();
+              return notifier;
+            }),
+          ],
+          child: const MaterialApp(
+            home: FocientTaskListScreen(),
+          ),
+        ),
+      );
+
+      // Scroll to and tap on "Project Progress Discussion"
+      await tester.ensureVisible(find.text('Project Progress Discussion'));
+      await tester.tap(find.text('Project Progress Discussion'));
+      await tester.pumpAndSettle();
+
+      // Task Detail screen opens!
+      expect(find.text('Task Detail'), findsOneWidget);
+      expect(find.text('Project Progress Discussion'), findsOneWidget);
+      expect(find.text('Meeting'), findsOneWidget);
+      expect(find.text('Deep Focus'), findsOneWidget);
+      expect(find.text('Task Date'), findsOneWidget);
+      expect(find.text('October, 3rd 2026'), findsOneWidget);
+      expect(find.text('Task Start'), findsOneWidget);
+      expect(find.text('11:40'), findsOneWidget);
+      expect(find.text('Duration'), findsOneWidget);
+      expect(find.text('60 Minutes'), findsOneWidget);
+      expect(find.text('Rest Time'), findsOneWidget);
+      expect(find.text('10 Minutes'), findsOneWidget);
+      expect(find.text('Cancel Task'), findsOneWidget);
+      expect(find.text('Edit Task'), findsOneWidget);
+    });
+
+    testWidgets('Flow 2: Dashboard -> Task List and Add Task via bottom navbar', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            taskListProvider.overrideWith((ref) {
+              final notifier = TaskListNotifier([]);
+              notifier.seedSampleTasks();
+              return notifier;
+            }),
+          ],
+          child: const MaterialApp(
+            home: FocientDashboardScreen(),
+          ),
+        ),
+      );
+
+      // Currently on Dashboard
+      expect(find.text('My Dashboard'), findsOneWidget);
+
+      // Tap Task List tab (tab 3) in bottom navbar
+      await tester.tap(find.text('Task List'));
+      await tester.pumpAndSettle();
+
+      // Navigated to Task List!
+      expect(find.text('Your Task List'), findsOneWidget);
+      expect(find.text('October 2026'), findsOneWidget);
+
+      // Tap Add Task tab (tab 2) in bottom navbar
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+
+      // Navigated to Add Task!
+      expect(find.text('Add Your Task'), findsOneWidget);
+      expect(find.text('Task Name'), findsOneWidget);
+      expect(find.text('Task Categories'), findsOneWidget);
+      expect(find.text('Task Duration'), findsOneWidget);
+      expect(find.text('Focus Type'), findsOneWidget);
+      expect(find.text('Time Slot'), findsOneWidget);
+      expect(find.text('Backlog Task'), findsOneWidget);
+      expect(find.text('Need to Rest After Task?'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Add New Task'), findsOneWidget);
+    });
+
+    testWidgets('Add Task form fills fields and saves new task', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            taskListProvider.overrideWith((ref) => TaskListNotifier([])),
+          ],
+          child: const MaterialApp(
+            home: FocientAddTaskScreen(),
+          ),
+        ),
+      );
+
+      // Verify initial empty state
+      expect(find.text('Add Your Task'), findsOneWidget);
+      expect(find.text('Input in here!'), findsAtLeastNWidgets(2));
+
+      // Enter Task Name
+      final nameField = find.byType(TextField).first;
+      await tester.enterText(nameField, 'Finalize Security Audit');
+
+      // Select category
+      await tester.tap(find.text('Execution'));
+      await tester.pumpAndSettle();
+
+      // Select duration
+      await tester.tap(find.text('20 Minute'));
+      await tester.pumpAndSettle();
+
+      // Tap Add New Task
+      await tester.ensureVisible(find.text('Add New Task'));
+      await tester.tap(find.text('Add New Task'));
+      await tester.pumpAndSettle();
+
+      // Snackbar confirmation
+      expect(find.textContaining('berhasil ditambahkan ke jadwal!'), findsOneWidget);
+    });
+
+    testWidgets('Task Detail allows Edit Task and Cancel Task', (tester) async {
+      final sampleTask = MobileTask(
+        id: 't-test-1',
+        title: 'Project Progress Discussion',
+        durationMinutes: 60,
+        priority: TaskPriorityEnum.top3,
+        energyLevel: EnergyLevelEnum.high,
+        categoryName: 'Meeting',
+        categoryColor: const Color(0xFFD97706),
+        restMinutes: 10,
+        dateDisplay: 'October, 3rd 2026',
+        startHourDisplay: '11:40',
+        focusType: 'Deep Focus',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            taskListProvider.overrideWith((ref) {
+              final notifier = TaskListNotifier([]);
+              notifier.addTask(sampleTask);
+              return notifier;
+            }),
+          ],
+          child: MaterialApp(
+            home: FocientTaskDetailScreen(task: sampleTask),
+          ),
+        ),
+      );
+
+      expect(find.text('Project Progress Discussion'), findsOneWidget);
+
+      // Tap Edit Task opens Add/Edit screen
+      await tester.ensureVisible(find.text('Edit Task'));
+      await tester.tap(find.text('Edit Task'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit Your Task'), findsOneWidget);
+      expect(find.text('Save Changes'), findsOneWidget);
+
+      // Tap Cancel on edit screen returns to detail
+      await tester.ensureVisible(find.text('Cancel'));
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Task Detail'), findsOneWidget);
+
+      // Tap Cancel Task opens confirm dialog
+      await tester.ensureVisible(find.text('Cancel Task'));
+      await tester.tap(find.text('Cancel Task'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Batalkan Tugas?'), findsOneWidget);
+      expect(find.text('Hapus Tugas'), findsOneWidget);
     });
   });
 }

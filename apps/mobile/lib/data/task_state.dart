@@ -20,6 +20,8 @@ class MobileTask {
   final String dateDisplay;
   final String startHourDisplay;
   final String focusType;
+  final bool isBacklog;
+  final bool needRestAfter;
 
   MobileTask({
     required this.id,
@@ -36,6 +38,8 @@ class MobileTask {
     this.dateDisplay = 'October, 10th',
     this.startHourDisplay = '10:00',
     this.focusType = 'Deep Focus',
+    this.isBacklog = false,
+    this.needRestAfter = true,
   });
 
   bool get isCompleted => status == TaskStatusEnum.completed;
@@ -54,6 +58,8 @@ class MobileTask {
     String? dateDisplay,
     String? startHourDisplay,
     String? focusType,
+    bool? isBacklog,
+    bool? needRestAfter,
   }) {
     return MobileTask(
       id: id,
@@ -70,6 +76,8 @@ class MobileTask {
       dateDisplay: dateDisplay ?? this.dateDisplay,
       startHourDisplay: startHourDisplay ?? this.startHourDisplay,
       focusType: focusType ?? this.focusType,
+      isBacklog: isBacklog ?? this.isBacklog,
+      needRestAfter: needRestAfter ?? this.needRestAfter,
     );
   }
 }
