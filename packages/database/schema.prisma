@@ -61,7 +61,13 @@ model User {
   email                         String                @unique
   passwordHash                  String
   name                          String
+  username                      String?
   roleArchetype                 String?               @default("Software Engineer")
+  occupancy                     String?               @default("General")
+  workingRhythm                 String?               @default("Early Bird")
+  schedulingStyle               String?               @default("Structured")
+  restTimePerTask               Int                   @default(20)
+  workloadPercentage            Int                   @default(60)
   workHoursLimit                Float                 @default(8.0)
   startWorkTime                 String                @default("09:00")
   endWorkTime                   String                @default("17:00")
@@ -126,6 +132,14 @@ model Task {
   status              TaskStatus            @default(TODO)
   deadline            DateTime?
   completedAt         DateTime?
+  focusType           String?               @default("Deep Focus")
+  restMinutes         Int                   @default(10)
+  needRestAfter       Boolean               @default(true)
+  isBacklog           Boolean               @default(false)
+  categoryName        String?
+  categoryColor       String?
+  dateDisplay         String?
+  startHourDisplay    String?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
 

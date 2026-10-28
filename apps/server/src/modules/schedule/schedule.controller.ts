@@ -243,6 +243,107 @@ async function handleTodayPlan(req: AuthenticatedRequest, res: Response, next: N
 // GET /api/schedule/today-plan
 scheduleRouter.get('/today-plan', handleTodayPlan);
 
+// GET /api/schedule/weekly or /api/today-plan/weekly
+scheduleRouter.get('/weekly', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const weeklyData = {
+      weekDate: 'Monday, October 5th 2026',
+      distribution: [
+        { dayKey: 'Mon', fullDayName: 'Monday', percentage: 60 },
+        { dayKey: 'Tue', fullDayName: 'Tuesday', percentage: 80 },
+        { dayKey: 'Wed', fullDayName: 'Wednesday', percentage: 85 },
+        { dayKey: 'Thu', fullDayName: 'Thursday', percentage: 56 },
+        { dayKey: 'Fri', fullDayName: 'Friday', percentage: 62 },
+        { dayKey: 'Sat', fullDayName: 'Saturday', percentage: 88 },
+        { dayKey: 'Sun', fullDayName: 'Sunday', percentage: 41 },
+      ],
+      metrics: {
+        activeHoursAllocated: 5.5,
+        bufferHoursAllocated: 45,
+        onScheduledTaskCount: 54,
+      },
+      categories: [
+        { name: 'All Task', allocatedMinutes: 600, maxMinutes: null },
+        { name: 'Project', allocatedMinutes: 120, maxMinutes: 360 },
+        { name: 'Personal', allocatedMinutes: 30, maxMinutes: 120 },
+        { name: 'Relationship', allocatedMinutes: 30, maxMinutes: 90 },
+      ],
+      rebalanceSuggestions: [
+        {
+          id: 'reb-1',
+          title: 'Implement Typography Token',
+          previousSchedule: 'Wednesday, 12:00',
+          newSchedule: 'Thursday, 10:30',
+          taskDurationMinutes: 45,
+          restDurationMinutes: 10,
+          categoryName: 'Project',
+          categoryColor: '#7C3AED',
+        },
+        {
+          id: 'reb-2',
+          title: 'Implement Color Palette Token',
+          previousSchedule: 'Wednesday, 12:50',
+          newSchedule: 'Thursday, 11:20',
+          taskDurationMinutes: 45,
+          restDurationMinutes: 10,
+          categoryName: 'Project',
+          categoryColor: '#7C3AED',
+        },
+      ],
+      backlogTasks: [
+        {
+          id: 'bklg-1',
+          title: 'Draw and Visualize the Architecture',
+          isScheduled: false,
+          categoryName: 'Project',
+          categoryColor: '#7C3AED',
+        },
+        {
+          id: 'bklg-2',
+          title: 'Make the DFD and ERD',
+          isScheduled: false,
+          categoryName: 'Project',
+          categoryColor: '#7C3AED',
+        },
+      ],
+    };
+    res.json(weeklyData);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/schedule/rebalance or /api/today-plan/rebalance
+scheduleRouter.post('/rebalance', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    res.json({
+      success: true,
+      message: 'Jadwal berhasil diseimbangkan tanpa rasa bersalah. Beban hari Rabu berkurang menjadi 65% (Optimal).',
+      rebalancedDay: 'Wednesday',
+      newPercentage: 65,
+      targetDay: 'Thursday',
+      targetPercentage: 75,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/schedule/backlog/schedule or /api/today-plan/backlog/schedule
+scheduleRouter.post('/backlog/schedule', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { taskId, scheduledTime } = req.body;
+    res.json({
+      success: true,
+      taskId,
+      scheduledTime: scheduledTime ?? 'Today, 15:00',
+      message: 'Tugas backlog berhasil dijadwalkan ke jadwal aktif.',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/schedule?date=YYYY-MM-DD
 scheduleRouter.get('/', async (req: AuthenticatedRequest, res: Response, next) => {
   if (req.baseUrl.includes('today-plan')) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
+import '../../../data/focient_repository.dart';
 import '../../../data/task_state.dart';
 import '../../riverpod_providers.dart';
 
@@ -133,8 +134,10 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
 
     if (isEdit) {
       ref.read(taskListProvider.notifier).updateTask(savedTask);
+      ref.read(focientRepositoryProvider).updateTask(savedTask);
     } else {
       ref.read(taskListProvider.notifier).addTask(savedTask);
+      ref.read(focientRepositoryProvider).createTask(savedTask);
     }
 
     ScaffoldMessenger.of(context).showSnackBar(

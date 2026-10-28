@@ -343,7 +343,12 @@ export class AuthService {
       where: { id: userId },
       data: {
         name: data.username || data.name || user.name,
-        roleArchetype: data.roleArchetype,
+        username: data.username || data.name || user.name,
+        roleArchetype: data.occupancy || data.roleArchetype,
+        occupancy: data.occupancy || data.roleArchetype,
+        workingRhythm: data.workingRhythm || data.energyRhythm || 'Early Bird',
+        schedulingStyle: data.schedulingStyle || data.workStyle || 'Structured',
+        restTimePerTask: data.restTimePerTask ?? data.restTimeMinutesPerTask ?? 10,
         workHoursLimit: data.workHoursLimit,
         startWorkTime: data.startWorkTime,
         endWorkTime: data.endWorkTime,
@@ -625,6 +630,12 @@ export class AuthService {
     id: string;
     email: string;
     name: string;
+    username?: string | null;
+    occupancy?: string | null;
+    workingRhythm?: string | null;
+    schedulingStyle?: string | null;
+    restTimePerTask?: number | null;
+    workloadPercentage?: number | null;
     timezone: string;
     roleArchetype?: string | null;
     workHoursLimit?: number | null;
@@ -658,6 +669,12 @@ export class AuthService {
       id: user.id,
       email: user.email,
       name: user.name,
+      username: user.username || user.name,
+      occupancy: user.occupancy || user.roleArchetype || 'Software Engineer',
+      workingRhythm: user.workingRhythm || 'Early Bird',
+      schedulingStyle: user.schedulingStyle || user.workStyle || 'Structured',
+      restTimePerTask: user.restTimePerTask ?? 10,
+      workloadPercentage: user.workloadPercentage ?? 0,
       timezone: user.timezone,
       roleArchetype: user.roleArchetype || 'Software Engineer',
       workHoursLimit: user.workHoursLimit || 8.0,

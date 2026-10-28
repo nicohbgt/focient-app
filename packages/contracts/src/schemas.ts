@@ -161,6 +161,14 @@ export const CreateTaskSchema = z.object({
     .datetime({ offset: true, message: MSG.taskStartTime })
     .optional(),
   swapWithTaskId: z.string().uuid().optional(),
+  focusType: z.string().max(50).optional(),
+  restMinutes: z.number().int().min(0).max(60).optional(),
+  needRestAfter: z.boolean().optional(),
+  isBacklog: z.boolean().optional(),
+  categoryName: z.string().max(50).optional(),
+  categoryColor: z.string().max(30).optional(),
+  dateDisplay: z.string().max(60).optional(),
+  startHourDisplay: z.string().max(30).optional(),
 });
 
 export const UpdateTaskSchema = CreateTaskSchema.partial().extend({
@@ -215,7 +223,11 @@ export const OnboardingSetupSchema = z
     workStyle: z.string().optional().default('Hybrid System: Structure + Flexibility'),
     timeToFirstPlanSeconds: z.number().int().positive().optional(),
     restTimeMinutesPerTask: z.number().min(0).max(30).optional().default(10),
+    restTimePerTask: z.number().min(0).max(30).optional(),
     energyRhythm: z.string().optional().default('Early Bird'),
+    workingRhythm: z.string().optional(),
+    occupancy: z.string().optional(),
+    schedulingStyle: z.string().optional(),
   })
   .refine(
     (data) => {

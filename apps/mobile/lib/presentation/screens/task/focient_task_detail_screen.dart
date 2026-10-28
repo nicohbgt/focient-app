@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
+import '../../../data/focient_repository.dart';
 import '../../../data/task_state.dart';
 import '../../riverpod_providers.dart';
 import 'focient_add_task_screen.dart';
@@ -62,6 +63,7 @@ class _FocientTaskDetailScreenState extends ConsumerState<FocientTaskDetailScree
             onPressed: () {
               Navigator.of(ctx).pop();
               ref.read(taskListProvider.notifier).removeTask(_currentTask.id);
+              ref.read(focientRepositoryProvider).deleteTask(_currentTask.id);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Tugas "${_currentTask.title}" dibatalkan tanpa rasa bersalah.'),

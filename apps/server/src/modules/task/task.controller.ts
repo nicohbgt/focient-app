@@ -83,6 +83,25 @@ taskRouter.get('/top-3', async (req: AuthenticatedRequest, res: Response, next) 
   }
 });
 
+// GET /api/tasks/:id (Fetch task detail)
+taskRouter.get('/:id', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const userId = req.user!.id;
+    const task = await prisma.task.findFirst({
+      where: { id: req.params.id, userId },
+      include: { categoryRef: true },
+    });
+
+    if (!task) {
+      throw new NotFoundError('Tugas tidak ditemukan');
+    }
+
+    res.json(formatTask(task));
+  } catch (error) {
+    next(error);
+  }
+});
+
 /**
  * POST /api/tasks (Proses 2.0: Quick Add Task with Activity Diagram Decision Flow)
  *
@@ -228,6 +247,14 @@ taskRouter.post('/', validateBody(CreateTaskSchema), async (req: AuthenticatedRe
         scheduledStart: finalStartTime,
         scheduledEnd: finalEndTime,
         deadline: data.deadline ? new Date(data.deadline) : undefined,
+        focusType: data.focusType ?? (data.energyLevel === 'HIGH' ? 'Deep Focus' : data.energyLevel === 'LOW' ? 'Light' : 'Medium'),
+        restMinutes: data.restMinutes ?? 10,
+        needRestAfter: data.needRestAfter ?? true,
+        isBacklog: data.isBacklog ?? false,
+        categoryName: data.categoryName ?? data.category ?? 'Strategic',
+        categoryColor: data.categoryColor ?? '#7C3AED',
+        dateDisplay: data.dateDisplay,
+        startHourDisplay: data.startHourDisplay,
       },
     });
 
@@ -472,6 +499,14 @@ taskRouter.patch('/:id', validateBody(UpdateTaskSchema), async (req: Authenticat
         ...(data.targetDate !== undefined ? { targetDate: data.targetDate ? new Date(data.targetDate) : null } : {}),
         ...(data.startTime !== undefined ? { startTime: data.startTime ? new Date(data.startTime) : null } : {}),
         ...(data.scheduledStart !== undefined ? { scheduledStart: data.scheduledStart ? new Date(data.scheduledStart) : null } : {}),
+        ...(data.focusType !== undefined ? { focusType: data.focusType } : {}),
+        ...(data.restMinutes !== undefined ? { restMinutes: data.restMinutes } : {}),
+        ...(data.needRestAfter !== undefined ? { needRestAfter: data.needRestAfter } : {}),
+        ...(data.isBacklog !== undefined ? { isBacklog: data.isBacklog } : {}),
+        ...(data.categoryName !== undefined ? { categoryName: data.categoryName } : {}),
+        ...(data.categoryColor !== undefined ? { categoryColor: data.categoryColor } : {}),
+        ...(data.dateDisplay !== undefined ? { dateDisplay: data.dateDisplay } : {}),
+        ...(data.startHourDisplay !== undefined ? { startHourDisplay: data.startHourDisplay } : {}),
         completedAt: completedAtDate,
       },
     });
@@ -534,6 +569,14 @@ export function formatTask(task: {
   scheduledEnd?: Date | null;
   deadline?: Date | null;
   completedAt?: Date | null;
+  focusType?: string | null;
+  restMinutes?: number | null;
+  needRestAfter?: boolean | null;
+  isBacklog?: boolean | null;
+  categoryName?: string | null;
+  categoryColor?: string | null;
+  dateDisplay?: string | null;
+  startHourDisplay?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }): TaskResponseDto {
@@ -557,6 +600,14 @@ export function formatTask(task: {
     scheduledStart: task.scheduledStart ? task.scheduledStart.toISOString() : undefined,
     scheduledEnd: task.scheduledEnd ? task.scheduledEnd.toISOString() : undefined,
     completedAt: task.completedAt ? task.completedAt.toISOString() : undefined,
+    focusType: task.focusType ?? (task.energyLevel === 'HIGH' ? 'Deep Focus' : task.energyLevel === 'LOW' ? 'Light' : 'Medium'),
+    restMinutes: task.restMinutes ?? 10,
+    needRestAfter: task.needRestAfter ?? true,
+    isBacklog: task.isBacklog ?? false,
+    categoryName: task.categoryName ?? task.category ?? 'Strategic',
+    categoryColor: task.categoryColor ?? '#7C3AED',
+    dateDisplay: task.dateDisplay ?? (task.targetDate ? task.targetDate.toISOString().split('T')[0] : 'October, 3rd 2026'),
+    startHourDisplay: task.startHourDisplay ?? (start ? start.toISOString().substring(11, 16) : '11:40'),
     createdAt: task.createdAt.toISOString(),
     updatedAt: task.updatedAt.toISOString(),
   };

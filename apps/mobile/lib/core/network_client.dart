@@ -74,6 +74,56 @@ class FocientNetworkClient {
     }
   }
 
+  Future<dynamic> patch(String endpoint, Map<String, dynamic> body) async {
+    final cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl$cleanEndpoint'),
+        headers: _headers,
+        body: jsonEncode(body),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(
+        'Gagal terhubung ke server FoCient. Periksa koneksi internet Anda.',
+      );
+    }
+  }
+
+  Future<dynamic> put(String endpoint, Map<String, dynamic> body) async {
+    final cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl$cleanEndpoint'),
+        headers: _headers,
+        body: jsonEncode(body),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(
+        'Gagal terhubung ke server FoCient. Periksa koneksi internet Anda.',
+      );
+    }
+  }
+
+  Future<dynamic> delete(String endpoint) async {
+    final cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl$cleanEndpoint'),
+        headers: _headers,
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(
+        'Gagal terhubung ke server FoCient. Periksa koneksi internet Anda.',
+      );
+    }
+  }
+
   dynamic _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) return null;

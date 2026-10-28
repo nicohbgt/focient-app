@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../../data/auth_state.dart';
+import '../../../data/focient_repository.dart';
 import '../../../data/task_state.dart';
 import '../../../data/workspace_category.dart';
 import '../../primitive/focient_button.dart';
@@ -99,6 +100,7 @@ class _FocientDashboardScreenState
     );
 
     ref.read(taskListProvider.notifier).addTask(newTask);
+    ref.read(focientRepositoryProvider).createTask(newTask);
     _taskNameController.clear();
     FocusScope.of(context).unfocus();
 

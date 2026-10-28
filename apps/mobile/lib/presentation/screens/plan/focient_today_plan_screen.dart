@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
+import '../../../data/focient_repository.dart';
 import '../../../data/planning_state.dart';
 import '../../../data/workspace_category.dart';
 import '../../primitive/focient_button.dart';
@@ -38,6 +39,7 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
 
   void _onRescheduleTask() {
     ref.read(planningProvider.notifier).rescheduleOverloadedTasks();
+    ref.read(focientRepositoryProvider).rebalanceSchedule();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
@@ -104,6 +106,7 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
                 onTap: () {
                   Navigator.pop(ctx);
                   ref.read(planningProvider.notifier).scheduleBacklogTask(task.id, 'Today, 15:00');
+                  ref.read(focientRepositoryProvider).scheduleBacklogTask(taskId: task.id, targetTime: 'Today, 15:00');
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Tugas "${task.title}" dijadwalkan ke jam 15:00!'),
@@ -118,6 +121,7 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
                 onTap: () {
                   Navigator.pop(ctx);
                   ref.read(planningProvider.notifier).scheduleBacklogTask(task.id, 'Tomorrow, 10:00');
+                  ref.read(focientRepositoryProvider).scheduleBacklogTask(taskId: task.id, targetTime: 'Tomorrow, 10:00');
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Tugas "${task.title}" dijadwalkan ke Besok jam 10:00!'),

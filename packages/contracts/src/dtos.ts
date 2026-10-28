@@ -67,6 +67,12 @@ export interface UserProfileDto {
   id: string;
   email: string;
   name: string;
+  username?: string;
+  occupancy?: string;
+  workingRhythm?: string;
+  schedulingStyle?: string;
+  restTimePerTask?: number;
+  workloadPercentage?: number;
   timezone: string;
   roleArchetype: string;
   workHoursLimit: number;
@@ -130,6 +136,14 @@ export interface CreateTaskDto {
   startTime?: string;
   scheduledStart?: string;
   swapWithTaskId?: string;
+  focusType?: string;
+  restMinutes?: number;
+  needRestAfter?: boolean;
+  isBacklog?: boolean;
+  categoryName?: string;
+  categoryColor?: string;
+  dateDisplay?: string;
+  startHourDisplay?: string;
 }
 
 export interface UpdateTaskDto {
@@ -151,6 +165,14 @@ export interface UpdateTaskDto {
   moodRating?: number;
   reflectionNotes?: string;
   swapWithTaskId?: string;
+  focusType?: string;
+  restMinutes?: number;
+  needRestAfter?: boolean;
+  isBacklog?: boolean;
+  categoryName?: string;
+  categoryColor?: string;
+  dateDisplay?: string;
+  startHourDisplay?: string;
 }
 
 export interface MarkTaskCompleteDto {
@@ -179,6 +201,14 @@ export interface TaskResponseDto {
   scheduledStart?: string;
   scheduledEnd?: string;
   completedAt?: string;
+  focusType?: string;
+  restMinutes?: number;
+  needRestAfter?: boolean;
+  isBacklog?: boolean;
+  categoryName?: string;
+  categoryColor?: string;
+  dateDisplay?: string;
+  startHourDisplay?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -197,6 +227,7 @@ export interface CompleteOnboardingDto {
   username?: string;
   name?: string;
   roleArchetype: string;
+  occupancy?: string;
   workHoursLimit: number; // 1 to 16 hours
   startWorkTime: string;  // "HH:mm"
   endWorkTime: string;    // "HH:mm"
@@ -204,9 +235,12 @@ export interface CompleteOnboardingDto {
   visualGoals?: string[] | string;
   motivationType?: MotivationType;
   workStyle?: string;
+  schedulingStyle?: string;
   timeToFirstPlanSeconds?: number;
   restTimeMinutesPerTask?: number;
+  restTimePerTask?: number;
   energyRhythm?: string;
+  workingRhythm?: string;
 }
 
 export type OnboardingSetupDto = CompleteOnboardingDto;
