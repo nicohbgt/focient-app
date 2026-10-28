@@ -34,7 +34,6 @@ class FocientTaskListScreen extends ConsumerStatefulWidget {
 class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
   int _activeNavIndex = 3; // Task List is active
   int _selectedDay = 3; // October 3rd, 2026
-  final int _selectedMonth = 10;
   final int _selectedYear = 2026;
 
   void _onSelectTask(MobileTask task) {

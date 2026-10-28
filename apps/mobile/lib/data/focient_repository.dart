@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/network_client.dart';
-import 'auth_state.dart';
 import 'dto_mappers.dart';
 import 'planning_state.dart';
 import 'task_state.dart';

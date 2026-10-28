@@ -2,15 +2,16 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy root monorepo files
+# Copy root monorepo files & package manifests for all workspaces
 COPY package.json package-lock.json turbo.json ./
 COPY packages/ui-tokens/package.json ./packages/ui-tokens/
 COPY packages/contracts/package.json ./packages/contracts/
 COPY packages/database/package.json ./packages/database/
 COPY apps/server/package.json ./apps/server/
+COPY apps/web/package.json ./apps/web/
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (ignoring postinstall until schema is copied)
+RUN npm ci --ignore-scripts
 
 # Copy source codes
 COPY packages/ ./packages/

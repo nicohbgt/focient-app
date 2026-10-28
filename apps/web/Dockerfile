@@ -2,19 +2,25 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Copy root monorepo files & package manifests for all workspaces
 COPY package.json package-lock.json turbo.json ./
 COPY packages/ui-tokens/package.json ./packages/ui-tokens/
 COPY packages/contracts/package.json ./packages/contracts/
+COPY packages/database/package.json ./packages/database/
 COPY apps/web/package.json ./apps/web/
+COPY apps/server/package.json ./apps/server/
 
-RUN npm ci
+# Install dependencies (ignoring postinstall until schema is copied)
+RUN npm ci --ignore-scripts
 
+# Copy source codes
 COPY packages/ ./packages/
 COPY apps/web/ ./apps/web/
 
 WORKDIR /app/apps/web
 RUN npm run build
 
+# Production runtime stage
 FROM node:20-alpine AS runner
 
 WORKDIR /app
