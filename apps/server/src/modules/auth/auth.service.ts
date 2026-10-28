@@ -1,6 +1,5 @@
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { prisma, TaskPriority, TaskStatus, ScheduleBlockType, CapacityStatus, NotificationType } from '@focient/database';
 import {
   RegisterDto,
@@ -16,29 +15,20 @@ import {
   ResetPasswordDto,
 } from '@focient/contracts';
 import { ConflictError, UnauthorizedError, NotFoundError } from '../../common/errors.js';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'focient_default_jwt_secret_change_in_prod';
-const JWT_EXPIRES_IN = '7d';
-
-interface StoredOtp {
-  code: string;
-  expiresAt: number;
-  lastSentAt: number;
-  attempts: number;
-}
-
-// In-memory OTP storage with strict TTL and rate-limiting
-const otpMemoryStore = new Map<string, StoredOtp>();
+import { otpRepository } from './otp.repository.js';
+import { emailService } from '../email/email.service.js';
+import { googleOidcService } from './google-oidc.service.js';
+import { sessionService, TokenPair } from './session.service.js';
 
 /**
  * FoCient Proses 1.0: Manajemen Akun & Onboarding
  *
- * Mengelola pendaftaran akun, otentikasi ganda (Email/Password & Google OAuth),
- * serta pencatatan preferensi gaya kerja ke D1 (users), D2 (categories), dan D4 (user_capacities).
+ * Mengelola pendaftaran akun, otentikasi ganda (Email/Password & Google OAuth OIDC),
+ * manajemen sesi, OTP terenkripsi/ter-hash persisten, serta pencatatan preferensi gaya kerja ke D1, D2, dan D4.
  */
 export class AuthService {
   /**
-   * Generates and dispatches a cryptographically secure 6-digit OTP code
+   * Generates and dispatches a cryptographically secure 6-digit OTP code using real email provider
    */
   async sendOtp(data: SendOtpDto): Promise<OtpResponseDto> {
     const email = data.email.toLowerCase();
@@ -52,29 +42,14 @@ export class AuthService {
       throw new ConflictError('Email sudah terdaftar. Silakan login ke akun Anda.');
     }
 
-    // 2. Check 30-second resend cooldown rate limit
-    const existingOtp = otpMemoryStore.get(email);
-    const now = Date.now();
-    if (existingOtp && now - existingOtp.lastSentAt < 30 * 1000) {
-      const waitSeconds = Math.ceil((30 * 1000 - (now - existingOtp.lastSentAt)) / 1000);
-      throw new ConflictError(`Mohon tunggu ${waitSeconds} detik sebelum meminta kode OTP baru.`);
-    }
-
-    // 3. Generate secure 6-digit OTP
+    // 2. Generate secure 6-digit OTP and persist hashed record
     const code = crypto.randomInt(100000, 999999).toString();
     const expiresInSeconds = 600; // 10 minutes
 
-    otpMemoryStore.set(email, {
-      code,
-      expiresAt: now + expiresInSeconds * 1000,
-      lastSentAt: now,
-      attempts: 0,
-    });
+    await otpRepository.saveOtp(email, 'REGISTRATION', code, expiresInSeconds);
 
-    // 4. Real Email Dispatch Hook
-    // If SMTP/Resend/SendGrid is configured in environment, dispatch actual email.
-    // In local development or staging, log directly to server console.
-    console.log(`[FoCient Real Email Service] Dispatched 6-digit OTP to: ${email} | Code: ${code} | Valid for 10 minutes`);
+    // 3. Real Email Dispatch Hook (code is never logged into server console)
+    await emailService.sendRegistrationOtp(email, code);
 
     return {
       success: true,
@@ -88,31 +63,11 @@ export class AuthService {
    */
   async verifyOtp(data: VerifyOtpDto): Promise<AuthResponseDto> {
     const email = data.email.toLowerCase();
-    const stored = otpMemoryStore.get(email);
 
-    if (!stored) {
-      throw new UnauthorizedError('Kode OTP tidak ditemukan atau sudah kedaluwarsa. Silakan minta kode baru.');
-    }
+    // 1. Verify and consume hashed OTP record
+    await otpRepository.verifyAndConsume(email, 'REGISTRATION', data.code);
 
-    if (Date.now() > stored.expiresAt) {
-      otpMemoryStore.delete(email);
-      throw new UnauthorizedError('Kode OTP sudah kedaluwarsa. Silakan minta kode baru.');
-    }
-
-    if (stored.attempts >= 5) {
-      otpMemoryStore.delete(email);
-      throw new UnauthorizedError('Batas percobaan terlampaui. Silakan minta kode OTP baru demi keamanan.');
-    }
-
-    if (stored.code !== data.code.trim()) {
-      stored.attempts += 1;
-      throw new UnauthorizedError('Kode OTP salah. Silakan periksa kembali email Anda.');
-    }
-
-    // Single-use guarantee: remove OTP from store immediately
-    otpMemoryStore.delete(email);
-
-    // Create real user in Database
+    // 2. Create real user in Database and initiate session
     return this.register({
       email,
       name: data.name,
@@ -135,25 +90,13 @@ export class AuthService {
       throw new NotFoundError('Email tidak terdaftar dalam sistem FoCient.');
     }
 
-    // Check rate-limit cooldown
-    const existingOtp = otpMemoryStore.get(email);
-    const now = Date.now();
-    if (existingOtp && now - existingOtp.lastSentAt < 30 * 1000) {
-      const waitSeconds = Math.ceil((30 * 1000 - (now - existingOtp.lastSentAt)) / 1000);
-      throw new ConflictError(`Mohon tunggu ${waitSeconds} detik sebelum meminta kode OTP baru.`);
-    }
-
     const code = crypto.randomInt(100000, 999999).toString();
     const expiresInSeconds = 600;
 
-    otpMemoryStore.set(email, {
-      code,
-      expiresAt: now + expiresInSeconds * 1000,
-      lastSentAt: now,
-      attempts: 0,
-    });
+    await otpRepository.saveOtp(email, 'PASSWORD_RESET', code, expiresInSeconds);
 
-    console.log(`[FoCient Password Reset Service] Dispatched 6-digit OTP to: ${email} | Code: ${code} | Valid for 10 minutes`);
+    // Dispatch via real email service
+    await emailService.sendPasswordResetOtp(email, code);
 
     return {
       success: true,
@@ -167,26 +110,7 @@ export class AuthService {
    */
   async verifyResetOtp(data: VerifyResetOtpDto): Promise<{ success: boolean; message: string }> {
     const email = data.email.toLowerCase();
-    const stored = otpMemoryStore.get(email);
-
-    if (!stored) {
-      throw new UnauthorizedError('Kode OTP tidak ditemukan atau sudah kedaluwarsa.');
-    }
-
-    if (Date.now() > stored.expiresAt) {
-      otpMemoryStore.delete(email);
-      throw new UnauthorizedError('Kode OTP sudah kedaluwarsa. Silakan minta kode baru.');
-    }
-
-    if (stored.attempts >= 5) {
-      otpMemoryStore.delete(email);
-      throw new UnauthorizedError('Batas percobaan terlampaui. Silakan minta kode baru.');
-    }
-
-    if (stored.code !== data.code.trim()) {
-      stored.attempts += 1;
-      throw new UnauthorizedError('Kode OTP salah. Silakan periksa kembali email Anda.');
-    }
+    await otpRepository.verifyAndConsume(email, 'PASSWORD_RESET', data.code);
 
     return {
       success: true,
@@ -195,14 +119,20 @@ export class AuthService {
   }
 
   /**
-   * Resets the user's password using verified OTP
+   * Resets the user's password using verified OTP and revokes all active sessions
    */
   async resetPassword(data: ResetPasswordDto): Promise<{ success: boolean; message: string }> {
     const email = data.email.toLowerCase();
-    const stored = otpMemoryStore.get(email);
 
-    if (!stored || stored.code !== data.code.trim()) {
-      throw new UnauthorizedError('Sesi pemulihan tidak valid atau sudah kedaluwarsa.');
+    // 1. Verify and consume OTP
+    await otpRepository.verifyAndConsume(email, 'PASSWORD_RESET', data.code);
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundError('Pengguna tidak ditemukan.');
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -213,8 +143,8 @@ export class AuthService {
       data: { passwordHash },
     });
 
-    // Clean up OTP store
-    otpMemoryStore.delete(email);
+    // 2. Revoke all existing sessions on password change
+    await sessionService.revokeAllUserSessions(user.id);
 
     return {
       success: true,
@@ -254,8 +184,12 @@ export class AuthService {
       },
     });
 
-    const token = this.generateToken(user.id);
-    return { token, user: this.formatProfile(user) };
+    const session = await sessionService.createSession(user.id);
+    return {
+      token: session.token,
+      refreshToken: session.refreshToken,
+      user: this.formatProfile(user),
+    };
   }
 
   async login(data: LoginDto): Promise<AuthResponseDto> {
@@ -272,26 +206,22 @@ export class AuthService {
       throw new UnauthorizedError('Email atau kata sandi tidak valid');
     }
 
-    const token = this.generateToken(user.id);
-    return { token, user: this.formatProfile(user) };
+    const session = await sessionService.createSession(user.id);
+    return {
+      token: session.token,
+      refreshToken: session.refreshToken,
+      user: this.formatProfile(user),
+    };
   }
 
   /**
    * Hybrid Auth: Google OAuth 2.0 Account Linking & Login
+   * Uses cryptographically verified OpenID Connect token validation.
    */
   async googleSignIn(googleToken: string): Promise<AuthResponseDto> {
-    let email = 'google.user@focient.dev';
-    let name = 'Google User';
-
-    try {
-      const decoded = jwt.decode(googleToken) as { email?: string; name?: string } | null;
-      if (decoded?.email) {
-        email = decoded.email.toLowerCase();
-        name = decoded.name || 'Google User';
-      }
-    } catch {
-      // Fallback
-    }
+    const verified = await googleOidcService.verifyIdToken(googleToken);
+    const email = verified.email;
+    const name = verified.name || 'Google User';
 
     let user = await prisma.user.findUnique({
       where: { email },
@@ -318,8 +248,12 @@ export class AuthService {
       });
     }
 
-    const token = this.generateToken(user.id);
-    return { token, user: this.formatProfile(user) };
+    const session = await sessionService.createSession(user.id);
+    return {
+      token: session.token,
+      refreshToken: session.refreshToken,
+      user: this.formatProfile(user),
+    };
   }
 
   /**
@@ -598,8 +532,21 @@ export class AuthService {
       },
     });
 
-    const token = this.generateToken(user.id);
-    return { token, user: this.formatProfile(user) };
+    const session = await sessionService.createSession(user.id);
+    return {
+      token: session.token,
+      refreshToken: session.refreshToken,
+      user: this.formatProfile(user),
+    };
+  }
+
+  async refreshToken(refreshToken: string): Promise<TokenPair> {
+    return sessionService.refreshTokens(refreshToken);
+  }
+
+  async logout(tokenOrSessionId: string): Promise<{ success: boolean; message: string }> {
+    await sessionService.revokeSessionByToken(tokenOrSessionId);
+    return { success: true, message: 'Logout berhasil. Sesi telah dicabut.' };
   }
 
   async getProfile(userId: string): Promise<UserProfileDto> {
@@ -614,16 +561,8 @@ export class AuthService {
     return this.formatProfile(user);
   }
 
-  private generateToken(userId: string): string {
-    return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-  }
-
-  verifyToken(token: string): { sub: string } {
-    try {
-      return jwt.verify(token, JWT_SECRET) as { sub: string };
-    } catch {
-      throw new UnauthorizedError('Sesi kadaluarsa atau token tidak valid');
-    }
+  async verifyToken(token: string): Promise<{ sub: string; sessionId?: string }> {
+    return sessionService.verifyAccessToken(token);
   }
 
   private formatProfile(user: {

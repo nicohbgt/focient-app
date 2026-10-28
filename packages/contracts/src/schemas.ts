@@ -98,6 +98,14 @@ export const ResetPasswordSchema = z.object({
   newPassword: z.string().min(8, MSG.passwordMin),
 });
 
+export const RefreshTokenSchema = z.object({
+  refreshToken: z.string().min(1, 'Refresh token diperlukan'),
+});
+
+export const RevokeSessionSchema = z.object({
+  refreshToken: z.string().optional(),
+});
+
 // ==========================================
 // Task Schemas
 // ==========================================

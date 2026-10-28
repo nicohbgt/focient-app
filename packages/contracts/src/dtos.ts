@@ -94,7 +94,16 @@ export interface UserProfileDto {
 
 export interface AuthResponseDto {
   token: string;
+  refreshToken?: string;
   user: UserProfileDto;
+}
+
+export interface RefreshTokenDto {
+  refreshToken: string;
+}
+
+export interface RevokeSessionDto {
+  refreshToken?: string;
 }
 
 // ==========================================

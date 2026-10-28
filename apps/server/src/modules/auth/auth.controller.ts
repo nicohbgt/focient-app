@@ -8,6 +8,8 @@ import {
   ForgotPasswordSchema,
   VerifyResetOtpSchema,
   ResetPasswordSchema,
+  RefreshTokenSchema,
+  RevokeSessionSchema,
 } from '@focient/contracts';
 import { validateBody } from '../../middleware/validate.middleware.js';
 import { authService } from './auth.service.js';
@@ -83,10 +85,31 @@ authRouter.post('/login', validateBody(LoginSchema), async (req, res: Response, 
   }
 });
 
-// Hybrid Auth: Google OAuth 2.0 Sign-In
+// Refresh Session: Issue new access token + rotated refresh token
+authRouter.post('/refresh', validateBody(RefreshTokenSchema), async (req, res: Response, next) => {
+  try {
+    const result = await authService.refreshToken(req.body.refreshToken);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Revoke Session / Logout: Invalidates session and tokens
+authRouter.post('/logout', validateBody(RevokeSessionSchema), async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, '') || req.body.refreshToken || '';
+    const result = await authService.logout(token);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Hybrid Auth: Google OAuth 2.0 Sign-In via verified OpenID Connect
 authRouter.post('/google', async (req, res: Response, next) => {
   try {
-    const token = req.body.token || req.body.idToken || 'mock_google_token';
+    const token = req.body.token || req.body.idToken;
     const result = await authService.googleSignIn(token);
     res.json(result);
   } catch (error) {

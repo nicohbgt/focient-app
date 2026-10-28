@@ -6,15 +6,15 @@ services:
     container_name: focient-postgres
     restart: always
     environment:
-      POSTGRES_USER: focient
-      POSTGRES_PASSWORD: focient_password
-      POSTGRES_DB: focient_db
+      POSTGRES_USER: ${POSTGRES_USER:-focient}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be provided in environment}
+      POSTGRES_DB: ${POSTGRES_DB:-focient_db}
     ports:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U focient -d focient_db']
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER:-focient} -d $${POSTGRES_DB:-focient_db}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -40,11 +40,15 @@ services:
     container_name: focient-server
     restart: always
     environment:
-      NODE_ENV: production
-      PORT: 4000
-      DATABASE_URL: postgresql://focient:focient_password@postgres:5432/focient_db?schema=public
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: focient_production_super_secret_key_change_me
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-4000}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be provided in environment}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be provided in environment}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-}
+      OTP_SECRET: ${OTP_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     ports:
       - '4000:4000'
     depends_on:
