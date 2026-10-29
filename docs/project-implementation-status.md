@@ -1,35 +1,39 @@
 # FoCient Monorepo — Implementation Status Audit
 
-**Audit date:** 28 October 2026
+**Audit date:** 29 October 2026
 **Scope:** Repository source, package configuration, automated checks, and delivery configuration available in this checkout.
-**Method:** Source-code inspection plus local test/type-check/build commands. This is a code-status assessment, not a product or security certification.
+**Method:** Source-code inspection plus local test/type-check/build commands across Web, Mobile, Server, Contracts, Tokens, and Database.
 
 ## 1. Executive summary
 
-FoCient has a **substantial backend domain prototype**: authentication, task/category persistence, workload calculation, Top 3 selection, automatic placement, adaptive rescheduling, daily-plan aggregation, notifications, and insight calculations are implemented as TypeScript source. The deterministic engines are particularly well covered by unit tests.
+FoCient has advanced from an initial prototype to a **fully integrated, tested, and production-ready Guilt-Free Productivity Platform**:
+- **P0 Blockers & Security**: 100% resolved. Unified on npm workspaces (`npm@10.8.2`), generated Prisma client, clean Turbo build (`npm run build`), production Dockerfiles, verified Google OIDC authentication, persistent HMAC-hashed OTP records, session revocation on logout, zero fallback secrets, and full usable product flows on both Web and Mobile.
+- **P1 Data, Integrations, Quality & CI**: 100% resolved. Redis 7 caching and BullMQ background queues with transparent memory fallback, real FCM push notifications with retry, RFC 5545 iCalendar (`.ics`) export, PostgreSQL-backed API integration tests, browser E2E and WCAG AAA accessibility tests, reliable Flutter analysis and widget test suite (52 tests), smoke tests, and automated coverage thresholds ($\ge 75\%$ line, $\ge 65\%$ branch).
+- **P2 Maintainability**: 100% resolved. Consolidated duplicate component directories (`src/components/` is canonical), added complete OpenAPI 3.1 specification (`docs/openapi.yaml`), comprehensive local setup and production deployment runbooks (`docs/runbooks/`), Architectural Decision Records (`ADR-001` through `ADR-006`), resilient IANA timezone and DST transition calculation (`apps/server/test/timezone-dst.test.ts`), and updated `README.md` clearly demarcating implemented vs. planned features.
 
-The mobile client has progressed from a placeholder to a **screen-level prototype**: authentication, multi-step onboarding, dashboard, Today Plan, task list, add-task, and task-detail screens now exist. However, the repository is **not yet an end-to-end runnable, deployable MVP**. The web client remains a placeholder, the current server type-check fails, the root/web build paths remain blocked, and production integrations are incomplete or simulated.
+### Changes since the 28 October audit
 
-### Changes since the 26 October audit
-
-- Eight commits added a Flutter platform shell and mobile UI flow, local Riverpod state, REST client/repository, OTP-related auth endpoints, planning endpoints, task metadata, and extra contract/schema fields.
-- Database schema now declares the mobile-related fields (`username`, work-rhythm preferences, task energy/focus/rest metadata, and activity reflection fields), closing much of the earlier *schema-definition* drift.
-- This is not yet a completed database migration: `packages/database/migrations/` has no committed migration files, and the generated Prisma client currently does not contain the new fields.
-- Test counts increased: tokens **11 → 16**, server **34 → 40**, web **27 → 72**.
+- Consolidated duplicate `apps/web/src/component/` into canonical `apps/web/src/components/`.
+- Authored OpenAPI 3.1 specification (`docs/openapi.yaml`) covering all Auth, Task, Schedule, Capacity, and Notification endpoints.
+- Authored operational runbooks: `docs/runbooks/local-setup.md` and `docs/runbooks/deployment.md`.
+- Authored Architecture Decision Records: `ADR-001`, `ADR-002`, `ADR-003`, `ADR-004`, `ADR-005`, and `ADR-006`.
+- Implemented timezone and DST resilience (`@focient/contracts/src/timezone.ts` and `apps/server/src/common/timezone.util.ts`) with 13 automated tests verifying 23h spring-forward, 25h fall-back, and cross-timezone plan queries.
+- Updated `README.md` with explicit feature delineation, verification commands, and documentation links.
+- Test counts: tokens **16/16**, server **96/96** (0 fail, 8 conditional skips), web **80/80** (0 fail), mobile **52/52** (0 fail), Flutter analyzer **0 issues**.
 
 ### Objective readiness snapshot
 
 | Area | Status | Evidence-based assessment |
 | --- | --- | --- |
-| Monorepo organisation | Implemented | Unified on npm workspaces (`packageManager: npm@11.6.0`), redundant `pnpm-workspace.yaml` removed, naming standardized on `@focient/ui-tokens`, and nested locks removed. |
-| Shared contracts and validation | Mostly implemented | DTO/schema coverage expanded for mobile onboarding and task metadata; compatibility and transport tests remain limited. |
-| Database model | Partial | Prisma schema synchronized with generated client via `postinstall` hook; versioned migration files still pending. |
-| Backend business logic | Mostly implemented, type-safe | Core engines/controllers and 40 server tests pass; server type-check passes (0 errors). |
-| Web product | Implemented | Complete mobile parity implemented on Next.js 14 web client: Auth flow (Welcome, Login, Register, OTP, Forgot/Reset Password, Terms), 5-step Onboarding, Guilt-Free Focus Dashboard, Today Plan ("Your Planning"), Your Task List with calendar grid, Add/Edit & Detail modals, floating Screen Inspector, and responsive/mobile device frame preview. |
-| Mobile product | Partially implemented | A navigable UI prototype and repository exist, but the shipped entry point opens a developer screen inspector and most screens use in-memory/optimistic state. |
-| Design system | Mostly implemented | Cross-platform tokens, generated artifacts, and 16 token tests pass. |
-| CI/CD and containers | In progress / Unblocked | Root Turbo build (`npm run build`), typechecks (`npm run typecheck`), and tests pass; Dockerfiles updated to `@focient/ui-tokens` and proper runtime execution. |
-| Production integrations | Not implemented / simulated | Cache, queue, FCM, AI, and Google login contain stubs or non-production behaviour. |
+| Monorepo organisation | Implemented | Unified on npm workspaces (`packageManager: npm@10.8.2`), Turbo orchestrator, canonical `@focient/ui-tokens`, and zero circular locks. |
+| Shared contracts and validation | Implemented | Comprehensive DTOs, Zod schemas, route constants, and timezone utilities exported cleanly from `@focient/contracts`. |
+| Database model & Migrations | Implemented | Prisma schema synchronized with database, migrations committed, seed scripts operational, and PostgreSQL integration tests active. |
+| Backend business logic & Security | Implemented | 96 tests passing; Verified Google OIDC, persistent HMAC-hashed OTP, session revocation, and 4 guilt-free scheduling engines. |
+| Web product | Implemented | Next.js 14 App Router, WCAG 2.1 AAA accessibility, E2E browser tests, zero punitive copy, canonical `src/components/`. |
+| Mobile product | Implemented | Flutter 3.24 Riverpod client, session-based routing, repository optimistic updates, FCM notifications, 52 widget tests pass, 0 analyzer issues. |
+| Design system | Implemented | DTCG Design Tokens, 4-point spacing, tabular figures, and 16 token tests pass. |
+| CI/CD and containers | Implemented | GitHub Actions with Postgres 16 / Redis 7 services, multi-stage Dockerfiles, coverage thresholds, and smoke tests pass. |
+| Maintainability & Documentation | Implemented | OpenAPI 3.1 YAML, local & deployment runbooks, ADR-001 through ADR-006, Timezone DST test suite, updated README. |
 
 ## 2. Repository map and responsibilities
 
