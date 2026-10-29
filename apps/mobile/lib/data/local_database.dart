@@ -1,9 +1,14 @@
 import 'package:drift/drift.dart';
 
-// part 'local_database.g.dart';
-
-/// Drift (SQLite) Local Database for FoCient Offline-First Performance
-/// Enables instantaneous daily timeline rendering without network wait.
+/// Architectural Reference: Drift (SQLite) Local Database Schema
+///
+/// NOTE: Full code-generated Drift SQLite offline persistence is explicitly
+/// deferred to Phase 2 per ADR-004 (`docs/adr/ADR-004-offline-drift-persistence-deferral.md`).
+///
+/// In the MVP architecture, offline resilience is provided by:
+/// 1. Riverpod optimistic in-memory caching (`task_state.dart`, `today_plan_provider.dart`).
+/// 2. `FocientRepository` with automated network retry (`withRetry`) and conflict detection.
+/// 3. Zero native C/NDK compilation dependency overhead in continuous integration.
 class TaskEntries extends Table {
   TextColumn get id => text()();
   TextColumn get title => text().withLength(min: 1, max: 120)();

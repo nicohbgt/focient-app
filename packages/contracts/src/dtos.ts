@@ -481,3 +481,72 @@ export interface CalendarSyncResponseDto {
   createdBlocksCount: number;
   conflictsFound: number;
 }
+
+// ==========================================
+// 11. Push Notifications & Device Tokens
+// ==========================================
+export type DevicePlatform = 'ANDROID' | 'IOS' | 'WEB';
+
+export interface RegisterDeviceTokenDto {
+  token: string;
+  platform?: DevicePlatform;
+  deviceInfo?: string;
+}
+
+export interface DeviceTokenDto {
+  id: string;
+  userId: string;
+  token: string;
+  platform: DevicePlatform;
+  deviceInfo?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationPreferencesDto {
+  id?: string;
+  userId: string;
+  focusReminders: boolean;
+  capacityAlerts: boolean;
+  rippleSuggestions: boolean;
+  dailySummary: boolean;
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  quietHoursStart?: string | null;
+  quietHoursEnd?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface UpdateNotificationPreferencesDto {
+  focusReminders?: boolean;
+  capacityAlerts?: boolean;
+  rippleSuggestions?: boolean;
+  dailySummary?: boolean;
+  emailNotifications?: boolean;
+  pushNotifications?: boolean;
+  quietHoursStart?: string | null;
+  quietHoursEnd?: string | null;
+}
+
+export interface PushNotificationPayloadDto {
+  title: string;
+  body: string;
+  data?: Record<string, string>;
+  sound?: string;
+}
+
+export interface PushNotificationResultDto {
+  success: boolean;
+  messageId?: string;
+  deliveredCount?: number;
+  failureCount?: number;
+  deliveredAt: string;
+  error?: string;
+}
+
+export interface CalendarExportQueryDto {
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+}

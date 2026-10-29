@@ -410,3 +410,36 @@ export const ApplyRescheduleSchema = z.object({
 export const BatchApplyRescheduleSchema = z.object({
   shifts: z.array(ApplyRescheduleSchema).min(1, 'Minimal satu pergeseran jadwal diperlukan'),
 });
+
+// ==========================================
+// Device Token & Notification Schemas
+// ==========================================
+export const DevicePlatformSchema = z.enum(['ANDROID', 'IOS', 'WEB']);
+
+export const RegisterDeviceTokenSchema = z.object({
+  token: z.string().min(10, 'Device token minimal 10 karakter'),
+  platform: DevicePlatformSchema.optional().default('ANDROID'),
+  deviceInfo: z.string().max(255).optional(),
+});
+
+export const UnregisterDeviceTokenSchema = z.object({
+  token: z.string().min(10, 'Device token minimal 10 karakter'),
+});
+
+export const UpdateNotificationPreferencesSchema = z.object({
+  focusReminders: z.boolean().optional(),
+  capacityAlerts: z.boolean().optional(),
+  rippleSuggestions: z.boolean().optional(),
+  dailySummary: z.boolean().optional(),
+  emailNotifications: z.boolean().optional(),
+  pushNotifications: z.boolean().optional(),
+  quietHoursStart: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Format jam harus HH:mm').nullable().optional(),
+  quietHoursEnd: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Format jam harus HH:mm').nullable().optional(),
+});
+
+export const SendTestPushNotificationSchema = z.object({
+  title: z.string().min(1, 'Judul notifikasi tidak boleh kosong'),
+  body: z.string().min(1, 'Pesan notifikasi tidak boleh kosong'),
+  type: z.enum(['FOCUS_REMINDER', 'CAPACITY_WARNING', 'RIPPLE_SUGGESTION', 'DAILY_SUMMARY']).optional().default('FOCUS_REMINDER'),
+});
+

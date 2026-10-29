@@ -240,6 +240,88 @@ async function handleTodayPlan(req: AuthenticatedRequest, res: Response, next: N
   }
 }
 
+/**
+ * Universal RFC 5545 iCalendar (.ics) Export (Per ADR-005)
+ * Allows users to import their scheduled tasks & focus blocks directly into
+ * Google Calendar, Apple Calendar, and Outlook without OAuth requirements.
+ */
+export async function handleIcsExport(req: AuthenticatedRequest, res: Response, next: any) {
+  try {
+    const userId = req.user!.id;
+    const dateStr = req.query.date as string | undefined;
+
+    let dateFilter = {};
+    if (dateStr) {
+      const dayStart = new Date(`${dateStr}T00:00:00.000Z`);
+      const dayEnd = new Date(`${dateStr}T23:59:59.999Z`);
+      dateFilter = {
+        OR: [
+          { scheduledStart: { gte: dayStart, lte: dayEnd } },
+          { startTime: { gte: dayStart, lte: dayEnd } },
+          { targetDate: { gte: dayStart, lte: dayEnd } },
+        ],
+      };
+    }
+
+    const tasks = await prisma.task.findMany({
+      where: {
+        userId,
+        ...dateFilter,
+      },
+      orderBy: { scheduledStart: 'asc' },
+    });
+
+    const formatIcsDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    };
+
+    const escapeIcsText = (str: string) => {
+      return str.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+    };
+
+    const icsContent: string[] = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//FoCient//Focus Schedule//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'X-WR-CALNAME:FoCient Focus Schedule',
+      'X-WR-TIMEZONE:UTC',
+    ];
+
+    const now = new Date();
+    for (const t of tasks) {
+      const start = t.scheduledStart || t.startTime || t.targetDate || now;
+      const end = t.scheduledEnd || new Date(new Date(start).getTime() + (t.durationMinutes || 30) * 60000);
+
+      icsContent.push(
+        'BEGIN:VEVENT',
+        `UID:focient-task-${t.id}@focient.app`,
+        `DTSTAMP:${formatIcsDate(now)}`,
+        `DTSTART:${formatIcsDate(new Date(start))}`,
+        `DTEND:${formatIcsDate(new Date(end))}`,
+        `SUMMARY:${escapeIcsText(t.title)}`,
+        `DESCRIPTION:${escapeIcsText(t.notes || `Focus Session (${t.durationMinutes}m) - FoCient Guilt-Free Productivity`)}`,
+        `STATUS:${t.status === 'COMPLETED' ? 'COMPLETED' : 'CONFIRMED'}`,
+        'END:VEVENT'
+      );
+    }
+
+    icsContent.push('END:VCALENDAR');
+
+    const result = icsContent.join('\r\n');
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="focient-schedule.ics"');
+    res.status(200).send(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+// GET /api/schedule/export/ics & /api/schedule/export.ics
+scheduleRouter.get('/export/ics', handleIcsExport);
+scheduleRouter.get('/export.ics', handleIcsExport);
+
 // GET /api/schedule/today-plan
 scheduleRouter.get('/today-plan', handleTodayPlan);
 

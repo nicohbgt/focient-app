@@ -12,6 +12,9 @@ class FocientRepository {
   String? lastError;
   ConflictException? lastConflict;
 
+  /// In-memory cache for offline resilience (per ADR-004)
+  final List<MobileTask> _taskCache = [];
+
   FocientRepository({FocientNetworkClient? client})
       : client = client ?? focientNetworkClient;
 
@@ -31,12 +34,23 @@ class FocientRepository {
         items = response['data'] as List<dynamic>;
       }
 
-      return items
+      final parsed = items
           .map((item) => TaskDtoMapper.fromJson(item as Map<String, dynamic>))
           .toList();
+
+      if (parsed.isNotEmpty) {
+        _taskCache.clear();
+        _taskCache.addAll(parsed);
+      }
+
+      return parsed;
     } catch (e) {
       debugPrint('[FocientRepository] getTasks error: $e');
       lastError = e.toString();
+      // Serve cached tasks if available during offline/network failure
+      if (_taskCache.isNotEmpty) {
+        return List.of(_taskCache);
+      }
       return [];
     }
   }

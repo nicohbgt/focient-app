@@ -33,5 +33,13 @@ export const API_ROUTES = {
   INSIGHT: {
     WEEKLY: '/api/insights/weekly',
   },
+  NOTIFICATIONS: {
+    BASE: '/api/notifications',
+    PREFERENCES: '/api/notifications/preferences',
+    DEVICE_TOKEN: '/api/notifications/device-token',
+  },
+  SCHEDULE_EXPORT: {
+    ICS: '/api/schedule/export/ics',
+  },
   HEALTH: '/health',
 } as const;
