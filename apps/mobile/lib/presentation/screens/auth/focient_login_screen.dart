@@ -6,6 +6,7 @@ import '../../../data/auth_state.dart';
 import '../../primitive/focient_button.dart';
 import '../../primitive/focient_input_field.dart';
 import '../../primitive/google_logo.dart';
+import '../../riverpod_providers.dart';
 
 /// FoCient Login Screen
 ///
@@ -60,7 +61,8 @@ class _FocientLoginScreenState extends ConsumerState<FocientLoginScreen> {
       _passwordTouched = true;
     });
 
-    final emailValid = FocientValidators.validateEmail(_emailController.text);
+    final lang = ref.read(languageProvider);
+    final emailValid = FocientValidators.validateEmail(_emailController.text, language: lang);
     if (!emailValid.isValid || _passwordController.text.isEmpty) {
       return;
     }
@@ -166,10 +168,11 @@ class _FocientLoginScreenState extends ConsumerState<FocientLoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final lang = ref.watch(languageProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final emailResult = _emailTouched || _submittedOnce
-        ? FocientValidators.validateEmail(_emailController.text)
+        ? FocientValidators.validateEmail(_emailController.text, language: lang)
         : ValidationResult.valid;
 
     final passEmpty = _passwordTouched || _submittedOnce
@@ -321,6 +324,7 @@ class _FocientLoginScreenState extends ConsumerState<FocientLoginScreen> {
                   SizedBox(
                     height: 48,
                     child: FocientButton(
+                      isFullWidth: true,
                       onPressed: authState.isLoading ? null : _handleLogin,
                       child: authState.isLoading
                           ? const SizedBox(

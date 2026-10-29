@@ -7,6 +7,8 @@ import '../../primitive/focient_button.dart';
 import '../../primitive/focient_checkbox.dart';
 import '../../primitive/focient_input_field.dart';
 import '../../primitive/google_logo.dart';
+import '../../riverpod_providers.dart';
+import '../../focient_copywriting.dart';
 import 'focient_terms_sheet.dart';
 
 /// FoCient Registration Screen (Image 1 Specification)
@@ -65,9 +67,10 @@ class _FocientRegisterScreenState extends ConsumerState<FocientRegisterScreen> {
       _passwordTouched = true;
     });
 
-    final nameValid = FocientValidators.validateName(_nameController.text);
-    final emailValid = FocientValidators.validateEmail(_emailController.text);
-    final passValid = FocientValidators.validatePassword(_passwordController.text);
+    final lang = ref.read(languageProvider);
+    final nameValid = FocientValidators.validateName(_nameController.text, language: lang);
+    final emailValid = FocientValidators.validateEmail(_emailController.text, language: lang);
+    final passValid = FocientValidators.validatePassword(_passwordController.text, language: lang);
 
     if (!nameValid.isValid || !emailValid.isValid || !passValid.isValid) {
       return;
@@ -75,9 +78,13 @@ class _FocientRegisterScreenState extends ConsumerState<FocientRegisterScreen> {
 
     if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please agree to the Term and Condition to proceed.'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(
+            lang == FoCientLanguage.id
+                ? 'Silakan setujui Syarat dan Ketentuan untuk melanjutkan.'
+                : 'Please agree to the Term and Condition to proceed.',
+          ),
+          duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -98,18 +105,19 @@ class _FocientRegisterScreenState extends ConsumerState<FocientRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final lang = ref.watch(languageProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final nameResult = _nameTouched || _submittedOnce
-        ? FocientValidators.validateName(_nameController.text)
+        ? FocientValidators.validateName(_nameController.text, language: lang)
         : ValidationResult.valid;
 
     final emailResult = _emailTouched || _submittedOnce
-        ? FocientValidators.validateEmail(_emailController.text)
+        ? FocientValidators.validateEmail(_emailController.text, language: lang)
         : ValidationResult.valid;
 
     final passResult = _passwordTouched || _submittedOnce
-        ? FocientValidators.validatePassword(_passwordController.text)
+        ? FocientValidators.validatePassword(_passwordController.text, language: lang)
         : ValidationResult.valid;
 
     final titleColor = isDark
@@ -199,7 +207,9 @@ class _FocientRegisterScreenState extends ConsumerState<FocientRegisterScreen> {
                     obscureText: _obscurePassword,
                     errorText: passResult.errorMessage,
                     isInvalid: !passResult.isValid,
-                    helperText: 'Make sure include 1 Uppercase, 1 Lowercase and 1 Number',
+                    helperText: lang == FoCientLanguage.id
+                        ? 'Pastikan menyertakan 1 huruf besar, 1 huruf kecil, dan 1 angka'
+                        : 'Make sure include 1 Uppercase, 1 Lowercase and 1 Number',
                     borderRadius: FocientBorderRadiusTokens.radiusLg,
                     textInputAction: TextInputAction.done,
                     suffixIcon: IconButton(
@@ -307,6 +317,7 @@ class _FocientRegisterScreenState extends ConsumerState<FocientRegisterScreen> {
                   SizedBox(
                     height: 48,
                     child: FocientButton(
+                      isFullWidth: true,
                       onPressed: authState.isLoading ? null : _handleCreateAccount,
                       child: authState.isLoading
                           ? const SizedBox(

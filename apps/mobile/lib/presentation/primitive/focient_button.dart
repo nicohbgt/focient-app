@@ -13,6 +13,7 @@ class FocientButton extends StatefulWidget {
   final Widget child;
   final FocientButtonVariant variant;
   final FocientButtonSize size;
+  final bool isFullWidth;
 
   const FocientButton({
     super.key,
@@ -20,6 +21,7 @@ class FocientButton extends StatefulWidget {
     required this.child,
     this.variant = FocientButtonVariant.primary,
     this.size = FocientButtonSize.md,
+    this.isFullWidth = false,
   });
 
   @override
@@ -127,24 +129,27 @@ class _FocientButtonState extends State<FocientButton> with SingleTickerProvider
       },
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: OutlinedButton(
-          onPressed: widget.onPressed,
-          style: OutlinedButton.styleFrom(
-            minimumSize: Size(minHeight, minHeight),
-            backgroundColor: _backgroundColor(isDark),
-            foregroundColor: _textColor(isDark),
-            side: _borderSide(isDark),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(radius),
+        child: SizedBox(
+          width: widget.isFullWidth ? double.infinity : null,
+          child: OutlinedButton(
+            onPressed: widget.onPressed,
+            style: OutlinedButton.styleFrom(
+              minimumSize: Size(widget.isFullWidth ? double.infinity : minHeight, minHeight),
+              backgroundColor: _backgroundColor(isDark),
+              foregroundColor: _textColor(isDark),
+              side: _borderSide(isDark),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(radius),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              textStyle: TextStyle(
+                fontFamily: FocientTypographyTokens.fontFamily,
+                fontWeight: FontWeight.w600,
+                fontSize: widget.size == FocientButtonSize.md ? 14 : 12,
+              ),
             ),
-            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-            textStyle: TextStyle(
-              fontFamily: FocientTypographyTokens.fontFamily,
-              fontWeight: FontWeight.w600,
-              fontSize: widget.size == FocientButtonSize.md ? 14 : 12,
-            ),
+            child: widget.child,
           ),
-          child: widget.child,
         ),
       ),
     );

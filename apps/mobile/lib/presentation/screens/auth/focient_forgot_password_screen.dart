@@ -5,6 +5,7 @@ import '../../../core/validators/focient_validators.dart';
 import '../../../data/auth_state.dart';
 import '../../primitive/focient_button.dart';
 import '../../primitive/focient_input_field.dart';
+import '../../riverpod_providers.dart';
 
 /// FoCient Forgot Password Screen (Matches Uploaded Mock Specification)
 ///
@@ -47,7 +48,8 @@ class _FocientForgotPasswordScreenState
       _emailTouched = true;
     });
 
-    final emailResult = FocientValidators.validateEmail(_emailController.text);
+    final lang = ref.read(languageProvider);
+    final emailResult = FocientValidators.validateEmail(_emailController.text, language: lang);
     if (!emailResult.isValid) {
       return;
     }
@@ -64,10 +66,11 @@ class _FocientForgotPasswordScreenState
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final lang = ref.watch(languageProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final emailResult = _emailTouched || _submittedOnce
-        ? FocientValidators.validateEmail(_emailController.text)
+        ? FocientValidators.validateEmail(_emailController.text, language: lang)
         : ValidationResult.valid;
 
     final titleColor = isDark
@@ -181,6 +184,7 @@ class _FocientForgotPasswordScreenState
                     width: double.infinity,
                     height: 48,
                     child: FocientButton(
+                      isFullWidth: true,
                       onPressed: authState.isLoading ? null : _handleGetOtp,
                       child: authState.isLoading
                           ? const SizedBox(

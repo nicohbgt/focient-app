@@ -8,9 +8,9 @@ import '../../riverpod_providers.dart';
 /// FoCient Welcome / Onboarding Landing Page
 ///
 /// Features:
-/// - Language switcher toggle (English vs Indonesian) with interactive state update.
-/// - Adaptive value pillars and brand tagline.
-/// - Primary and Secondary CTA navigations into Register / Login flows.
+/// - Header language switcher toggle (English vs Indonesian).
+/// - Anti-overload brand typography and value pillars (no emblem logo).
+/// - Fully responsive primary and secondary CTA buttons.
 class FocientWelcomeScreen extends ConsumerWidget {
   final VoidCallback onGetStarted;
   final VoidCallback onLogin;
@@ -49,198 +49,216 @@ class FocientWelcomeScreen extends ConsumerWidget {
           ? FocientColorDarkTokens.neutralBgCanvas
           : FocientColorTokens.neutralBgCanvas,
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Header: Wordmark & Language Switcher (Point 1)
+            Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: FocientSpacingTokens.space6,
-                vertical: FocientSpacingTokens.space4,
+                horizontal: FocientSpacingTokens.space5,
+                vertical: FocientSpacingTokens.space3,
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark
+                        ? const Color(0xFF334155).withValues(alpha: 0.5)
+                        : const Color(0xFFE2E8F0).withValues(alpha: 0.5),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Top Language Switcher Bar
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildLanguageChip(
-                              label: 'English',
-                              isSelected: activeLanguage == FoCientLanguage.en,
-                              onTap: () {
-                                try {
-                                  ref.read(languageProvider.notifier).setLanguage(FoCientLanguage.en);
-                                } catch (_) {}
-                                onLanguageChanged?.call(FoCientLanguage.en);
-                              },
-                              isDark: isDark,
-                            ),
-                            const SizedBox(width: 4),
-                            _buildLanguageChip(
-                              label: 'Indonesia',
-                              isSelected: activeLanguage == FoCientLanguage.id,
-                              onTap: () {
-                                try {
-                                  ref.read(languageProvider.notifier).setLanguage(FoCientLanguage.id);
-                                } catch (_) {}
-                                onLanguageChanged?.call(FoCientLanguage.id);
-                              },
-                              isDark: isDark,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Brand Emblem
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: FocientColorTokens.primaryActionBase,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: FocientColorTokens.primaryActionBase.withValues(alpha: 0.25),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.center_focus_strong_rounded,
-                      color: Colors.white,
-                      size: 38,
-                    ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  // Brand Title
                   Text(
                     'FoCient',
-                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 32,
+                      fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: -0.8,
+                      letterSpacing: -0.5,
                       color: titleColor,
                     ),
                   ),
-
-                  const SizedBox(height: 8),
-
-                  // Tagline
-                  Text(
-                    copy.welcomeTagline,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: FocientColorTokens.primaryActionBase,
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Subtitle
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      copy.welcomeSubtitle,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: FocientTypographyTokens.fontFamily,
-                        fontSize: 14,
-                        height: 1.4,
-                        color: mutedColor,
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF1E293B)
+                          : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                        width: 1,
                       ),
                     ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Value Pillars
-                  _buildPillar(
-                    icon: Icons.check_circle_outline_rounded,
-                    text: copy.welcomePillar1,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildPillar(
-                    icon: Icons.sync_rounded,
-                    text: copy.welcomePillar2,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildPillar(
-                    icon: Icons.speed_rounded,
-                    text: copy.welcomePillar3,
-                    isDark: isDark,
-                  ),
-
-                  const SizedBox(height: 36),
-
-                  // Primary CTA: Get Started
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: FocientButton(
-                      onPressed: onGetStarted,
-                      child: Text(
-                        copy.getStarted,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildLanguageChip(
+                          label: 'English',
+                          isSelected: activeLanguage == FoCientLanguage.en,
+                          onTap: () {
+                            try {
+                              ref
+                                  .read(languageProvider.notifier)
+                                  .setLanguage(FoCientLanguage.en);
+                            } catch (_) {}
+                            onLanguageChanged?.call(FoCientLanguage.en);
+                          },
+                          isDark: isDark,
                         ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Secondary CTA: Login
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: FocientButton(
-                      variant: FocientButtonVariant.outline,
-                      onPressed: onLogin,
-                      child: Text(
-                        copy.alreadyHaveAccountLogin,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: titleColor,
+                        const SizedBox(width: 4),
+                        _buildLanguageChip(
+                          label: 'Indonesia',
+                          isSelected: activeLanguage == FoCientLanguage.id,
+                          onTap: () {
+                            try {
+                              ref
+                                  .read(languageProvider.notifier)
+                                  .setLanguage(FoCientLanguage.id);
+                            } catch (_) {}
+                            onLanguageChanged?.call(FoCientLanguage.id);
+                          },
+                          isDark: isDark,
                         ),
-                      ),
+                      ],
                     ),
                   ),
-
-                  const SizedBox(height: 16),
                 ],
               ),
             ),
-          ),
+
+            // Responsive Body Content (Without Logo)
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 440),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: FocientSpacingTokens.space6,
+                          vertical: FocientSpacingTokens.space4,
+                        ),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight - 32,
+                          ),
+                          child: IntrinsicHeight(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const Spacer(flex: 1),
+
+                                // Tagline
+                                Text(
+                                  copy.welcomeTagline,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily:
+                                        FocientTypographyTokens.fontFamily,
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.6,
+                                    color: FocientColorTokens.primaryActionBase,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                // Subtitle
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
+                                  child: Text(
+                                    copy.welcomeSubtitle,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontFamily:
+                                          FocientTypographyTokens.fontFamily,
+                                      fontSize: 14,
+                                      height: 1.45,
+                                      color: mutedColor,
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 32),
+
+                                // Value Pillars
+                                _buildPillar(
+                                  icon: Icons.check_circle_outline_rounded,
+                                  text: copy.welcomePillar1,
+                                  isDark: isDark,
+                                ),
+                                const SizedBox(height: 14),
+                                _buildPillar(
+                                  icon: Icons.sync_rounded,
+                                  text: copy.welcomePillar2,
+                                  isDark: isDark,
+                                ),
+                                const SizedBox(height: 14),
+                                _buildPillar(
+                                  icon: Icons.speed_rounded,
+                                  text: copy.welcomePillar3,
+                                  isDark: isDark,
+                                ),
+
+                                const Spacer(flex: 2),
+                                const SizedBox(height: 28),
+
+                                // Responsive CTA Buttons
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 48,
+                                  child: FocientButton(
+                                    isFullWidth: true,
+                                    onPressed: onGetStarted,
+                                    child: Text(
+                                      copy.getStarted,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 48,
+                                  child: FocientButton(
+                                    isFullWidth: true,
+                                    variant: FocientButtonVariant.outline,
+                                    onPressed: onLogin,
+                                    child: Text(
+                                      copy.alreadyHaveAccountLogin,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: titleColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 12),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -259,9 +277,7 @@ class FocientWelcomeScreen extends ConsumerWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF2563EB)
-              : Colors.transparent,
+          color: isSelected ? const Color(0xFF2563EB) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           boxShadow: isSelected
               ? [

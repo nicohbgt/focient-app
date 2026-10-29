@@ -71,13 +71,17 @@ class FocientNetworkClient {
     }
   }
 
+  static const Duration requestTimeout = Duration(seconds: 4);
+
   Future<dynamic> get(String endpoint) async {
     final cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl$cleanEndpoint'),
-        headers: _headers,
-      );
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl$cleanEndpoint'),
+            headers: _headers,
+          )
+          .timeout(requestTimeout);
       return _handleResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -90,11 +94,13 @@ class FocientNetworkClient {
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
     final cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl$cleanEndpoint'),
-        headers: _headers,
-        body: jsonEncode(body),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl$cleanEndpoint'),
+            headers: _headers,
+            body: jsonEncode(body),
+          )
+          .timeout(requestTimeout);
       return _handleResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -107,11 +113,13 @@ class FocientNetworkClient {
   Future<dynamic> patch(String endpoint, Map<String, dynamic> body) async {
     final cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
     try {
-      final response = await http.patch(
-        Uri.parse('$baseUrl$cleanEndpoint'),
-        headers: _headers,
-        body: jsonEncode(body),
-      );
+      final response = await http
+          .patch(
+            Uri.parse('$baseUrl$cleanEndpoint'),
+            headers: _headers,
+            body: jsonEncode(body),
+          )
+          .timeout(requestTimeout);
       return _handleResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -124,11 +132,13 @@ class FocientNetworkClient {
   Future<dynamic> put(String endpoint, Map<String, dynamic> body) async {
     final cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
     try {
-      final response = await http.put(
-        Uri.parse('$baseUrl$cleanEndpoint'),
-        headers: _headers,
-        body: jsonEncode(body),
-      );
+      final response = await http
+          .put(
+            Uri.parse('$baseUrl$cleanEndpoint'),
+            headers: _headers,
+            body: jsonEncode(body),
+          )
+          .timeout(requestTimeout);
       return _handleResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -141,10 +151,12 @@ class FocientNetworkClient {
   Future<dynamic> delete(String endpoint) async {
     final cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
     try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl$cleanEndpoint'),
-        headers: _headers,
-      );
+      final response = await http
+          .delete(
+            Uri.parse('$baseUrl$cleanEndpoint'),
+            headers: _headers,
+          )
+          .timeout(requestTimeout);
       return _handleResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;

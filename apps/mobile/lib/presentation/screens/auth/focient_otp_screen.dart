@@ -6,6 +6,8 @@ import '../../../data/auth_state.dart';
 import '../../primitive/focient_badge.dart';
 import '../../primitive/focient_button.dart';
 import '../../primitive/focient_otp_input.dart';
+import '../../riverpod_providers.dart';
+import '../../focient_copywriting.dart';
 
 /// FoCient OTP Verification Screen (Image 2 & 3 Specification)
 ///
@@ -39,11 +41,15 @@ class _FocientOtpScreenState extends ConsumerState<FocientOtpScreen> {
   void _handleSubmit() async {
     setState(() => _submittedOnce = true);
 
-    final validation = FocientValidators.validateOtp(_enteredCode);
+    final lang = ref.read(languageProvider);
+    final validation = FocientValidators.validateOtp(_enteredCode, language: lang);
     if (!validation.isValid) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(validation.errorMessage ?? 'Please enter all 6 digits.'),
+          content: Text(validation.errorMessage ??
+              (lang == FoCientLanguage.id
+                  ? 'Silakan masukkan 6 digit kode OTP.'
+                  : 'Please enter all 6 digits.')),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
@@ -61,6 +67,7 @@ class _FocientOtpScreenState extends ConsumerState<FocientOtpScreen> {
     final auth = ref.read(authProvider);
     if (auth.otpCooldownSeconds > 0) return;
 
+    final lang = ref.read(languageProvider);
     final success = await ref.read(authProvider.notifier).resendOtp();
     if (success && mounted) {
       _otpKey.currentState?.clear();
@@ -70,9 +77,13 @@ class _FocientOtpScreenState extends ConsumerState<FocientOtpScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('A fresh 6-digit verification code has been sent to your email.'),
-          duration: Duration(seconds: 3),
+        SnackBar(
+          content: Text(
+            lang == FoCientLanguage.id
+                ? 'Kode verifikasi 6 digit baru telah dikirim ke email Anda.'
+                : 'A fresh 6-digit verification code has been sent to your email.',
+          ),
+          duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -213,6 +224,7 @@ class _FocientOtpScreenState extends ConsumerState<FocientOtpScreen> {
                     width: double.infinity,
                     height: 48,
                     child: FocientButton(
+                      isFullWidth: true,
                       onPressed: authState.isLoading ? null : _handleSubmit,
                       child: authState.isLoading
                           ? const SizedBox(

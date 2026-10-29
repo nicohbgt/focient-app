@@ -5,6 +5,8 @@ import '../../../core/validators/focient_validators.dart';
 import '../../../data/auth_state.dart';
 import '../../primitive/focient_button.dart';
 import '../../primitive/focient_input_field.dart';
+import '../../riverpod_providers.dart';
+import '../../focient_copywriting.dart';
 
 /// FoCient Reset Password Screen
 ///
@@ -54,8 +56,9 @@ class _FocientResetPasswordScreenState
       _confirmTouched = true;
     });
 
+    final lang = ref.read(languageProvider);
     final passResult =
-        FocientValidators.validatePassword(_passwordController.text);
+        FocientValidators.validatePassword(_passwordController.text, language: lang);
     if (!passResult.isValid) {
       return;
     }
@@ -70,10 +73,14 @@ class _FocientResetPasswordScreenState
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password successfully updated! Please log in.'),
+        SnackBar(
+          content: Text(
+            lang == FoCientLanguage.id
+                ? 'Kata sandi berhasil diperbarui! Silakan masuk.'
+                : 'Password successfully updated! Please log in.',
+          ),
           backgroundColor: FocientColorTokens.successActionBase,
-          duration: Duration(seconds: 3),
+          duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -84,10 +91,11 @@ class _FocientResetPasswordScreenState
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final lang = ref.watch(languageProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final passResult = _passwordTouched || _submittedOnce
-        ? FocientValidators.validatePassword(_passwordController.text)
+        ? FocientValidators.validatePassword(_passwordController.text, language: lang)
         : ValidationResult.valid;
 
     final passwordsMatch =
