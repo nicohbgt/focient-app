@@ -23,7 +23,10 @@
     "test:web": "npm test --prefix apps/web",
     "typecheck:web": "npm run typecheck --prefix apps/web",
     "typecheck:server": "npm run typecheck --prefix apps/server",
-    "typecheck:contracts": "npm run typecheck --prefix packages/contracts"
+    "typecheck:contracts": "npm run typecheck --prefix packages/contracts",
+    "test:coverage": "node scripts/check-coverage.mjs",
+    "smoke": "node scripts/smoke-test.mjs",
+    "security:scan": "npm audit --audit-level=critical"
   },
   "devDependencies": {
     "turbo": "^2.1.3"

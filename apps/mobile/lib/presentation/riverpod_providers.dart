@@ -12,8 +12,7 @@ final languageProvider =
 });
 
 class LanguageNotifier extends StateNotifier<FoCientLanguage> {
-  LanguageNotifier([FoCientLanguage initial = FoCientLanguage.en])
-      : super(initial);
+  LanguageNotifier([super.initial = FoCientLanguage.en]);
 
   void setLanguage(FoCientLanguage lang) {
     state = lang;

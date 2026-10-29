@@ -12,15 +12,14 @@ class ApiException implements Exception {
 }
 
 class AuthExpiredException extends ApiException {
-  const AuthExpiredException([String message = 'Session expired. Please log in again.'])
-      : super(message, statusCode: 401);
+  const AuthExpiredException([super.message = 'Session expired. Please log in again.'])
+      : super(statusCode: 401);
 }
 
 class ConflictException extends ApiException {
   final Map<String, dynamic>? conflictData;
 
-  const ConflictException(String message, {this.conflictData, int statusCode = 409})
-      : super(message, statusCode: statusCode);
+  const ConflictException(super.message, {this.conflictData, super.statusCode = 409});
 }
 
 /// Real Network Client for FoCient Mobile
@@ -63,7 +62,7 @@ class FocientNetworkClient {
       } catch (e) {
         if (e is AuthExpiredException ||
             e is ConflictException ||
-            (e is ApiException && e.statusCode != null && e.statusCode! < 500) ||
+            (e is ApiException && e.statusCode < 500) ||
             attempts > maxRetries) {
           rethrow;
         }
