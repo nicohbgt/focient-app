@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../../data/focient_repository.dart';
+import '../../../data/models/task_item.dart';
 import '../../../data/task_state.dart';
 import '../../riverpod_providers.dart';
 import 'focient_add_task_screen.dart';
@@ -126,15 +127,13 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
       return t.dateDisplay.contains(selectedDayStr);
     }).toList();
 
+    final taskItems = dayTasks.map(TaskItem.fromMobileTask).toList();
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bgColor = isDark
         ? FocientColorDarkTokens.neutralBgCanvas
         : const Color(0xFFF8FAFC);
-
-    final cardBg = isDark
-        ? FocientColorDarkTokens.neutralSurfaceCard
-        : Colors.white;
 
     final borderColor = isDark
         ? const Color(0xFF334155)
@@ -225,55 +224,8 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Schedule Timeline
-                    if (dayTasks.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: cardBg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(Icons.event_available_outlined, size: 40, color: subtitleColor),
-                            const SizedBox(height: 10),
-                            Text(
-                              'Belum ada tugas yang dijadwalkan untuk hari ini.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: FocientTypographyTokens.fontFamily,
-                                fontSize: 13,
-                                color: subtitleColor,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            ElevatedButton.icon(
-                              onPressed: _onOpenAddTask,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF059669),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              icon: const Icon(Icons.add_rounded, size: 18),
-                              label: const Text('Add Task'),
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      Column(
-                        children: _buildTimelineWidgets(
-                          tasks: dayTasks,
-                          cardBg: cardBg,
-                          borderColor: borderColor,
-                          titleColor: titleColor,
-                          subtitleColor: subtitleColor,
-                        ),
-                      ),
+                    // Schedule Timeline (4 Lifecycle State: Loading, Empty, Zero Inbox, Populated)
+                    _buildBodyContent(taskItems, _isLoading),
 
                     const SizedBox(height: 24),
                   ],
@@ -283,6 +235,165 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // --- Dynamic Lifecycle State Body Content ---
+  Widget _buildBodyContent(List<TaskItem> tasks, bool isLoading) {
+    if (isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40.0),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // 1. Empty State (Kondisi Awal Pengguna Baru)
+    if (tasks.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    // 2. All Tasks Completed (Zero Inbox)
+    final bool allDone = tasks.every((t) => t.isCompleted);
+    if (allDone) {
+      return _buildZeroInboxState();
+    }
+
+    // 3. Populated State (Tampilan Berisi)
+    return _buildTaskList(tasks);
+  }
+
+  Widget _buildEmptyState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? FocientColorDarkTokens.neutralSurfaceCard : Colors.white;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final subtitleColor = isDark ? FocientColorDarkTokens.neutralTextMuted : const Color(0xFF64748B);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.event_available_outlined, size: 40, color: subtitleColor),
+          const SizedBox(height: 10),
+          Text(
+            'Belum ada tugas yang dijadwalkan untuk hari ini.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 13,
+              color: subtitleColor,
+            ),
+          ),
+          const SizedBox(height: 14),
+          ElevatedButton.icon(
+            onPressed: _onOpenAddTask,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF059669),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: const Text('Add Task'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildZeroInboxState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? FocientColorDarkTokens.neutralSurfaceCard : Colors.white;
+    final subtitleColor = isDark ? FocientColorDarkTokens.neutralTextMuted : const Color(0xFF64748B);
+    final titleColor = isDark ? FocientColorDarkTokens.neutralTextBold : const Color(0xFF0F172A);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: Color(0xFFECFDF5),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_circle_outline_rounded, size: 36, color: Color(0xFF059669)),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Semua Tugas Selesai! (Zero Inbox)',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Hebat! Seluruh fokus target hari ini telah tercapai dengan ritme seimbang. Istirahatlah dengan tenang.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 12,
+              color: subtitleColor,
+            ),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: _onOpenAddTask,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF0D9488),
+              side: const BorderSide(color: Color(0xFF0D9488)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            ),
+            icon: const Icon(Icons.add_rounded, size: 16),
+            label: const Text('+ Tambah Tugas Ekstra', style: TextStyle(fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaskList(List<TaskItem> tasks) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? FocientColorDarkTokens.neutralSurfaceCard : Colors.white;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final subtitleColor = isDark ? FocientColorDarkTokens.neutralTextMuted : const Color(0xFF64748B);
+    final titleColor = isDark ? FocientColorDarkTokens.neutralTextBold : const Color(0xFF0F172A);
+
+    final allMobileTasks = ref.watch(taskListProvider);
+    final matchingMobileTasks = tasks.map((ti) {
+      return allMobileTasks.firstWhere(
+        (mt) => mt.id == ti.id,
+        orElse: () => ti.toMobileTask(dateDisplay: _formatSelectedDateTitle()),
+      );
+    }).toList();
+
+    return Column(
+      children: _buildTimelineWidgets(
+        tasks: matchingMobileTasks,
+        cardBg: cardBg,
+        borderColor: borderColor,
+        titleColor: titleColor,
+        subtitleColor: subtitleColor,
       ),
     );
   }
@@ -718,8 +829,8 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
     final navItems = [
       (Icons.home_outlined, Icons.home_rounded, 'Home'),
       (Icons.calendar_today_outlined, Icons.calendar_month_rounded, 'Plan'),
-      (Icons.add_rounded, Icons.add_rounded, 'Add'),
-      (Icons.format_list_bulleted_rounded, Icons.format_list_bulleted_rounded, 'Tasks'),
+      (Icons.add_rounded, Icons.add_rounded, 'Add Task'),
+      (Icons.format_list_bulleted_rounded, Icons.format_list_bulleted_rounded, 'Task List'),
       (Icons.insert_chart_outlined_rounded, Icons.insert_chart_rounded, 'Insights'),
     ];
 
@@ -775,26 +886,41 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
                   onTap: handleTap,
                   borderRadius: BorderRadius.circular(24),
                   child: Transform.translate(
-                    offset: const Offset(0, -10),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF2563EB).withValues(alpha: 0.35),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                    offset: const Offset(0, -6),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2563EB),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF2563EB).withValues(alpha: 0.35),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.add_rounded,
-                        color: Colors.white,
-                        size: 26,
-                      ),
+                          child: const Icon(
+                            Icons.add_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF2563EB),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );

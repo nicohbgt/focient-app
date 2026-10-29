@@ -1142,8 +1142,8 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
     final navItems = [
       (Icons.home_outlined, Icons.home_rounded, 'Home'),
       (Icons.calendar_today_outlined, Icons.calendar_month_rounded, 'Plan'),
-      (Icons.add_rounded, Icons.add_rounded, 'Add'),
-      (Icons.format_list_bulleted_rounded, Icons.format_list_bulleted_rounded, 'Tasks'),
+      (Icons.add_rounded, Icons.add_rounded, 'Add Task'),
+      (Icons.format_list_bulleted_rounded, Icons.format_list_bulleted_rounded, 'Task List'),
       (Icons.insert_chart_outlined_rounded, Icons.insert_chart_rounded, 'Insights'),
     ];
 
@@ -1196,26 +1196,41 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
                   onTap: handleTap,
                   borderRadius: BorderRadius.circular(24),
                   child: Transform.translate(
-                    offset: const Offset(0, -10),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF2563EB).withValues(alpha: 0.35),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                    offset: const Offset(0, -6),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2563EB),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF2563EB).withValues(alpha: 0.35),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.add_rounded,
-                        color: Colors.white,
-                        size: 26,
-                      ),
+                          child: const Icon(
+                            Icons.add_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF2563EB),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
