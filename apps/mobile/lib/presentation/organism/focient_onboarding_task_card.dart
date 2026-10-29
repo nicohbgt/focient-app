@@ -214,7 +214,7 @@ class FocientTaskAddedCard extends StatelessWidget {
                     ),
                   ),
 
-                // Category Badge (Dot + Name + Focus Type)
+                // Category Badge (Dot + Name)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(
@@ -248,6 +248,28 @@ class FocientTaskAddedCard extends StatelessWidget {
                     ],
                   ),
                 ),
+
+                // Focus Type Badge
+                if (task.focusType.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFE4E6),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: const Color(0xFFFECDD3),
+                      ),
+                    ),
+                    child: Text(
+                      task.focusType,
+                      style: const TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF9F1239),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ],

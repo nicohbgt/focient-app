@@ -91,7 +91,7 @@ void main() {
             taskListProvider.overrideWith((ref) => TaskListNotifier([])),
           ],
           child: const MaterialApp(
-            home: FocientTaskListScreen(),
+            home: FocientTaskListScreen(initialSelectedDay: 3),
           ),
         ),
       );
@@ -126,7 +126,7 @@ void main() {
             taskListProvider.overrideWith((ref) => TaskListNotifier(completedTasks)),
           ],
           child: const MaterialApp(
-            home: FocientTaskListScreen(),
+            home: FocientTaskListScreen(initialSelectedDay: 3),
           ),
         ),
       );
@@ -154,7 +154,7 @@ void main() {
             taskListProvider.overrideWith((ref) => TaskListNotifier(activeTasks)),
           ],
           child: const MaterialApp(
-            home: FocientTaskListScreen(),
+            home: FocientTaskListScreen(initialSelectedDay: 3),
           ),
         ),
       );

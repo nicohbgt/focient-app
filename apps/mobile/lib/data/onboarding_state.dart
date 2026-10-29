@@ -197,15 +197,17 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     );
   }
 
+  /// Step 1: Set full category list directly
+  void setCategories(List<WorkspaceCategory> categories) {
+    state = state.copyWith(
+      categories: List.unmodifiable(categories),
+      lifecycle: OnboardingLifecycle.editing,
+      clearError: true,
+    );
+  }
+
   /// Step 1: Add a custom category
   bool addCategory(WorkspaceCategory category) {
-    if (state.categories.length >= 5) {
-      state = state.copyWith(
-        errorMessage: 'Maksimal 5 kategori kerja untuk menjaga kesederhanaan fokus.',
-      );
-      return false;
-    }
-
     state = state.copyWith(
       categories: [...state.categories, category],
       lifecycle: OnboardingLifecycle.editing,

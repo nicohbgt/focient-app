@@ -49,11 +49,11 @@ class CreateTaskBottomSheet extends StatefulWidget {
 
 class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
   late final TextEditingController _nameController;
-  late WorkspaceCategory _selectedCategory;
-  int _selectedDurationMinutes = 25;
-  String _selectedFocusType = 'Deep Focus';
-  String _dateDisplay = 'October, 10th 2026';
-  String _startHourDisplay = '10:00';
+  WorkspaceCategory? _selectedCategory;
+  int? _selectedDurationMinutes;
+  String? _selectedFocusType;
+  String? _dateDisplay;
+  String? _startHourDisplay;
   bool _isBacklog = false;
   bool _needsRestAfter = true;
   String? _errorMessage;
@@ -63,14 +63,13 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: 'Create the Annual OKR');
-    _selectedCategory = widget.availableCategories.isNotEmpty
-        ? widget.availableCategories.first
-        : const WorkspaceCategory(
-            name: 'Strategic',
-            color: Color(0xFF7C3AED),
-            colorHex: '#7C3AED',
-          );
+    // Rule: Every input form must start in an empty state first
+    _nameController = TextEditingController();
+    _selectedCategory = null;
+    _selectedDurationMinutes = null;
+    _selectedFocusType = null;
+    _dateDisplay = null;
+    _startHourDisplay = null;
   }
 
   @override
@@ -90,6 +89,7 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
     if (picked != null) {
       setState(() {
         _dateDisplay = '${_monthName(picked.month)}, ${picked.day}th ${picked.year}';
+        _errorMessage = null;
       });
     }
   }
@@ -104,6 +104,7 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
       final minStr = picked.minute.toString().padLeft(2, '0');
       setState(() {
         _startHourDisplay = '$hourStr:$minStr';
+        _errorMessage = null;
       });
     }
   }
@@ -125,15 +126,40 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
       return;
     }
 
+    if (_selectedCategory == null) {
+      setState(() {
+        _errorMessage = 'Please select a task category';
+      });
+      return;
+    }
+
+    if (_selectedDurationMinutes == null) {
+      setState(() {
+        _errorMessage = 'Please select a task duration';
+      });
+      return;
+    }
+
+    if (_selectedFocusType == null) {
+      setState(() {
+        _errorMessage = 'Please select a focus type';
+      });
+      return;
+    }
+
+    final now = DateTime.now();
+    final effectiveDate = _dateDisplay ?? '${_monthName(now.month)}, ${now.day}th ${now.year}';
+    final effectiveHour = _startHourDisplay ?? '09:00';
+
     final task = OnboardingTask(
       id: 'task_${DateTime.now().millisecondsSinceEpoch}',
       title: title,
-      categoryName: _selectedCategory.name,
-      categoryColor: _selectedCategory.color,
-      durationMinutes: _selectedDurationMinutes,
-      focusType: _selectedFocusType,
-      dateDisplay: _dateDisplay.split(' ').take(2).join(' '),
-      startHourDisplay: _startHourDisplay,
+      categoryName: _selectedCategory!.name,
+      categoryColor: _selectedCategory!.color,
+      durationMinutes: _selectedDurationMinutes!,
+      focusType: _selectedFocusType!,
+      dateDisplay: effectiveDate.split(' ').take(2).join(' '),
+      startHourDisplay: effectiveHour,
       isBacklog: _isBacklog,
       needsRestAfter: _needsRestAfter,
       restMinutes: widget.defaultRestMinutes,
@@ -250,7 +276,7 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
               clipBehavior: Clip.none,
               child: Row(
                 children: widget.availableCategories.map((cat) {
-                  final isSelected = _selectedCategory.name == cat.name;
+                  final isSelected = _selectedCategory?.name == cat.name;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: InkWell(
@@ -480,10 +506,10 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
                           ),
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            _dateDisplay,
+                            _dateDisplay ?? 'Select date',
                             style: TextStyle(
                               fontSize: 13,
-                              color: titleColor,
+                              color: _dateDisplay != null ? titleColor : subtitleColor,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -519,10 +545,10 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
                           ),
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            _startHourDisplay,
+                            _startHourDisplay ?? 'Select hour',
                             style: TextStyle(
                               fontSize: 13,
-                              color: titleColor,
+                              color: _startHourDisplay != null ? titleColor : subtitleColor,
                             ),
                           ),
                         ),

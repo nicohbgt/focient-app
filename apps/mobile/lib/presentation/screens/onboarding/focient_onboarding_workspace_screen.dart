@@ -97,13 +97,6 @@ class _FocientOnboardingWorkspaceScreenState
   }
 
   Future<void> _openAddCategorySheet() async {
-    if (_categories.length >= 5) {
-      setState(() {
-        _categoryError = 'Maksimal 5 kategori kerja untuk menjaga kesederhanaan fokus.';
-      });
-      return;
-    }
-
     final newCategory = await AddTaskCategorySheet.show(context);
     if (newCategory != null && mounted) {
       setState(() {
@@ -216,17 +209,20 @@ class _FocientOnboardingWorkspaceScreenState
                             },
                         tooltip: 'Back',
                       ),
-                      const Spacer(),
-                      Text(
-                        '1 of 5 steps',
-                        style: TextStyle(
-                          fontFamily: FocientTypographyTokens.fontFamily,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: subtitleColor,
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            '1 of 5 steps',
+                            style: TextStyle(
+                              fontFamily: FocientTypographyTokens.fontFamily,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: subtitleColor,
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 40),
                     ],
                   ),
                   const SizedBox(height: 8),

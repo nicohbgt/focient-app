@@ -41,7 +41,7 @@ class FocientOnboardingReviewScreen extends StatefulWidget {
 class _FocientOnboardingReviewScreenState
     extends State<FocientOnboardingReviewScreen> {
   bool _notificationEnabled = false;
-  bool _showMore = true;
+  bool _showMore = false;
 
   @override
   Widget build(BuildContext context) {
@@ -246,7 +246,7 @@ class _FocientOnboardingReviewScreenState
                           ),
                           const SizedBox(height: 16),
 
-                          // Show More Toggle
+                          // Show More / Show Less Toggle
                           InkWell(
                             onTap: () {
                               setState(() => _showMore = !_showMore);
@@ -254,7 +254,7 @@ class _FocientOnboardingReviewScreenState
                             child: Row(
                               children: [
                                 Text(
-                                  'Show More',
+                                  _showMore ? 'Show Less' : 'Show More',
                                   style: TextStyle(
                                     fontFamily: FocientTypographyTokens.fontFamily,
                                     fontSize: 13,
@@ -274,94 +274,93 @@ class _FocientOnboardingReviewScreenState
                             ),
                           ),
 
-                          // Top 3 Task Detail
-                          if (_showMore) ...[
-                            const SizedBox(height: 16),
-                            const Divider(height: 1),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Top 3 Task Detail',
-                              style: TextStyle(
-                                fontFamily: FocientTypographyTokens.fontFamily,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: titleColor,
-                              ),
+                          const SizedBox(height: 16),
+                          const Divider(height: 1),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Top 3 Task Detail',
+                            style: TextStyle(
+                              fontFamily: FocientTypographyTokens.fontFamily,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: titleColor,
                             ),
-                            const SizedBox(height: 12),
+                          ),
+                          const SizedBox(height: 12),
 
-                            // List tasks or fallback mock OKR task
-                            if (widget.tasks.isNotEmpty)
-                              ...widget.tasks.map((task) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8.0),
-                                  child: Row(
-                                    children: [
-                                      // Blue Dot Indicator
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFF2563EB),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          task.title,
-                                          style: TextStyle(
-                                            fontFamily: FocientTypographyTokens.fontFamily,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                            color: titleColor,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      // Category Badge
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFF3E8FF),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Container(
-                                              width: 8,
-                                              height: 8,
-                                              decoration: BoxDecoration(
-                                                color: task.categoryColor,
-                                                shape: BoxShape.circle,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              task.categoryName,
-                                              style: TextStyle(
-                                                fontFamily: FocientTypographyTokens.fontFamily,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                color: task.categoryColor,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
+                          if (widget.tasks.isEmpty)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.assignment_outlined,
+                                    size: 18,
+                                    color: subtitleColor,
                                   ),
-                                );
-                              })
-                            else
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'No tasks in your focus plan yet.',
+                                      style: TextStyle(
+                                        fontFamily: FocientTypographyTokens.fontFamily,
+                                        fontSize: 13,
+                                        color: subtitleColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else if (!_showMore)
+                            // Compact / concise view: task title + category pill
+                            ...widget.tasks.map((task) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Row(
+                                  children: [
+                                    // Blue Dot Indicator
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF2563EB),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        task.title,
+                                        style: TextStyle(
+                                          fontFamily: FocientTypographyTokens.fontFamily,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: titleColor,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _buildCategoryPill(task),
+                                  ],
+                                ),
+                              );
+                            })
+                          else
+                            // Detailed card view: full card with title, badges (category, focus type, duration)
+                            ...widget.tasks.map((task) {
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 10.0),
+                                padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
                                   color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
                                   borderRadius: BorderRadius.circular(12),
@@ -369,28 +368,58 @@ class _FocientOnboardingReviewScreenState
                                     color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
                                   ),
                                 ),
-                                child: Row(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(
-                                      Icons.assignment_outlined,
-                                      size: 18,
-                                      color: subtitleColor,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        'No tasks in your focus plan yet.',
-                                        style: TextStyle(
-                                          fontFamily: FocientTypographyTokens.fontFamily,
-                                          fontSize: 13,
-                                          color: subtitleColor,
-                                        ),
+                                    Text(
+                                      task.title,
+                                      style: TextStyle(
+                                        fontFamily: FocientTypographyTokens.fontFamily,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: titleColor,
                                       ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      task.formattedTimestamp,
+                                      style: TextStyle(
+                                        fontFamily: FocientTypographyTokens.fontFamily,
+                                        fontSize: 12,
+                                        color: subtitleColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 6,
+                                      children: [
+                                        _buildPillBadge(
+                                          label: '${task.durationMinutes}" Task',
+                                          bgColor: const Color(0xFFEFF6FF),
+                                          borderColor: const Color(0xFFBFDBFE),
+                                          textColor: const Color(0xFF2563EB),
+                                        ),
+                                        if (task.needsRestAfter)
+                                          _buildPillBadge(
+                                            label: '${task.restMinutes}" Rest',
+                                            bgColor: const Color(0xFFEFF6FF),
+                                            borderColor: const Color(0xFFBFDBFE),
+                                            textColor: const Color(0xFF2563EB),
+                                          ),
+                                        _buildCategoryPill(task),
+                                        _buildPillBadge(
+                                          label: task.focusType.isNotEmpty ? task.focusType : 'Deep Focus',
+                                          bgColor: const Color(0xFFFFE4E6),
+                                          borderColor: const Color(0xFFFECDD3),
+                                          textColor: const Color(0xFF9F1239),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ),
-                          ],
+                              );
+                            }),
                         ],
                       ),
                     ),
@@ -442,6 +471,67 @@ class _FocientOnboardingReviewScreenState
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryPill(OnboardingTask task) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3E8FF),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: task.categoryColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            task.categoryName,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: task.categoryColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPillBadge({
+    required String label,
+    required Color bgColor,
+    required Color borderColor,
+    required Color textColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: FocientTypographyTokens.fontFamily,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: textColor,
         ),
       ),
     );

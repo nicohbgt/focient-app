@@ -22,9 +22,9 @@ class FocientOnboardingTimeScreen extends StatefulWidget {
     super.key,
     this.onBack,
     this.onNext,
-    this.initialStartHour = '09:00 AM',
-    this.initialEndHour = '05:00 PM',
-    this.initialRestMinutes = 20,
+    this.initialStartHour = '',
+    this.initialEndHour = '',
+    this.initialRestMinutes = 0,
   });
 
   @override
@@ -34,29 +34,53 @@ class FocientOnboardingTimeScreen extends StatefulWidget {
 
 class _FocientOnboardingTimeScreenState
     extends State<FocientOnboardingTimeScreen> {
-  late String _startHourDisplay;
-  late String _endHourDisplay;
   late int _restMinutes;
+  bool _is24Hour = false;
 
-  TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
-  TimeOfDay _endTime = const TimeOfDay(hour: 17, minute: 0);
+  TimeOfDay? _startTime;
+  TimeOfDay? _endTime;
 
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _startHourDisplay = widget.initialStartHour;
-    _endHourDisplay = widget.initialEndHour;
+    _startTime = _parseTime(widget.initialStartHour);
+    _endTime = _parseTime(widget.initialEndHour);
     _restMinutes = widget.initialRestMinutes;
   }
 
-  String _formatTimeOfDay(TimeOfDay time) {
-    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
-    final hourStr = hour.toString().padLeft(2, '0');
-    return '$hourStr:$minute $period';
+  TimeOfDay? _parseTime(String timeStr) {
+    if (timeStr.isEmpty) return null;
+    try {
+      final trimmed = timeStr.trim().toUpperCase();
+      final isPm = trimmed.contains('PM');
+      final isAm = trimmed.contains('AM');
+      final clean = trimmed.replaceAll('AM', '').replaceAll('PM', '').trim();
+      final parts = clean.split(':');
+      var hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+      if (isPm && hour < 12) hour += 12;
+      if (isAm && hour == 12) hour = 0;
+      return TimeOfDay(hour: hour, minute: minute);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _formatTime(TimeOfDay? time) {
+    if (time == null) return '';
+    if (_is24Hour) {
+      final hourStr = time.hour.toString().padLeft(2, '0');
+      final minuteStr = time.minute.toString().padLeft(2, '0');
+      return '$hourStr:$minuteStr';
+    } else {
+      final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+      final minute = time.minute.toString().padLeft(2, '0');
+      final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+      final hourStr = hour.toString().padLeft(2, '0');
+      return '$hourStr:$minute $period';
+    }
   }
 
   String _to24HourFormat(TimeOfDay time) {
@@ -68,12 +92,17 @@ class _FocientOnboardingTimeScreenState
   Future<void> _pickStartTime() async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: _startTime,
+      initialTime: _startTime ?? const TimeOfDay(hour: 9, minute: 0),
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: _is24Hour),
+          child: child ?? const SizedBox(),
+        );
+      },
     );
     if (picked != null) {
       setState(() {
         _startTime = picked;
-        _startHourDisplay = _formatTimeOfDay(picked);
         _errorMessage = null;
       });
     }
@@ -82,20 +111,32 @@ class _FocientOnboardingTimeScreenState
   Future<void> _pickEndTime() async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: _endTime,
+      initialTime: _endTime ?? const TimeOfDay(hour: 17, minute: 0),
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: _is24Hour),
+          child: child ?? const SizedBox(),
+        );
+      },
     );
     if (picked != null) {
       setState(() {
         _endTime = picked;
-        _endHourDisplay = _formatTimeOfDay(picked);
         _errorMessage = null;
       });
     }
   }
 
   void _onNextPressed() {
-    final startMinutes = _startTime.hour * 60 + _startTime.minute;
-    final endMinutes = _endTime.hour * 60 + _endTime.minute;
+    if (_startTime == null || _endTime == null) {
+      setState(() {
+        _errorMessage = 'Silakan atur jam mulai dan jam selesai kerja terlebih dahulu.';
+      });
+      return;
+    }
+
+    final startMinutes = _startTime!.hour * 60 + _startTime!.minute;
+    final endMinutes = _endTime!.hour * 60 + _endTime!.minute;
 
     if (endMinutes <= startMinutes) {
       setState(() {
@@ -104,8 +145,8 @@ class _FocientOnboardingTimeScreenState
       return;
     }
 
-    final start24 = _to24HourFormat(_startTime);
-    final end24 = _to24HourFormat(_endTime);
+    final start24 = _to24HourFormat(_startTime!);
+    final end24 = _to24HourFormat(_endTime!);
 
     widget.onNext?.call(start24, end24, _restMinutes);
   }
@@ -233,15 +274,47 @@ class _FocientOnboardingTimeScreenState
                     ),
                     const SizedBox(height: 32),
 
-                    // Section 1: Daily Active Hour
-                    Text(
-                      'Daily Active Hour',
-                      style: TextStyle(
-                        fontFamily: FocientTypographyTokens.fontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: sectionLabelColor,
-                      ),
+                    // Section 1: Daily Active Hour with 12h/24h toggle
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Daily Active Hour',
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: sectionLabelColor,
+                          ),
+                        ),
+                        // 12h / 24h format switcher
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildFormatPill(
+                                label: '12h',
+                                isActive: !_is24Hour,
+                                onTap: () => setState(() => _is24Hour = false),
+                              ),
+                              _buildFormatPill(
+                                label: '24h',
+                                isActive: _is24Hour,
+                                onTap: () => setState(() => _is24Hour = true),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 14),
 
@@ -280,14 +353,14 @@ class _FocientOnboardingTimeScreenState
                                   ),
                                   alignment: Alignment.centerLeft,
                                   child: Text(
-                                    _startHourDisplay.isNotEmpty
-                                        ? _startHourDisplay
+                                    _formatTime(_startTime).isNotEmpty
+                                        ? _formatTime(_startTime)
                                         : 'Input here',
                                     style: TextStyle(
                                       fontFamily: FocientTypographyTokens.fontFamily,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
-                                      color: _startHourDisplay.isNotEmpty
+                                      color: _formatTime(_startTime).isNotEmpty
                                           ? titleColor
                                           : subtitleColor,
                                     ),
@@ -330,14 +403,14 @@ class _FocientOnboardingTimeScreenState
                                   ),
                                   alignment: Alignment.centerLeft,
                                   child: Text(
-                                    _endHourDisplay.isNotEmpty
-                                        ? _endHourDisplay
+                                    _formatTime(_endTime).isNotEmpty
+                                        ? _formatTime(_endTime)
                                         : 'Input here',
                                     style: TextStyle(
                                       fontFamily: FocientTypographyTokens.fontFamily,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
-                                      color: _endHourDisplay.isNotEmpty
+                                      color: _formatTime(_endTime).isNotEmpty
                                           ? titleColor
                                           : subtitleColor,
                                     ),
@@ -421,6 +494,34 @@ class _FocientOnboardingTimeScreenState
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormatPill({
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF2563EB) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: FocientTypographyTokens.fontFamily,
+            fontSize: 12,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+            color: isActive ? Colors.white : const Color(0xFF64748B),
+          ),
         ),
       ),
     );

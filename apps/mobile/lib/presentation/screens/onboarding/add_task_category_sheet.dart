@@ -145,7 +145,7 @@ class _AddTaskCategorySheetState extends State<AddTaskCategorySheet> {
             ),
             const SizedBox(height: 20),
 
-            // 2. Label Color
+            // 2. Label Color (Horizontal Scroll Only)
             Text(
               'Label Color',
               style: TextStyle(
@@ -156,46 +156,51 @@ class _AddTaskCategorySheetState extends State<AddTaskCategorySheet> {
               ),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: kCategoryColorSwatches.map((color) {
-                final isSelected = color.toARGB32() == _selectedColor.toARGB32();
-                return GestureDetector(
-                  onTap: () {
-                    setState(() => _selectedColor = color);
-                  },
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isSelected ? Colors.white : Colors.transparent,
-                        width: 2.5,
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: kCategoryColorSwatches.map((color) {
+                  final isSelected = color.toARGB32() == _selectedColor.toARGB32();
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 10.0),
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() => _selectedColor = color);
+                      },
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? Colors.white : Colors.transparent,
+                            width: 2.5,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: color.withValues(alpha: 0.6),
+                                    blurRadius: 6,
+                                    spreadRadius: 1,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        alignment: Alignment.center,
+                        child: isSelected
+                            ? const Icon(
+                                Icons.check_rounded,
+                                size: 20,
+                                color: Colors.white,
+                              )
+                            : null,
                       ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: color.withValues(alpha: 0.6),
-                                blurRadius: 6,
-                                spreadRadius: 1,
-                              ),
-                            ]
-                          : null,
                     ),
-                    alignment: Alignment.center,
-                    child: isSelected
-                        ? const Icon(
-                            Icons.check_rounded,
-                            size: 18,
-                            color: Colors.white,
-                          )
-                        : null,
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
             const SizedBox(height: 24),
 

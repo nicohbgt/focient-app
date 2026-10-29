@@ -23,7 +23,12 @@ import '../task/focient_task_list_screen.dart';
 /// - Card 5: Quick Add Task (Task name input, Category pills, Duration pills, "Confirm New Task" green button).
 /// - Bottom Navigation Bar: Home, Plan, Add Task, Task List, Insights.
 class FocientDashboardScreen extends ConsumerStatefulWidget {
-  const FocientDashboardScreen({super.key});
+  final bool? forceShowReschedule;
+
+  const FocientDashboardScreen({
+    super.key,
+    this.forceShowReschedule,
+  });
 
   @override
   ConsumerState<FocientDashboardScreen> createState() =>
@@ -42,6 +47,7 @@ class _FocientDashboardScreenState
   String _selectedCategoryName = 'Strategic';
   Color _selectedCategoryColor = const Color(0xFF7C3AED);
   int _selectedDurationMinutes = 20;
+  String _selectedFocusType = 'Deep Focus';
 
   final List<String> _availableCategories = const [
     'Strategic',
@@ -130,7 +136,7 @@ class _FocientDashboardScreenState
       restMinutes: 20,
       dateDisplay: 'October, 5th',
       startHourDisplay: '14:30',
-      focusType: isTop3 ? 'Deep Focus' : 'Medium',
+      focusType: _selectedFocusType,
     );
 
     ref.read(taskListProvider.notifier).addTask(newTask);
@@ -421,7 +427,13 @@ class _FocientDashboardScreenState
                     const SizedBox(height: 16),
 
                     // Card 2: Task Reschedule Suggestion (Algoritma 3)
-                    if (!_rescheduleDismissed)
+                    // Reschedule suggestion appeals ONLY when today workload is too high
+                    if (!_rescheduleDismissed &&
+                        (workloadPercent > 80 ||
+                            workloadStatus == 'Near Capacity' ||
+                            workloadStatus == 'Overload' ||
+                            (widget.forceShowReschedule ?? false) ||
+                            _rescheduleResolved)) ...[
                       _buildRescheduleSuggestionCard(
                         cardBg: cardBg,
                         borderColor: borderColor,
@@ -429,7 +441,8 @@ class _FocientDashboardScreenState
                         subtitleColor: subtitleColor,
                         isResolved: _rescheduleResolved,
                       ),
-                    if (!_rescheduleDismissed) const SizedBox(height: 16),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Card 3: Top 3 Priority Task
                     _buildTop3PriorityCard(
@@ -995,18 +1008,22 @@ class _FocientDashboardScreenState
     required Color subtitleColor,
     required List<MobileTask> top3Tasks,
   }) {
-    final firstTask = top3Tasks.isNotEmpty
-        ? top3Tasks.first
-        : MobileTask(
-            id: 'mock-okr',
-            title: 'Create the Annual OKR',
-            durationMinutes: 25,
-            restMinutes: 20,
-            categoryName: 'Strategy',
-            categoryColor: const Color(0xFF7C3AED),
-            dateDisplay: 'October, 10th',
-            startHourDisplay: '10:00',
-          );
+    // Dynamically adjust to server saved data
+    final displayTasks = top3Tasks.isNotEmpty
+        ? top3Tasks
+        : [
+            MobileTask(
+              id: 'mock-okr',
+              title: 'Create the Annual OKR',
+              durationMinutes: 25,
+              restMinutes: 20,
+              categoryName: 'Strategic',
+              categoryColor: const Color(0xFF7C3AED),
+              dateDisplay: 'October, 10th',
+              startHourDisplay: '10:00',
+              focusType: 'Deep Focus',
+            ),
+          ];
 
     return Container(
       width: double.infinity,
@@ -1079,137 +1096,38 @@ class _FocientDashboardScreenState
           ),
           const SizedBox(height: 12),
 
-          // Image 1: Compact View (when _showDetailedTop3 is false)
+          // Compact View (when _showDetailedTop3 is false)
           if (!_showDetailedTop3)
-            Row(
-              children: [
-                // Blue Dot Indicator
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF2563EB),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    firstTask.title,
-                    style: TextStyle(
-                      fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: titleColor,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Purple Category Badge (e.g. Strategy)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF3E8FF),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+            Column(
+              children: displayTasks.map((task) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Colored Dot Indicator
                       Container(
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: firstTask.categoryColor,
+                          color: task.categoryColor,
                           shape: BoxShape.circle,
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        firstTask.categoryName,
-                        style: const TextStyle(
-                          fontFamily: FocientTypographyTokens.fontFamily,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF7C3AED),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            )
-          // Image 2: Detailed Boxed Card (when _showDetailedTop3 is true)
-          else
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    firstTask.title,
-                    style: TextStyle(
-                      fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: titleColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${firstTask.dateDisplay} - ${firstTask.startHourDisplay}',
-                    style: TextStyle(
-                      fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 12,
-                      color: subtitleColor,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  // Badges Row: 25" Task | 20" Rest | ● Strategic
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFBFDBFE)),
-                        ),
+                      const SizedBox(width: 8),
+                      Expanded(
                         child: Text(
-                          '${firstTask.durationMinutes}" Task',
-                          style: const TextStyle(
+                          task.title,
+                          style: TextStyle(
                             fontFamily: FocientTypographyTokens.fontFamily,
-                            fontSize: 12,
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF2563EB),
+                            color: titleColor,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFBFDBFE)),
-                        ),
-                        child: Text(
-                          '${firstTask.restMinutes}" Rest',
-                          style: const TextStyle(
-                            fontFamily: FocientTypographyTokens.fontFamily,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2563EB),
-                          ),
-                        ),
-                      ),
+                      const SizedBox(width: 8),
+                      // Category Badge
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
@@ -1223,18 +1141,18 @@ class _FocientDashboardScreenState
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: firstTask.categoryColor,
+                                color: task.categoryColor,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              firstTask.categoryName,
-                              style: const TextStyle(
+                              task.categoryName,
+                              style: TextStyle(
                                 fontFamily: FocientTypographyTokens.fontFamily,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF7C3AED),
+                                color: task.categoryColor,
                               ),
                             ),
                           ],
@@ -1242,8 +1160,137 @@ class _FocientDashboardScreenState
                       ),
                     ],
                   ),
-                ],
-              ),
+                );
+              }).toList(),
+            )
+          // Detailed Boxed Cards (when _showDetailedTop3 is true)
+          else
+            Column(
+              children: displayTasks.map((task) {
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.title,
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: titleColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${task.dateDisplay} - ${task.startHourDisplay}',
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 12,
+                          color: subtitleColor,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // Badges Row: Duration | Rest | Category | Focus Type
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFBFDBFE)),
+                            ),
+                            child: Text(
+                              '${task.durationMinutes}" Task',
+                              style: const TextStyle(
+                                fontFamily: FocientTypographyTokens.fontFamily,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF2563EB),
+                              ),
+                            ),
+                          ),
+                          if (task.restMinutes > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFFBFDBFE)),
+                              ),
+                              child: Text(
+                                '${task.restMinutes}" Rest',
+                                style: const TextStyle(
+                                  fontFamily: FocientTypographyTokens.fontFamily,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF2563EB),
+                                ),
+                              ),
+                            ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3E8FF),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: task.categoryColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  task.categoryName,
+                                  style: TextStyle(
+                                    fontFamily: FocientTypographyTokens.fontFamily,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: task.categoryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFE4E6),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFFECDD3)),
+                            ),
+                            child: Text(
+                              task.focusType.isNotEmpty ? task.focusType : 'Deep Focus',
+                              style: const TextStyle(
+                                fontFamily: FocientTypographyTokens.fontFamily,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF9F1239),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
         ],
       ),
@@ -1386,6 +1433,8 @@ class _FocientDashboardScreenState
     required Color titleColor,
     required Color subtitleColor,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -1540,6 +1589,84 @@ class _FocientDashboardScreenState
                           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                           color: isSelected ? Colors.white : const Color(0xFF1D4ED8),
                         ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Field 4: Focus Type
+          Text(
+            'Focus Type',
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: ['Deep Focus', 'Medium', 'Light Focus'].map((type) {
+                final isSelected = _selectedFocusType == type;
+                Color activeBg;
+                Color activeBorder;
+                Color activeText;
+                if (type == 'Deep Focus') {
+                  activeBg = const Color(0xFFFFE4E6);
+                  activeBorder = const Color(0xFFFECDD3);
+                  activeText = const Color(0xFF9F1239);
+                } else if (type == 'Medium') {
+                  activeBg = const Color(0xFFFEF3C7);
+                  activeBorder = const Color(0xFFFDE68A);
+                  activeText = const Color(0xFF92400E);
+                } else {
+                  activeBg = const Color(0xFFE0F2FE);
+                  activeBorder = const Color(0xFFBAE6FD);
+                  activeText = const Color(0xFF075985);
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      setState(() => _selectedFocusType = type);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? activeBg : (isDark ? const Color(0xFF1E293B) : Colors.white),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? activeBorder : borderColor,
+                          width: isSelected ? 1.5 : 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 13,
+                            color: isSelected ? activeText : subtitleColor,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            type,
+                            style: TextStyle(
+                              fontFamily: FocientTypographyTokens.fontFamily,
+                              fontSize: 12,
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              color: isSelected ? activeText : subtitleColor,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

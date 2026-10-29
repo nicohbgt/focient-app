@@ -13,6 +13,9 @@ class FocientTaskCard extends StatelessWidget {
   final String title;
   final String? notes;
   final String? duration;
+  final String? categoryName;
+  final Color? categoryColor;
+  final String? focusType;
   final bool completed;
   final bool isFocusTop3;
   final bool needsReschedule;
@@ -27,6 +30,9 @@ class FocientTaskCard extends StatelessWidget {
     required this.title,
     this.notes,
     this.duration,
+    this.categoryName,
+    this.categoryColor,
+    this.focusType,
     this.completed = false,
     this.isFocusTop3 = false,
     this.needsReschedule = false,
@@ -118,6 +124,67 @@ class FocientTaskCard extends StatelessWidget {
                           fontSize: 13,
                           color: isDark ? FocientColorDarkTokens.neutralTextMuted : FocientColorTokens.neutralTextMuted,
                         ),
+                      ),
+                    ],
+                    if (categoryName != null || focusType != null) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          if (categoryName != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: (categoryColor ?? const Color(0xFF7C3AED)).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: (categoryColor ?? const Color(0xFF7C3AED)).withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      color: categoryColor ?? const Color(0xFF7C3AED),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    categoryName!,
+                                    style: TextStyle(
+                                      fontFamily: FocientTypographyTokens.fontFamily,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: categoryColor ?? const Color(0xFF7C3AED),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (focusType != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFE4E6),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFFECDD3)),
+                              ),
+                              child: Text(
+                                focusType!,
+                                style: const TextStyle(
+                                  fontFamily: FocientTypographyTokens.fontFamily,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF9F1239),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ],

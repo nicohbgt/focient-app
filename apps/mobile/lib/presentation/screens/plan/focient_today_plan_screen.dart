@@ -277,16 +277,17 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
 
                     const SizedBox(height: 16),
 
-                    // Section 3: Smart Rebalancer
-                    _buildSmartRebalancerCard(
-                      state: planningState,
-                      cardBg: cardBg,
-                      borderColor: borderColor,
-                      titleColor: titleColor,
-                      subtitleColor: subtitleColor,
-                    ),
-
-                    const SizedBox(height: 16),
+                    // Section 3: Smart Rebalancer (Only show when rebalancing suggestions exist or rebalanced)
+                    if (planningState.rebalanceSuggestions.isNotEmpty || planningState.isRebalanced) ...[
+                      _buildSmartRebalancerCard(
+                        state: planningState,
+                        cardBg: cardBg,
+                        borderColor: borderColor,
+                        titleColor: titleColor,
+                        subtitleColor: subtitleColor,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Section 4: Backlog Scheduler
                     _buildBacklogSchedulerCard(
@@ -353,7 +354,7 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
           // Screen Title
           Expanded(
             child: Text(
-              'Your Planning',
+              'Your Plan',
               style: TextStyle(
                 fontFamily: FocientTypographyTokens.fontFamily,
                 fontSize: 18,

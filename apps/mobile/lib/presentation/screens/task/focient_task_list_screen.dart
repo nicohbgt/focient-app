@@ -21,12 +21,14 @@ class FocientTaskListScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   final ValueChanged<int>? onNavigateTab;
   final bool showBottomNav;
+  final int? initialSelectedDay;
 
   const FocientTaskListScreen({
     super.key,
     this.onBack,
     this.onNavigateTab,
     this.showBottomNav = true,
+    this.initialSelectedDay,
   });
 
   @override
@@ -35,7 +37,7 @@ class FocientTaskListScreen extends ConsumerStatefulWidget {
 
 class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
   int _activeNavIndex = 3; // Task List is active
-  int _selectedDay = 3; // October 3rd, 2026
+  late int _selectedDay;
   final int _selectedYear = 2026;
   bool _isLoading = false;
   String? _errorMessage;
@@ -43,6 +45,8 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
   @override
   void initState() {
     super.initState();
+    // Default to current day
+    _selectedDay = widget.initialSelectedDay ?? DateTime.now().day;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadTasksFromApi();
     });
@@ -602,23 +606,17 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
                           spacing: 8,
                           runSpacing: 4,
                           children: [
+                            _buildCategoryBadge(
+                              categoryName: task.categoryName,
+                              color: task.categoryColor,
+                            ),
+                            _buildFocusTypeBadge(task.focusType),
                             _buildPillBadge(
                               label: '${task.durationMinutes}" Task',
                               bgColor: const Color(0xFFF1F5F9),
                               borderColor: const Color(0xFFCBD5E1),
                               textColor: const Color(0xFF475569),
                             ),
-                            _buildCategoryBadge(
-                              categoryName: task.categoryName,
-                              color: task.categoryColor,
-                            ),
-                            if (task.focusType == 'Deep Focus')
-                              _buildPillBadge(
-                                label: 'Deep Focus',
-                                bgColor: const Color(0xFFFFE4E6),
-                                borderColor: const Color(0xFFFECDD3),
-                                textColor: const Color(0xFF9F1239),
-                              ),
                           ],
                         ),
                       ],
@@ -670,6 +668,31 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
     }
 
     return widgets;
+  }
+
+  Widget _buildFocusTypeBadge(String focusType) {
+    Color bg;
+    Color border;
+    Color text;
+    if (focusType == 'Deep Focus') {
+      bg = const Color(0xFFFFE4E6);
+      border = const Color(0xFFFECDD3);
+      text = const Color(0xFF9F1239);
+    } else if (focusType == 'Medium') {
+      bg = const Color(0xFFFEF3C7);
+      border = const Color(0xFFFDE68A);
+      text = const Color(0xFF92400E);
+    } else {
+      bg = const Color(0xFFE0F2FE);
+      border = const Color(0xFFBAE6FD);
+      text = const Color(0xFF075985);
+    }
+    return _buildPillBadge(
+      label: focusType.isNotEmpty ? focusType : 'Deep Focus',
+      bgColor: bg,
+      borderColor: border,
+      textColor: text,
+    );
   }
 
   Widget _buildPillBadge({

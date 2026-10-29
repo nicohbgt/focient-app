@@ -113,11 +113,7 @@ class _FocientOnboardingFlowState extends ConsumerState<FocientOnboardingFlow> {
           onWorkspaceConfigured: (username, occupancy, categories) {
             notifier.setUsername(username);
             notifier.selectOccupancy(occupancy);
-            for (final cat in categories) {
-              if (!onboarding.categories.any((c) => c.name == cat.name)) {
-                notifier.addCategory(cat);
-              }
-            }
+            notifier.setCategories(categories);
             setState(() => _currentStep = 2);
           },
         );
@@ -137,9 +133,9 @@ class _FocientOnboardingFlowState extends ConsumerState<FocientOnboardingFlow> {
 
       case 3:
         return FocientOnboardingTimeScreen(
-          initialRestMinutes: onboarding.restMinutesPerTask > 0
-              ? onboarding.restMinutesPerTask
-              : 20,
+          initialRestMinutes: onboarding.restMinutesPerTask,
+          initialStartHour: onboarding.startHour24 ?? '',
+          initialEndHour: onboarding.endHour24 ?? '',
           onBack: () {
             setState(() => _currentStep = 2);
           },
@@ -156,9 +152,7 @@ class _FocientOnboardingFlowState extends ConsumerState<FocientOnboardingFlow> {
       case 4:
         return FocientOnboardingTaskScreen(
           categories: activeCategories,
-          defaultRestMinutes: onboarding.restMinutesPerTask > 0
-              ? onboarding.restMinutesPerTask
-              : 20,
+          defaultRestMinutes: onboarding.restMinutesPerTask,
           initialTasks: onboarding.tasks,
           onBack: () {
             setState(() => _currentStep = 3);

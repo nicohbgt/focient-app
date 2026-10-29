@@ -430,6 +430,18 @@ void main() {
       expect(find.text('Daily Active Hour'), findsOneWidget);
       expect(find.text('Rest Time per Task'), findsOneWidget);
 
+      // Select Start Hour (09:00 default in picker)
+      await tester.tap(find.text('Input here').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      // Select End Hour (17:00 default in picker)
+      await tester.tap(find.text('Input here').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
       await tester.ensureVisible(find.text('Next'));
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
@@ -446,6 +458,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Create Your Task'), findsOneWidget);
+      await tester.enterText(find.byType(TextField).first, 'Create the Annual OKR');
+      await tester.tap(find.text('Personal').last);
+      await tester.tap(find.text('25 Minute'));
+      await tester.tap(find.text('Deep Focus'));
+      await tester.pumpAndSettle();
+
       await tester.ensureVisible(find.text('Confirm'));
       await tester.tap(find.text('Confirm'));
       await tester.pumpAndSettle();
@@ -853,6 +871,8 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: FocientOnboardingTimeScreen(
+            initialStartHour: '09:00 AM',
+            initialEndHour: '05:00 PM',
             initialRestMinutes: 5,
             onNext: (start, end, rest) {
               submittedStart = start;
@@ -880,6 +900,32 @@ void main() {
       expect(submittedStart, '09:00');
       expect(submittedEnd, '17:00');
       expect(submittedRest, isNotNull);
+    });
+
+    testWidgets('Step 3 defaults to empty state, 0 min rest, and toggles 12h/24h format', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: FocientOnboardingTimeScreen(),
+        ),
+      );
+
+      // Daily Active Hour starts empty
+      expect(find.text('Input here'), findsNWidgets(2));
+      // Rest Time defaults to 0 Minute / Task
+      expect(find.text('0 Minutes / Task'), findsOneWidget);
+
+      // Format switchers exist
+      expect(find.text('12h'), findsOneWidget);
+      expect(find.text('24h'), findsOneWidget);
+
+      // Tap 24h toggle
+      await tester.tap(find.text('24h'));
+      await tester.pumpAndSettle();
+
+      // Tapping Next without hours shows error
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      expect(find.text('Silakan atur jam mulai dan jam selesai kerja terlebih dahulu.'), findsOneWidget);
     });
   });
 
@@ -954,6 +1000,17 @@ void main() {
       expect(find.text('Time Slot'), findsOneWidget);
       expect(find.text('Backlog Task'), findsOneWidget);
       expect(find.text('Need to Rest After Task?'), findsOneWidget);
+
+      // Rule: whole input form starts in empty state
+      expect(find.text('Select date'), findsOneWidget);
+      expect(find.text('Select hour'), findsOneWidget);
+
+      // Enter task info
+      await tester.enterText(find.byType(TextField).first, 'Create the Annual OKR');
+      await tester.tap(find.text('Strategic').last);
+      await tester.tap(find.text('25 Minute'));
+      await tester.tap(find.text('Deep Focus'));
+      await tester.pumpAndSettle();
 
       // Confirm
       await tester.ensureVisible(find.text('Confirm'));
@@ -1058,7 +1115,7 @@ void main() {
             }),
           ],
           child: const MaterialApp(
-            home: FocientDashboardScreen(),
+            home: FocientDashboardScreen(forceShowReschedule: true),
           ),
         ),
       );
@@ -1115,6 +1172,7 @@ void main() {
       expect(find.text('Input in here!'), findsOneWidget);
       expect(find.text('Task Categories'), findsOneWidget);
       expect(find.text('Task Duration'), findsOneWidget);
+      expect(find.text('Focus Type'), findsOneWidget);
       expect(find.text('Confirm New Task'), findsOneWidget);
 
       // Bottom Navigation Bar
@@ -1136,7 +1194,7 @@ void main() {
             }),
           ],
           child: const MaterialApp(
-            home: FocientDashboardScreen(),
+            home: FocientDashboardScreen(forceShowReschedule: true),
           ),
         ),
       );
@@ -1175,7 +1233,7 @@ void main() {
             }),
           ],
           child: const MaterialApp(
-            home: FocientDashboardScreen(),
+            home: FocientDashboardScreen(forceShowReschedule: true),
           ),
         ),
       );
@@ -1196,7 +1254,7 @@ void main() {
             taskListProvider.overrideWith((ref) => TaskListNotifier([])),
           ],
           child: const MaterialApp(
-            home: FocientDashboardScreen(),
+            home: FocientDashboardScreen(forceShowReschedule: true),
           ),
         ),
       );
@@ -1238,7 +1296,7 @@ void main() {
       );
 
       // Top App Bar
-      expect(find.text('Your Planning'), findsOneWidget);
+      expect(find.text('Your Plan'), findsOneWidget);
       expect(find.text('60%'), findsNWidgets(2)); // Both bell pill and Monday bar are 60%
 
       // Section 1: Task Categories
@@ -1410,7 +1468,7 @@ void main() {
       );
 
       // Renders with 0% and empty guidance
-      expect(find.text('Your Planning'), findsOneWidget);
+      expect(find.text('Your Plan'), findsOneWidget);
       expect(find.text('0%'), findsAtLeastNWidgets(1));
       expect(find.text('0.0 Hours'), findsOneWidget);
       expect(find.text('0 Task'), findsOneWidget);
@@ -1430,7 +1488,7 @@ void main() {
             }),
           ],
           child: const MaterialApp(
-            home: FocientTaskListScreen(),
+            home: FocientTaskListScreen(initialSelectedDay: 3),
           ),
         ),
       );
@@ -1462,7 +1520,7 @@ void main() {
             }),
           ],
           child: const MaterialApp(
-            home: FocientTaskListScreen(),
+            home: FocientTaskListScreen(initialSelectedDay: 3),
           ),
         ),
       );
@@ -1500,7 +1558,7 @@ void main() {
             }),
           ],
           child: const MaterialApp(
-            home: FocientDashboardScreen(),
+            home: FocientDashboardScreen(forceShowReschedule: true),
           ),
         ),
       );
@@ -1517,7 +1575,7 @@ void main() {
       expect(find.text('October 2026'), findsOneWidget);
 
       // Tap Add Task tab (tab 2) in bottom navbar
-      await tester.tap(find.text('Add Task'));
+      await tester.tap(find.text('Add Task').last);
       await tester.pumpAndSettle();
 
       // Navigated to Add Task!
