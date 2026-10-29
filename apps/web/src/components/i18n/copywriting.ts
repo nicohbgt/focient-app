@@ -93,6 +93,22 @@ export interface FoCientCopywriting {
     toggleTheme: string;
     sidebarExpand: string;
     sidebarCollapse: string;
+    dashboard: string;
+    reschedule: string;
+    dateToday: string;
+    datePrevious: string;
+    dateNext: string;
+    commandPaletteTitle: string;
+    commandPalettePlaceholder: string;
+    commandPaletteNoResults: string;
+    commandPaletteSectionNavigation: string;
+    commandPaletteSectionTasks: string;
+    commandPaletteSectionActions: string;
+    draftPreservationTitle: string;
+    draftPreservationMessage: string;
+    draftPreservationSave: string;
+    draftPreservationDiscard: string;
+    draftPreservationCancel: string;
   };
 
   // Card Suite Titles & Placeholders
@@ -307,6 +323,22 @@ export const idCopywriting: FoCientCopywriting = {
     toggleTheme: 'Ganti Tema Latar',
     sidebarExpand: 'Perluas Navigasi',
     sidebarCollapse: 'Ciutkan Navigasi',
+    dashboard: 'Beranda',
+    reschedule: 'Penyesuaian Jadwal',
+    dateToday: 'Hari Ini',
+    datePrevious: 'Hari Sebelumnya',
+    dateNext: 'Hari Berikutnya',
+    commandPaletteTitle: 'Pencarian & Tindakan Cepat',
+    commandPalettePlaceholder: 'Cari tugas, halaman, atau tindakan... (Esc untuk menutup)',
+    commandPaletteNoResults: 'Tidak ada hasil yang sesuai.',
+    commandPaletteSectionNavigation: 'Navigasi Cepat',
+    commandPaletteSectionTasks: 'Tugas & Jadwal',
+    commandPaletteSectionActions: 'Tindakan Sistem',
+    draftPreservationTitle: 'Draf Rencana Belum Tersimpan',
+    draftPreservationMessage: 'Perubahan rencana belum diterapkan. Ingin simpan sebagai draf sebelum berpindah?',
+    draftPreservationSave: 'Simpan Draf & Pindah',
+    draftPreservationDiscard: 'Abaikan & Pindah',
+    draftPreservationCancel: 'Batal / Tetap di Sini',
   },
 
   cards: {
@@ -513,6 +545,22 @@ export const enCopywriting: FoCientCopywriting = {
     toggleTheme: 'Toggle Theme',
     sidebarExpand: 'Expand Navigation',
     sidebarCollapse: 'Collapse Navigation',
+    dashboard: 'Dashboard',
+    reschedule: 'Reschedule',
+    dateToday: 'Today',
+    datePrevious: 'Previous Day',
+    dateNext: 'Next Day',
+    commandPaletteTitle: 'Quick Commands & Search',
+    commandPalettePlaceholder: 'Search tasks, destinations, or actions... (Esc to close)',
+    commandPaletteNoResults: 'No matching results found.',
+    commandPaletteSectionNavigation: 'Quick Navigation',
+    commandPaletteSectionTasks: 'Tasks & Schedule',
+    commandPaletteSectionActions: 'System Actions',
+    draftPreservationTitle: 'Unsaved Plan Draft',
+    draftPreservationMessage: 'Schedule changes not applied. Save as draft before leaving?',
+    draftPreservationSave: 'Save Draft & Navigate',
+    draftPreservationDiscard: 'Discard & Navigate',
+    draftPreservationCancel: 'Cancel & Stay',
   },
 
   cards: {

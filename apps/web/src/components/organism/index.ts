@@ -16,3 +16,5 @@ export * from './CapacityMeterSkeleton.js';
 export * from './AdaptiveSyncBadge.js';
 export * from './TopProgressBar.js';
 export * from './DailySuccessBanner.js';
+export * from './CommandPalette.js';
+export * from './ContextPreservationDialog.js';

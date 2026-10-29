@@ -1142,8 +1142,8 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
     final navItems = [
       (Icons.home_outlined, Icons.home_rounded, 'Home'),
       (Icons.calendar_today_outlined, Icons.calendar_month_rounded, 'Plan'),
-      (Icons.add_rounded, Icons.add_rounded, 'Add Task'),
-      (Icons.format_list_bulleted_rounded, Icons.format_list_bulleted_rounded, 'Task List'),
+      (Icons.add_rounded, Icons.add_rounded, 'Add'),
+      (Icons.format_list_bulleted_rounded, Icons.format_list_bulleted_rounded, 'Tasks'),
       (Icons.insert_chart_outlined_rounded, Icons.insert_chart_rounded, 'Insights'),
     ];
 
@@ -1152,7 +1152,7 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
         color: isDark ? FocientColorDarkTokens.neutralSurfaceCard : Colors.white,
         border: Border(
           top: BorderSide(
-            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
             width: 1,
           ),
         ),
@@ -1161,7 +1161,7 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
         top: false,
         bottom: true,
         child: SizedBox(
-          height: 60,
+          height: 64,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: navItems.asMap().entries.map((entry) {
@@ -1170,52 +1170,101 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
               final isActive = _activeNavIndex == idx;
               final isCenterAdd = idx == 2;
 
-              return InkWell(
-                onTap: () {
-                  if (idx == 0) {
-                    // Return to Home
-                    if (widget.onNavigateTab != null) {
-                      widget.onNavigateTab!(0);
-                    } else if (widget.onBack != null) {
-                      widget.onBack!();
-                    } else if (Navigator.of(context).canPop()) {
-                      Navigator.of(context).pop();
-                    }
-                    return;
-                  }
-
+              void handleTap() {
+                if (idx == 0) {
+                  // Return to Home
                   if (widget.onNavigateTab != null) {
-                    widget.onNavigateTab!(idx);
-                    return;
+                    widget.onNavigateTab!(0);
+                  } else if (widget.onBack != null) {
+                    widget.onBack!();
+                  } else if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
                   }
+                  return;
+                }
 
-                  setState(() => _activeNavIndex = idx);
-                },
-                child: SizedBox(
-                  width: 58,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        isActive ? iconFilled : iconOutlined,
-                        size: isCenterAdd ? 24 : 20,
-                        color: isActive
-                            ? const Color(0xFF0F172A)
-                            : const Color(0xFF64748B),
+                if (widget.onNavigateTab != null) {
+                  widget.onNavigateTab!(idx);
+                  return;
+                }
+
+                setState(() => _activeNavIndex = idx);
+              }
+
+              if (isCenterAdd) {
+                return InkWell(
+                  onTap: handleTap,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Transform.translate(
+                    offset: const Offset(0, -10),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2563EB),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF2563EB).withValues(alpha: 0.35),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontFamily: FocientTypographyTokens.fontFamily,
-                          fontSize: 10,
-                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                      child: const Icon(
+                        Icons.add_rounded,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              return InkWell(
+                onTap: handleTap,
+                borderRadius: BorderRadius.circular(8),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isActive ? iconFilled : iconOutlined,
+                          size: 20,
                           color: isActive
-                              ? const Color(0xFF0F172A)
+                              ? const Color(0xFF2563EB)
                               : const Color(0xFF64748B),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 2),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 11,
+                            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                            color: isActive
+                                ? const Color(0xFF2563EB)
+                                : const Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        if (isActive)
+                          Container(
+                            width: 4,
+                            height: 4,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF2563EB),
+                              shape: BoxShape.circle,
+                            ),
+                          )
+                        else
+                          const SizedBox(height: 4),
+                      ],
+                    ),
                   ),
                 ),
               );

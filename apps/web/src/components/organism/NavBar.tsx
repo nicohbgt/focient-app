@@ -8,11 +8,15 @@ export interface TopNavBarProps {
   pageTitle?: string;
   dateLabel?: string;
   workloadPercentage?: number;
+  isScrolled?: boolean;
+  showDateNavigator?: boolean;
+  onNavigateDate?: (direction: 'prev' | 'next' | 'today') => void;
   onSearchClick?: () => void;
   onNotificationsClick?: () => void;
   onThemeToggle?: () => void;
   userAvatarUrl?: string;
   userName?: string;
+  userRole?: string;
   className?: string;
 }
 
@@ -20,13 +24,17 @@ export interface TopNavBarProps {
  * FoCient Top Navigation Bar (<TopNavBar/>)
  *
  * Desktop 64px, Mobile 56px.
- * Features quick search (Cmd+K), date switcher, live workload indicator (⚡ 65%),
- * adaptive notification bell, and language selector.
+ * Features quick search (⌘K), date navigator / timeline switcher,
+ * live workload indicator (⚡ 65%), adaptive notification bell, and language selector.
+ * Scrolled elevation activates dynamic backdrop blur without layout shift.
  */
 export const TopNavBar: React.FC<TopNavBarProps> = ({
   pageTitle,
-  dateLabel = 'Hari Ini / Today',
+  dateLabel,
   workloadPercentage = 65,
+  isScrolled = false,
+  showDateNavigator = true,
+  onNavigateDate,
   onSearchClick,
   onNotificationsClick,
   onThemeToggle,
@@ -36,15 +44,63 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
 }) => {
   const { copywriting } = useFoCientI18n();
   const displayTitle = pageTitle || copywriting.navigation.todayPlan;
+  const displayDate = dateLabel || copywriting.navigation.dateToday;
 
   return (
-    <header className={['focient-top-nav', className].filter(Boolean).join(' ')}>
-      {/* Left: Page Title + Date Indicator */}
+    <header
+      className={[
+        'focient-top-nav',
+        isScrolled ? 'focient-top-nav--scrolled' : '',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      {/* Left: Page Title + Date Navigator */}
       <div className="focient-top-nav-left">
         <h1 className="focient-page-title">{displayTitle}</h1>
-        <Badge variant="neutral" size="xs">
-          {dateLabel}
-        </Badge>
+
+        {showDateNavigator ? (
+          <div className="focient-date-navigator" role="group" aria-label={copywriting.navigation.todayPlan}>
+            <button
+              type="button"
+              className="focient-date-nav-btn"
+              onClick={() => onNavigateDate?.('prev')}
+              aria-label={copywriting.navigation.datePrevious}
+              title={copywriting.navigation.datePrevious}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="focient-date-nav-pill"
+              onClick={() => onNavigateDate?.('today')}
+              aria-label={copywriting.navigation.dateToday}
+              title={copywriting.navigation.dateToday}
+            >
+              <Badge variant="neutral" size="xs">
+                {displayDate}
+              </Badge>
+            </button>
+            <button
+              type="button"
+              className="focient-date-nav-btn"
+              onClick={() => onNavigateDate?.('next')}
+              aria-label={copywriting.navigation.dateNext}
+              title={copywriting.navigation.dateNext}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <Badge variant="neutral" size="xs">
+            {displayDate}
+          </Badge>
+        )}
       </div>
 
       {/* Center: Quick Search Bar with Cmd+K (Desktop) */}
@@ -60,7 +116,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
             <SearchIcon size="xs" />
             <span>{copywriting.navigation.searchPlaceholder}</span>
           </span>
-          <kbd style={{ fontSize: '11px', padding: '1px 4px', background: '#F1F5F9', borderRadius: '3px' }}>
+          <kbd style={{ fontSize: '11px', padding: '1px 5px', background: '#F1F5F9', borderRadius: '4px', border: '1px solid #CBD5E1', fontFamily: 'monospace' }}>
             ⌘K
           </kbd>
         </button>
@@ -132,6 +188,8 @@ export interface SideNavItem {
   label: string;
   icon: React.ReactNode;
   active?: boolean;
+  badgeCount?: number;
+  shortcutHint?: string;
   onClick?: () => void;
 }
 
@@ -149,9 +207,9 @@ export interface SideNavBarProps {
 /**
  * FoCient Side Navigation Bar (<SideNavBar/>)
  *
- * For Desktop screens >= 1024px.
- * Features expanded (250px) / collapsed (72px) states,
- * active item Cobalt accent, and integrated Daily Capacity Meter.
+ * For Desktop screens >= 1024px (expanded 260px) and Tablets 600px-1023px (collapsed rail 72px).
+ * Features smooth transitions, active Cobalt indicator bar, 300ms anti-flicker hover tooltip,
+ * and integrated Daily Capacity Meter.
  */
 export const SideNavBar: React.FC<SideNavBarProps> = ({
   items,
@@ -192,6 +250,7 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
               className="focient-btn focient-btn--ghost focient-btn--sm"
               onClick={onToggleCollapse}
               aria-label={collapsed ? copywriting.navigation.sidebarExpand : copywriting.navigation.sidebarCollapse}
+              title={collapsed ? copywriting.navigation.sidebarExpand : copywriting.navigation.sidebarCollapse}
               style={{ padding: '0 6px', margin: collapsed ? '0 auto' : undefined }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -216,10 +275,17 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
               ]
                 .filter(Boolean)
                 .join(' ')}
+              data-tooltip={collapsed ? item.label : undefined}
               title={collapsed ? item.label : undefined}
+              aria-label={item.label}
             >
               <span className="focient-nav-item-icon">{item.icon}</span>
-              {!collapsed && <span>{item.label}</span>}
+              {!collapsed && <span className="focient-nav-item-label">{item.label}</span>}
+              {!collapsed && typeof item.badgeCount === 'number' && item.badgeCount > 0 && (
+                <span className={['focient-nav-item-badge', item.active ? 'focient-nav-item-badge--active' : ''].filter(Boolean).join(' ')}>
+                  {item.badgeCount}
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -276,12 +342,15 @@ export interface BottomNavBarItem {
   label: string;
   icon: React.ReactNode;
   active?: boolean;
+  badgeCount?: number;
   onClick?: () => void;
 }
 
 export interface BottomNavBarProps {
   items: BottomNavBarItem[];
   onAddClick?: () => void;
+  hideOnKeyboard?: boolean;
+  isKeyboardActive?: boolean;
   className?: string;
 }
 
@@ -290,14 +359,28 @@ export interface BottomNavBarProps {
  *
  * For Mobile screens <= 600px.
  * Features 4 touch-safe tabs (min 48px hit area) + 1 central action button.
+ * Active items display an active filled icon, 11px SemiBold text, and a 4px active micro-dot.
+ * Automatically translates down when virtual keyboard is active to eliminate screen clipping.
  */
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   items,
   onAddClick,
+  hideOnKeyboard = false,
+  isKeyboardActive = false,
   className = '',
 }) => {
+  const isHidden = hideOnKeyboard || isKeyboardActive;
+
   return (
-    <nav className={['focient-bottom-nav', className].filter(Boolean).join(' ')}>
+    <nav
+      className={[
+        'focient-bottom-nav',
+        isHidden ? 'focient-bottom-nav--hidden' : '',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       {items.slice(0, 2).map((item) => (
         <button
           key={item.id}
@@ -309,9 +392,16 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           ]
             .filter(Boolean)
             .join(' ')}
+          aria-label={item.label}
         >
-          {item.icon}
-          <span>{item.label}</span>
+          <div className="focient-bottom-nav-icon-wrapper">
+            {item.icon}
+            {typeof item.badgeCount === 'number' && item.badgeCount > 0 && (
+              <span className="focient-bottom-nav-badge">{item.badgeCount}</span>
+            )}
+          </div>
+          <span className="focient-bottom-nav-label">{item.label}</span>
+          {item.active && <span className="focient-bottom-nav-dot" aria-hidden="true" />}
         </button>
       ))}
 
@@ -338,9 +428,16 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           ]
             .filter(Boolean)
             .join(' ')}
+          aria-label={item.label}
         >
-          {item.icon}
-          <span>{item.label}</span>
+          <div className="focient-bottom-nav-icon-wrapper">
+            {item.icon}
+            {typeof item.badgeCount === 'number' && item.badgeCount > 0 && (
+              <span className="focient-bottom-nav-badge">{item.badgeCount}</span>
+            )}
+          </div>
+          <span className="focient-bottom-nav-label">{item.label}</span>
+          {item.active && <span className="focient-bottom-nav-dot" aria-hidden="true" />}
         </button>
       ))}
     </nav>

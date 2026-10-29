@@ -56,6 +56,8 @@ import {
   AdaptiveSyncBadge,
   TopProgressBar,
   DailySuccessBanner,
+  CommandPalette,
+  ContextPreservationDialog,
 } from './organism/index.js';
 import {
   Icon,
@@ -189,6 +191,11 @@ export const ComponentShowcaseInner: React.FC = () => {
   const [rippleShiftActive, setRippleShiftActive] = useState(false);
   const [accordionDemoExpanded, setAccordionDemoExpanded] = useState(false);
 
+  // Navigation Interactive Playground State
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [preservationDialogOpen, setPreservationDialogOpen] = useState(false);
+  const [showcaseDate, setShowcaseDate] = useState('Hari Ini, 24 Okt');
+
   // Toasts
   const [toasts, setToasts] = useState<ToastMessage[]>([
     {
@@ -281,7 +288,21 @@ export const ComponentShowcaseInner: React.FC = () => {
       {/* Top Navigation */}
       <TopNavBar
         workloadPercentage={72}
-        onSearchClick={() => addToast('Quick search activated (Cmd+K)')}
+        dateLabel={showcaseDate}
+        showDateNavigator={true}
+        onNavigateDate={(dir) => {
+          if (dir === 'today') {
+            setShowcaseDate(locale === 'id' ? 'Hari Ini, 24 Okt' : 'Today, Oct 24');
+            addToast(locale === 'id' ? 'Kembali ke Hari Ini' : 'Jumped to Today');
+          } else if (dir === 'prev') {
+            setShowcaseDate(locale === 'id' ? 'Kemarin, 23 Okt' : 'Yesterday, Oct 23');
+            addToast(locale === 'id' ? 'Melihat Hari Sebelumnya' : 'Viewing Previous Day');
+          } else if (dir === 'next') {
+            setShowcaseDate(locale === 'id' ? 'Besok, 25 Okt' : 'Tomorrow, Oct 25');
+            addToast(locale === 'id' ? 'Melihat Hari Berikutnya' : 'Viewing Next Day');
+          }
+        }}
+        onSearchClick={() => setCommandPaletteOpen(true)}
         onNotificationsClick={() => setRescheduleModalOpen(true)}
       />
 
@@ -1024,13 +1045,23 @@ export const ComponentShowcaseInner: React.FC = () => {
 
         {/* Section 6: Navigation Suites (Desktop SideNavBar & Mobile BottomNavBar) */}
         <section style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>
-              6. Desktop SideNavBar & Mobile BottomNavBar Suites
-            </h3>
-            <p style={{ margin: 0, color: '#64748B', fontSize: '13px' }}>
-              Full Lucide icon navigation integration • Responsive layout transitions • Direct quick actions
-            </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>
+                6. Desktop SideNavBar & Mobile BottomNavBar Suites
+              </h3>
+              <p style={{ margin: 0, color: '#64748B', fontSize: '13px' }}>
+                Full Lucide icon navigation integration • Responsive layout transitions • Direct quick actions
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <Button size="sm" variant="primary" onClick={() => setCommandPaletteOpen(true)}>
+                ⌘K Buka Command Palette
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => setPreservationDialogOpen(true)}>
+                🛡️ Uji Context Preservation
+              </Button>
+            </div>
           </div>
 
           <div style={{ border: '1px solid #CBD5E1', borderRadius: '8px', overflow: 'hidden', height: '360px', display: 'flex' }}>
@@ -2029,6 +2060,26 @@ export const ComponentShowcaseInner: React.FC = () => {
         onSubmit={(val) => {
           setMobileKeyboardOpen(false);
           addToast(`Input tersimpan: "${val}"`);
+        }}
+      />
+
+      {/* Command Palette Overlay */}
+      <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+
+      {/* Guilt-Free Context Preservation Dialog */}
+      <ContextPreservationDialog
+        isOpen={preservationDialogOpen}
+        draftTitle="Pengaturan Sesi Fokus 45m"
+        onSave={() => {
+          addToast('Draf berhasil disimpan dengan aman');
+          setPreservationDialogOpen(false);
+        }}
+        onDiscard={() => {
+          addToast('Perubahan draf dibatalkan');
+          setPreservationDialogOpen(false);
+        }}
+        onCancel={() => {
+          setPreservationDialogOpen(false);
         }}
       />
 

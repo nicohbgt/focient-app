@@ -473,6 +473,38 @@ interface FocientContextType {
   toast: { message: string; type: 'success' | 'warning' | 'error' | 'info'; undoAction?: () => void } | null;
   showToast: (message: string, type?: 'success' | 'warning' | 'error' | 'info', undoAction?: () => void) => void;
   hideToast: () => void;
+
+  // Navigation & Low-Friction Interaction
+  isSidebarCollapsed: boolean;
+  toggleSidebar: () => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  isScrolled: boolean;
+  setIsScrolled: (scrolled: boolean) => void;
+  isCommandPaletteOpen: boolean;
+  setIsCommandPaletteOpen: (open: boolean) => void;
+  toggleCommandPalette: () => void;
+  isMobileKeyboardActive: boolean;
+  setIsMobileKeyboardActive: (active: boolean) => void;
+  calendarOffsetDays: number;
+  activeCalendarDate: string;
+  navigateDate: (direction: 'prev' | 'next' | 'today') => void;
+  badgeCounts: {
+    todayPlan: number;
+    tasks: number;
+    reschedule: number;
+    insights: number;
+  };
+  draftContext: {
+    isDirty: boolean;
+    draftTitle?: string;
+    onSaveDraft?: () => void;
+    pendingNavTab?: ActiveNavTab | null;
+  };
+  setDraftContext: (ctx: { isDirty: boolean; draftTitle?: string; onSaveDraft?: () => void; pendingNavTab?: ActiveNavTab | null } | ((prev: { isDirty: boolean; draftTitle?: string; onSaveDraft?: () => void; pendingNavTab?: ActiveNavTab | null }) => { isDirty: boolean; draftTitle?: string; onSaveDraft?: () => void; pendingNavTab?: ActiveNavTab | null })) => void;
+  isPreservationDialogOpen: boolean;
+  setIsPreservationDialogOpen: (open: boolean) => void;
+  safeNavigate: (tab: ActiveNavTab) => void;
+  confirmPendingNavigation: (action: 'save' | 'discard' | 'cancel') => void;
 }
 
 const FocientContext = createContext<FocientContextType | null>(null);
@@ -933,6 +965,162 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     return language === 'id' ? `Oktober, ${s}${suffix} 2026` : `October, ${s}${suffix} 2026`;
   }, [selectedCalendarDay, language]);
 
+  // Navigation & Responsiveness state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarCollapsed((prev) => !prev);
+  }, []);
+
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
+  const toggleCommandPalette = useCallback(() => {
+    setIsCommandPaletteOpen((prev) => !prev);
+  }, []);
+
+  const [isMobileKeyboardActive, setIsMobileKeyboardActive] = useState<boolean>(false);
+
+  // Date Navigation State
+  const [calendarOffsetDays, setCalendarOffsetDays] = useState<number>(0);
+
+  const navigateDate = useCallback((direction: 'prev' | 'next' | 'today') => {
+    if (direction === 'today') {
+      setCalendarOffsetDays(0);
+      setSelectedCalendarDay(3);
+    } else if (direction === 'prev') {
+      setCalendarOffsetDays((prev) => prev - 1);
+      setSelectedCalendarDay((prev) => Math.max(1, prev - 1));
+    } else if (direction === 'next') {
+      setCalendarOffsetDays((prev) => prev + 1);
+      setSelectedCalendarDay((prev) => Math.min(31, prev + 1));
+    }
+  }, []);
+
+  const activeCalendarDate = useMemo(() => {
+    const base = new Date(2026, 9, 24);
+    const target = new Date(base.getTime() + calendarOffsetDays * 86400000);
+
+    if (calendarOffsetDays === 0) {
+      return language === 'id' ? 'Hari Ini, 24 Okt' : 'Today, Oct 24';
+    } else if (calendarOffsetDays === -1) {
+      return language === 'id' ? 'Kemarin, 23 Okt' : 'Yesterday, Oct 23';
+    } else if (calendarOffsetDays === 1) {
+      return language === 'id' ? 'Besok, 25 Okt' : 'Tomorrow, Oct 25';
+    }
+
+    const dayName =
+      language === 'id'
+        ? ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][target.getDay()]
+        : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][target.getDay()];
+    const monthName =
+      language === 'id'
+        ? ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][target.getMonth()]
+        : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][target.getMonth()];
+
+    return `${dayName}, ${target.getDate()} ${monthName}`;
+  }, [calendarOffsetDays, language]);
+
+  // Dynamic Badge Counts
+  const badgeCounts = useMemo(() => {
+    const todayPlanCount = tasks.filter((t) => t.status !== 'completed').length;
+    const tasksCount = todayPlanCount + backlogTasks.length;
+    const rescheduleCount = rebalanceProposal && !rescheduleAlertResolved && !rescheduleAlertDismissed ? 1 : 0;
+    const insightsCount = weeklyWorkloads.filter((w) => w.percentage > 90).length;
+    return {
+      todayPlan: todayPlanCount,
+      tasks: tasksCount,
+      reschedule: rescheduleCount,
+      insights: insightsCount,
+    };
+  }, [tasks, backlogTasks.length, rebalanceProposal, rescheduleAlertResolved, rescheduleAlertDismissed, weeklyWorkloads]);
+
+  // Context Preservation & Safe Navigation
+  const [draftContext, setDraftContext] = useState<{
+    isDirty: boolean;
+    draftTitle?: string;
+    onSaveDraft?: () => void;
+    pendingNavTab?: ActiveNavTab | null;
+  }>({
+    isDirty: false,
+    draftTitle: undefined,
+    onSaveDraft: undefined,
+    pendingNavTab: null,
+  });
+
+  const [isPreservationDialogOpen, setIsPreservationDialogOpen] = useState<boolean>(false);
+
+  const safeNavigate = useCallback(
+    (tab: ActiveNavTab) => {
+      if (tab === activeNavTab) return;
+      if (draftContext.isDirty) {
+        setDraftContext((prev) => ({ ...prev, pendingNavTab: tab }));
+        setIsPreservationDialogOpen(true);
+      } else {
+        setActiveNavTab(tab);
+      }
+    },
+    [activeNavTab, draftContext.isDirty]
+  );
+
+  const confirmPendingNavigation = useCallback(
+    (action: 'save' | 'discard' | 'cancel') => {
+      if (action === 'save') {
+        if (draftContext.onSaveDraft) {
+          draftContext.onSaveDraft();
+        }
+        showToast(
+          language === 'id' ? 'Draf berhasil disimpan dengan aman' : 'Draft safely saved',
+          'success'
+        );
+        if (draftContext.pendingNavTab) {
+          setActiveNavTab(draftContext.pendingNavTab);
+        }
+        setDraftContext({ isDirty: false, draftTitle: undefined, onSaveDraft: undefined, pendingNavTab: null });
+        setIsPreservationDialogOpen(false);
+      } else if (action === 'discard') {
+        showToast(
+          language === 'id' ? 'Perubahan draf dibatalkan' : 'Draft changes discarded',
+          'info'
+        );
+        if (draftContext.pendingNavTab) {
+          setActiveNavTab(draftContext.pendingNavTab);
+        }
+        setDraftContext({ isDirty: false, draftTitle: undefined, onSaveDraft: undefined, pendingNavTab: null });
+        setIsPreservationDialogOpen(false);
+      } else {
+        setDraftContext((prev) => ({ ...prev, pendingNavTab: null }));
+        setIsPreservationDialogOpen(false);
+      }
+    },
+    [draftContext, language, showToast]
+  );
+
+  // Global listeners for scroll elevation & Command+K palette
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      } else if (e.key === 'Escape') {
+        setIsCommandPaletteOpen(false);
+        setIsPreservationDialogOpen(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   return (
     <FocientContext.Provider
       value={{
@@ -1018,6 +1206,27 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         toast,
         showToast,
         hideToast,
+
+        isSidebarCollapsed,
+        toggleSidebar,
+        setSidebarCollapsed: setIsSidebarCollapsed,
+        isScrolled,
+        setIsScrolled,
+        isCommandPaletteOpen,
+        setIsCommandPaletteOpen,
+        toggleCommandPalette,
+        isMobileKeyboardActive,
+        setIsMobileKeyboardActive,
+        calendarOffsetDays,
+        activeCalendarDate,
+        navigateDate,
+        badgeCounts,
+        draftContext,
+        setDraftContext,
+        isPreservationDialogOpen,
+        setIsPreservationDialogOpen,
+        safeNavigate,
+        confirmPendingNavigation,
       }}
     >
       {children}

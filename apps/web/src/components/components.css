@@ -1111,7 +1111,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   8. NAVIGATION BARS (TOP, SIDE, BOTTOM)
+   8. NAVIGATION (TOP, SIDE, BOTTOM, COMMAND PALETTE, CONTEXT PRESERVATION)
    -------------------------------------------------------------------------- */
 /* Top Header */
 .focient-top-nav {
@@ -1126,6 +1126,15 @@
   position: sticky;
   top: 0;
   z-index: 30;
+  transition: background-color 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.focient-top-nav--scrolled {
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--color-border, #CBD5E1);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
 }
 
 @media (max-width: 63.99rem) {
@@ -1147,6 +1156,51 @@
   font-weight: 700;
   color: var(--color-text-main, #0F172A);
   margin: 0;
+}
+
+/* Date Navigator Buttons */
+.focient-date-navigator {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--color-neutral-surface-muted, #F1F5F9);
+  padding: 2px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border, #CBD5E1);
+}
+
+.focient-date-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted, #64748B);
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.focient-date-nav-btn:hover {
+  background-color: #FFFFFF;
+  color: var(--color-text-main, #0F172A);
+}
+
+.focient-date-nav-btn:focus-visible {
+  outline: 2px solid #BFDBFE;
+  outline-offset: 1px;
+}
+
+.focient-date-nav-pill {
+  border: none;
+  background: transparent;
+  padding: 0 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
 }
 
 .focient-top-nav-center {
@@ -1190,7 +1244,7 @@
   color: var(--color-primary-action-base, #2563EB);
 }
 
-/* Side Navigation (Desktop >= 1024px) */
+/* Side Navigation (Desktop >= 1024px, Tablet Rail 72px) */
 .focient-side-nav {
   height: 100vh;
   background-color: var(--color-surface, #FFFFFF);
@@ -1200,17 +1254,19 @@
   justify-content: space-between;
   padding: var(--space-4, 16px);
   box-sizing: border-box;
-  transition: width 200ms cubic-bezier(0.2, 0, 0, 1);
+  transition: width 250ms cubic-bezier(0.2, 0, 0, 1);
   position: sticky;
   top: 0;
+  z-index: 25;
 }
 
 .focient-side-nav--expanded {
-  width: 250px;
+  width: 260px;
 }
 
 .focient-side-nav--collapsed {
   width: 72px;
+  padding: var(--space-4, 16px) var(--space-2, 8px);
 }
 
 .focient-nav-item {
@@ -1231,6 +1287,7 @@
   width: 100%;
   text-align: left;
   box-sizing: border-box;
+  position: relative;
   transition:
     background-color 150ms ease,
     color 150ms ease,
@@ -1240,6 +1297,11 @@
 .focient-nav-item:hover {
   background-color: var(--color-neutral-surface-muted, #F1F5F9);
   color: var(--color-text-main, #0F172A);
+}
+
+.focient-nav-item:focus-visible {
+  outline: 2px solid #BFDBFE;
+  outline-offset: 2px;
 }
 
 .focient-nav-item--active {
@@ -1253,6 +1315,64 @@
   width: 20px;
   height: 20px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.focient-nav-item-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.focient-nav-item-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: #FFFFFF;
+  color: var(--color-primary-action-base, #2563EB);
+  padding: 1px 7px;
+  border-radius: 10px;
+  border: 1px solid #BFDBFE;
+  font-variant-numeric: tabular-nums;
+}
+
+.focient-nav-item-badge--active {
+  background: var(--color-primary-action-base, #2563EB);
+  color: #FFFFFF;
+  border-color: var(--color-primary-action-base, #2563EB);
+}
+
+/* Tablet Rail Tooltip with 300ms anti-flicker delay */
+.focient-side-nav--collapsed .focient-nav-item {
+  justify-content: center;
+  padding: 0;
+}
+
+.focient-side-nav--collapsed .focient-nav-item[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 100%;
+  margin-left: 10px;
+  background: #0F172A;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 150ms ease 300ms, transform 150ms ease 300ms;
+  z-index: 50;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.focient-side-nav--collapsed .focient-nav-item[data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 /* Bottom Navigation (Mobile <= 600px) */
@@ -1261,7 +1381,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  height: 64px;
   background-color: var(--color-surface, #FFFFFF);
   border-top: 1px solid var(--color-border, #CBD5E1);
   display: flex;
@@ -1269,6 +1389,12 @@
   justify-content: space-around;
   padding-bottom: env(safe-area-inset-bottom);
   z-index: 35;
+  transition: transform 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.focient-bottom-nav--hidden {
+  transform: translateY(100%);
+  pointer-events: none;
 }
 
 .focient-bottom-nav-item {
@@ -1279,12 +1405,25 @@
   gap: 2px;
   min-width: 48px;
   min-height: 48px;
+  padding: 4px 8px;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--color-text-muted, #64748B);
   font-size: 11px;
   font-weight: 500;
+  position: relative;
+  transition: transform 100ms ease, color 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.focient-bottom-nav-item:active {
+  transform: scale(0.95);
+}
+
+.focient-bottom-nav-item:focus-visible {
+  outline: 2px solid #BFDBFE;
+  outline-offset: 2px;
 }
 
 .focient-bottom-nav-item--active {
@@ -1292,9 +1431,49 @@
   font-weight: 600;
 }
 
+.focient-bottom-nav-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.focient-bottom-nav-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  background: var(--color-primary-action-base, #2563EB);
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  border-radius: 8px;
+  text-align: center;
+  padding: 0 3px;
+  box-sizing: border-box;
+}
+
+.focient-bottom-nav-label {
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+/* 4px Micro-Dot below active label */
+.focient-bottom-nav-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--color-primary-action-base, #2563EB);
+  margin-top: 1px;
+}
+
 .focient-bottom-nav-add-btn {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
   border-radius: 50%;
   background-color: var(--color-primary-action-base, #2563EB);
   color: #FFFFFF;
@@ -1302,13 +1481,287 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
   cursor: pointer;
-  margin-top: -16px;
-  transition: transform 150ms ease;
+  margin-top: -18px;
+  transition: transform 150ms ease, background-color 150ms ease;
+  -webkit-tap-highlight-color: transparent;
 }
+
 .focient-bottom-nav-add-btn:active {
   transform: scale(0.92);
+}
+
+.focient-bottom-nav-add-btn:focus-visible {
+  outline: 2px solid #BFDBFE;
+  outline-offset: 3px;
+}
+
+/* --------------------------------------------------------------------------
+   8B. COMMAND PALETTE (Linear/Raycast benchmarked low-friction)
+   -------------------------------------------------------------------------- */
+.focient-command-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 14vh;
+  padding-left: var(--space-4, 16px);
+  padding-right: var(--space-4, 16px);
+  box-sizing: border-box;
+  animation: focient-palette-fade 150ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes focient-palette-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.focient-command-palette {
+  width: 100%;
+  max-width: 580px;
+  background: var(--color-surface, #FFFFFF);
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--color-border, #CBD5E1);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: focient-palette-slide 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes focient-palette-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.focient-command-palette-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border, #CBD5E1);
+  background: #FFFFFF;
+}
+
+.focient-command-palette-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-family: var(--typography-font-family-sans, 'Inter', system-ui, sans-serif);
+  font-size: 15px;
+  color: var(--color-text-main, #0F172A);
+  background: transparent;
+}
+
+.focient-command-palette-input::placeholder {
+  color: var(--color-text-muted, #64748B);
+}
+
+.focient-command-palette-kbd {
+  font-size: 11px;
+  font-family: monospace;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  color: #64748B;
+}
+
+.focient-command-palette-list {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.focient-command-palette-empty {
+  padding: 32px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-muted, #64748B);
+}
+
+.focient-command-palette-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 100ms ease;
+  user-select: none;
+}
+
+.focient-command-palette-item:hover,
+.focient-command-palette-item--selected {
+  background-color: var(--color-primary-bg-subtle, #EFF6FF);
+}
+
+.focient-command-palette-item-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-primary-action-base, #2563EB);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.focient-command-palette-item-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.focient-command-palette-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-main, #0F172A);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.focient-command-palette-item-subtitle {
+  font-size: 11px;
+  color: var(--color-text-muted, #64748B);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.focient-command-palette-shortcut {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748B;
+  background: #F1F5F9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.focient-command-palette-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid var(--color-border, #CBD5E1);
+  background: #F8FAFC;
+  font-size: 12px;
+  color: var(--color-text-muted, #64748B);
+}
+
+.focient-command-palette-kbd-inline {
+  display: inline-block;
+  font-size: 10px;
+  font-family: monospace;
+  padding: 1px 4px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 3px;
+  color: #475569;
+}
+
+/* --------------------------------------------------------------------------
+   8C. GUILT-FREE CONTEXT PRESERVATION DIALOG
+   -------------------------------------------------------------------------- */
+.focient-preservation-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4, 16px);
+  box-sizing: border-box;
+}
+
+.focient-preservation-dialog {
+  width: 100%;
+  max-width: 480px;
+  background: var(--color-surface, #FFFFFF);
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--color-border, #CBD5E1);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: focient-palette-slide 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.focient-preservation-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.focient-preservation-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-primary-bg-subtle, #EFF6FF);
+  color: var(--color-primary-action-base, #2563EB);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.focient-preservation-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-main, #0F172A);
+}
+
+.focient-preservation-badge {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--color-text-muted, #64748B);
+  background: #F1F5F9;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.focient-preservation-body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-muted, #64748B);
+}
+
+.focient-preservation-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
 }
 
 /* --------------------------------------------------------------------------
