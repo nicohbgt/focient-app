@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { loadingTokens } from '@focient/ui-tokens/loading-token';
-import { dictionaries, idCopywriting, enCopywriting } from '../src/component/i18n/copywriting.ts';
+import { dictionaries, idCopywriting, enCopywriting } from '../src/components/i18n/copywriting.ts';
 
 test('FoCient Loading State, Skeleton Shimmer & CLS Compliance Suite', async (t) => {
-  const css = await readFile(new URL('../src/component/components.css', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/components/components.css', import.meta.url), 'utf8');
 
   await t.test('1. Semantic Design Token Integration', () => {
     // Canonical DTCG tokens
@@ -82,19 +82,19 @@ test('FoCient Loading State, Skeleton Shimmer & CLS Compliance Suite', async (t)
   });
 
   await t.test('6. Component Structure & Export Verification', async () => {
-    const primitiveIndex = await readFile(new URL('../src/component/primitive/index.ts', import.meta.url), 'utf8');
+    const primitiveIndex = await readFile(new URL('../src/components/primitive/index.ts', import.meta.url), 'utf8');
     assert.ok(primitiveIndex.includes('Skeleton'), 'primitive/index.ts must export Skeleton');
 
-    const organismIndex = await readFile(new URL('../src/component/organism/index.ts', import.meta.url), 'utf8');
+    const organismIndex = await readFile(new URL('../src/components/organism/index.ts', import.meta.url), 'utf8');
     assert.ok(organismIndex.includes('TaskCardSkeleton'), 'organism/index.ts must export TaskCardSkeleton');
     assert.ok(organismIndex.includes('CapacityMeterSkeleton'), 'organism/index.ts must export CapacityMeterSkeleton');
     assert.ok(organismIndex.includes('AdaptiveSyncBadge'), 'organism/index.ts must export AdaptiveSyncBadge');
     assert.ok(organismIndex.includes('TopProgressBar'), 'organism/index.ts must export TopProgressBar');
 
-    const taskSkeletonTsx = await readFile(new URL('../src/component/organism/TaskCardSkeleton.tsx', import.meta.url), 'utf8');
+    const taskSkeletonTsx = await readFile(new URL('../src/components/organism/TaskCardSkeleton.tsx', import.meta.url), 'utf8');
     assert.ok(taskSkeletonTsx.includes('focient-task-card'), 'TaskCardSkeleton must reuse .focient-task-card for CLS parity');
 
-    const capacitySkeletonTsx = await readFile(new URL('../src/component/organism/CapacityMeterSkeleton.tsx', import.meta.url), 'utf8');
+    const capacitySkeletonTsx = await readFile(new URL('../src/components/organism/CapacityMeterSkeleton.tsx', import.meta.url), 'utf8');
     assert.ok(capacitySkeletonTsx.includes('padding: \'16px\''), 'CapacityMeterSkeleton must match 16px padding');
   });
 

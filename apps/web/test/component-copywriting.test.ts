@@ -7,7 +7,7 @@ import {
   idCopywriting,
   enCopywriting,
   formatMinutesLocalized,
-} from '../src/component/i18n/copywriting.ts';
+} from '../src/components/i18n/copywriting.ts';
 
 test('1. Guilt-Free Vocabulary Compliance in Indonesian and English', () => {
   const punitiveWords = [
@@ -84,7 +84,7 @@ test('2. Multi-language dictionary structure and formatting integrity', () => {
 });
 
 test('3. CSS Specification & Guardrails Verification', async () => {
-  const css = await readFile(new URL('../src/component/components.css', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/components/components.css', import.meta.url), 'utf8');
 
   // Tabular figures
   assert.ok(css.includes('tabular-nums'), 'CSS must include tabular-nums');
@@ -115,9 +115,9 @@ test('3. CSS Specification & Guardrails Verification', async () => {
 
 test('4. Component Structure and Export Verification', async () => {
   // Read index.ts and primitive / organism files directly to verify exports
-  const indexTs = await readFile(new URL('../src/component/index.ts', import.meta.url), 'utf8');
-  const primitiveTs = await readFile(new URL('../src/component/primitive/index.ts', import.meta.url), 'utf8');
-  const organismTs = await readFile(new URL('../src/component/organism/index.ts', import.meta.url), 'utf8');
+  const indexTs = await readFile(new URL('../src/components/index.ts', import.meta.url), 'utf8');
+  const primitiveTs = await readFile(new URL('../src/components/primitive/index.ts', import.meta.url), 'utf8');
+  const organismTs = await readFile(new URL('../src/components/organism/index.ts', import.meta.url), 'utf8');
 
   // Primitives
   const requiredPrimitives = [
@@ -137,7 +137,7 @@ test('4. Component Structure and Export Verification', async () => {
   }
 
   // Keyboard Component Specific Exports
-  const keyboardTs = await readFile(new URL('../src/component/primitive/Keyboard.tsx', import.meta.url), 'utf8');
+  const keyboardTs = await readFile(new URL('../src/components/primitive/Keyboard.tsx', import.meta.url), 'utf8');
   assert.ok(keyboardTs.includes('export const Keyboard'), 'Keyboard.tsx must export Keyboard');
   assert.ok(keyboardTs.includes('export const NumericKeyboard'), 'Keyboard.tsx must export NumericKeyboard');
   assert.ok(keyboardTs.includes('export const GeneralKeyboard'), 'Keyboard.tsx must export GeneralKeyboard');
@@ -150,7 +150,7 @@ test('4. Component Structure and Export Verification', async () => {
   }
 
   // All 7 Card Suite exports in TaskCard.tsx
-  const taskCardTs = await readFile(new URL('../src/component/organism/TaskCard.tsx', import.meta.url), 'utf8');
+  const taskCardTs = await readFile(new URL('../src/components/organism/TaskCard.tsx', import.meta.url), 'utf8');
   const requiredCards = [
     'FocusTaskCard',
     'Top3PriorityCard',
@@ -164,7 +164,7 @@ test('4. Component Structure and Export Verification', async () => {
   }
 
   // DailyCapacityMeterCard in DailyCapacityMeter.tsx
-  const capacityTs = await readFile(new URL('../src/component/organism/DailyCapacityMeter.tsx', import.meta.url), 'utf8');
+  const capacityTs = await readFile(new URL('../src/components/organism/DailyCapacityMeter.tsx', import.meta.url), 'utf8');
   assert.ok(capacityTs.includes('export const DailyCapacityMeterCard'), 'DailyCapacityMeter.tsx must export DailyCapacityMeterCard');
 
   // ComponentShowcase
@@ -172,11 +172,11 @@ test('4. Component Structure and Export Verification', async () => {
 });
 
 test('5. Lucide Icon System and Token Assets Verification', async () => {
-  const iconsIndexTs = await readFile(new URL('../src/component/icons/index.ts', import.meta.url), 'utf8');
+  const iconsIndexTs = await readFile(new URL('../src/components/icons/index.ts', import.meta.url), 'utf8');
   assert.ok(iconsIndexTs.includes('Icon'), 'icons/index.ts must export Icon');
   assert.ok(iconsIndexTs.includes('named-icons'), 'icons/index.ts must export named-icons');
 
-  const namedIconsTs = await readFile(new URL('../src/component/icons/named-icons.tsx', import.meta.url), 'utf8');
+  const namedIconsTs = await readFile(new URL('../src/components/icons/named-icons.tsx', import.meta.url), 'utf8');
   const expectedNamedIcons = [
     'CheckIcon',
     'CheckCircleIcon',

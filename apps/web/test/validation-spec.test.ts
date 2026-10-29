@@ -18,7 +18,7 @@ import {
   idCopywriting,
   enCopywriting,
   dictionaries,
-} from '../src/component/i18n/copywriting.ts';
+} from '../src/components/i18n/copywriting.ts';
 
 test('FoCient Validation Contract Specification Suite', async (t) => {
   await t.test('1. Task Management: title validation rules & empathetic message', () => {

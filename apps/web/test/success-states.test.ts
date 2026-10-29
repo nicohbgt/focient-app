@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { successTokens } from '@focient/ui-tokens/success-token';
-import { dictionaries, idCopywriting, enCopywriting } from '../src/component/i18n/copywriting.ts';
+import { dictionaries, idCopywriting, enCopywriting } from '../src/components/i18n/copywriting.ts';
 
 test('FoCient Success State, Calm Affirmation & Reversibility Suite', async (t) => {
-  const css = await readFile(new URL('../src/component/components.css', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/components/components.css', import.meta.url), 'utf8');
 
   await t.test('1. Semantic Design Token Integration', () => {
     // Canonical DTCG tokens
@@ -65,7 +65,7 @@ test('FoCient Success State, Calm Affirmation & Reversibility Suite', async (t) 
     assert.ok(css.includes('border-radius: var(--radius-lg, 12px)'), 'Banner must have 12px radius');
     assert.ok(css.includes('padding: var(--space-4, 16px)'), 'Banner must have 16px padding');
 
-    const bannerTsx = await readFile(new URL('../src/component/organism/DailySuccessBanner.tsx', import.meta.url), 'utf8');
+    const bannerTsx = await readFile(new URL('../src/components/organism/DailySuccessBanner.tsx', import.meta.url), 'utf8');
     assert.ok(bannerTsx.includes('role="status"'), 'DailySuccessBanner must have role="status" for screen readers');
     assert.ok(bannerTsx.includes('aria-live="polite"'), 'DailySuccessBanner must be polite (non-jarring)');
     assert.ok(bannerTsx.includes('dailyPillarCompletedTitle'), 'DailySuccessBanner uses localized title');
@@ -121,17 +121,14 @@ test('FoCient Success State, Calm Affirmation & Reversibility Suite', async (t) 
     assert.equal(enCopywriting.successStates.taskCompletedUndo('Review PR'), '"Review PR" completed');
   });
 
-  await t.test('8. Dual-Directory Parity (src/component vs src/components)', async () => {
-    const componentCss = await readFile(new URL('../src/component/components.css', import.meta.url), 'utf8');
+  await t.test('8. Consolidated Canonical Directory Verification (src/components)', async () => {
     const componentsCss = await readFile(new URL('../src/components/components.css', import.meta.url), 'utf8');
-    assert.equal(componentCss, componentsCss, 'components.css must be identical in both directories');
+    assert.ok(componentsCss.includes('.focient-btn--success'), 'components.css must define .focient-btn--success');
 
-    const componentBanner = await readFile(new URL('../src/component/organism/DailySuccessBanner.tsx', import.meta.url), 'utf8');
     const componentsBanner = await readFile(new URL('../src/components/organism/DailySuccessBanner.tsx', import.meta.url), 'utf8');
-    assert.equal(componentBanner, componentsBanner, 'DailySuccessBanner.tsx must be identical in both directories');
+    assert.ok(componentsBanner.includes('DailySuccessBanner'), 'DailySuccessBanner.tsx must be in canonical components');
 
-    const componentCopy = await readFile(new URL('../src/component/i18n/copywriting.ts', import.meta.url), 'utf8');
     const componentsCopy = await readFile(new URL('../src/components/i18n/copywriting.ts', import.meta.url), 'utf8');
-    assert.equal(componentCopy, componentsCopy, 'copywriting.ts must be identical in both directories');
+    assert.ok(componentsCopy.includes('successStates'), 'copywriting.ts must be in canonical components');
   });
 });

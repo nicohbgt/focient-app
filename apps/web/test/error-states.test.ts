@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { errorTokens } from '@focient/ui-tokens/error-token';
-import { dictionaries, idCopywriting, enCopywriting } from '../src/component/i18n/copywriting.ts';
+import { dictionaries, idCopywriting, enCopywriting } from '../src/components/i18n/copywriting.ts';
 
 test('FoCient Error & Fail States Specification Compliance Suite', async (t) => {
-  const css = await readFile(new URL('../src/component/components.css', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/components/components.css', import.meta.url), 'utf8');
 
   await t.test('1. Semantic Design Token Integration & WCAG AAA Contrast', () => {
     // Canonical error token mappings from DTCG
@@ -96,16 +96,16 @@ test('FoCient Error & Fail States Specification Compliance Suite', async (t) => 
   });
 
   await t.test('7. Component Structure & Export Verification', async () => {
-    const organismIndex = await readFile(new URL('../src/component/organism/index.ts', import.meta.url), 'utf8');
+    const organismIndex = await readFile(new URL('../src/components/organism/index.ts', import.meta.url), 'utf8');
     assert.ok(organismIndex.includes('InlineModuleFail'), 'Organism index must export InlineModuleFail');
     assert.ok(organismIndex.includes('SyncConflictAlert'), 'Organism index must export SyncConflictAlert');
     assert.ok(organismIndex.includes('FullViewError'), 'Organism index must export FullViewError');
 
-    const buttonTsx = await readFile(new URL('../src/component/primitive/Button.tsx', import.meta.url), 'utf8');
+    const buttonTsx = await readFile(new URL('../src/components/primitive/Button.tsx', import.meta.url), 'utf8');
     assert.ok(buttonTsx.includes('shake?: boolean'), 'ButtonProps must support shake prop');
     assert.ok(buttonTsx.includes('focient-btn--shake'), 'Button must apply focient-btn--shake class');
 
-    const inputTsx = await readFile(new URL('../src/component/primitive/InputField.tsx', import.meta.url), 'utf8');
+    const inputTsx = await readFile(new URL('../src/components/primitive/InputField.tsx', import.meta.url), 'utf8');
     assert.ok(inputTsx.includes('focient-input-trailing-alert'), 'InputField must render trailing alert icon');
     assert.ok(inputTsx.includes('focient-input-helper-container'), 'InputField must wrap helper in zero-layout-shift container');
     assert.ok(inputTsx.includes('aria-invalid='), 'InputField must maintain aria-invalid accessibility attribute');

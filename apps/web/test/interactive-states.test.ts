@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 test('Interactive & Responsive States Specification Compliance', async (t) => {
-  const css = await readFile(new URL('../src/component/components.css', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/components/components.css', import.meta.url), 'utf8');
 
   await t.test('1. Platform Rules & Interaction Foundations', () => {
     // Area Sentuh (Hit-Target): Mobile >= 48px, Desktop 36px-40px

@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { emptyTokens } from '@focient/ui-tokens/empty-token';
-import { dictionaries, idCopywriting, enCopywriting } from '../src/component/i18n/copywriting.ts';
+import { dictionaries, idCopywriting, enCopywriting } from '../src/components/i18n/copywriting.ts';
 
 test('FoCient Empty State Specification & Anti-Burnout Compliance Suite', async (t) => {
-  const css = await readFile(new URL('../src/component/components.css', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/components/components.css', import.meta.url), 'utf8');
 
   await t.test('1. Semantic Design Token Integration & Contrast Ratio', () => {
     // Canonical DTCG tokens
@@ -72,17 +72,17 @@ test('FoCient Empty State Specification & Anti-Burnout Compliance Suite', async 
   });
 
   await t.test('5. Component Structure & Export Verification', async () => {
-    const organismIndex = await readFile(new URL('../src/component/organism/index.ts', import.meta.url), 'utf8');
+    const organismIndex = await readFile(new URL('../src/components/organism/index.ts', import.meta.url), 'utf8');
     assert.ok(organismIndex.includes('EmptyState'), 'Organism index must export EmptyState');
 
-    const emptyStateTsx = await readFile(new URL('../src/component/organism/EmptyState.tsx', import.meta.url), 'utf8');
+    const emptyStateTsx = await readFile(new URL('../src/components/organism/EmptyState.tsx', import.meta.url), 'utf8');
     assert.ok(emptyStateTsx.includes('EmptyStateVariant'), 'EmptyState must export EmptyStateVariant type');
     assert.ok(emptyStateTsx.includes('onboarding'), 'EmptyState must support onboarding variant');
     assert.ok(emptyStateTsx.includes('all-completed'), 'EmptyState must support all-completed variant');
     assert.ok(emptyStateTsx.includes('search-empty'), 'EmptyState must support search-empty variant');
     assert.ok(emptyStateTsx.includes('rest-day'), 'EmptyState must support rest-day variant');
 
-    const iconsNamedTsx = await readFile(new URL('../src/component/icons/named-icons.tsx', import.meta.url), 'utf8');
+    const iconsNamedTsx = await readFile(new URL('../src/components/icons/named-icons.tsx', import.meta.url), 'utf8');
     assert.ok(iconsNamedTsx.includes('RouteIcon'), 'named-icons must export RouteIcon');
     assert.ok(iconsNamedTsx.includes('CalendarPlusIcon'), 'named-icons must export CalendarPlusIcon');
     assert.ok(iconsNamedTsx.includes('HourglassIcon'), 'named-icons must export HourglassIcon');

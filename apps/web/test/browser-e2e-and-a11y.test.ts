@@ -3,8 +3,8 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 test('FoCient Browser End-to-End & WCAG AAA Accessibility Suite (P1 Quality & CI)', async (t) => {
-  const css = await readFile(new URL('../src/component/components.css', import.meta.url), 'utf8');
-  const microCss = await readFile(new URL('../src/component/microinteractions.css', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/components/components.css', import.meta.url), 'utf8');
+  const microCss = await readFile(new URL('../src/components/microinteractions.css', import.meta.url), 'utf8');
 
   // Relative luminance calculation for WCAG contrast ratio
   function sRgbToLin(c: number): number {

@@ -20,16 +20,18 @@ import { silentPlacementEngine as taskPlacementEngine } from '../../engine/silen
 import { top3PrioritiesEngine } from '../../engine/top3-priorities.engine.js';
 import { formatTask } from '../task/task.controller.js';
 import { NotFoundError } from '../../common/errors.js';
+import { getLocalDayBoundaries, formatLocalDateString } from '../../common/timezone.util.js';
 
 export const scheduleRouter = Router();
 
 scheduleRouter.use(authenticate);
 
 async function recalculateCapacity(userId: string, dateStr: string) {
-  const dayStart = new Date(`${dateStr}T00:00:00.000Z`);
-  const dayEnd = new Date(`${dateStr}T23:59:59.999Z`);
-
   const user = await prisma.user.findUnique({ where: { id: userId } });
+  const boundaries = getLocalDayBoundaries(dateStr, user?.timezone ?? 'Asia/Jakarta');
+  const dayStart = boundaries.startOfDay;
+  const dayEnd = boundaries.endOfDay;
+
   const maxDailyMinutes = Math.round((user?.workHoursLimit ?? 8) * 60);
 
   const dayTasks = await prisma.task.findMany({
@@ -87,12 +89,14 @@ async function recalculateCapacity(userId: string, dateStr: string) {
 async function handleTodayPlan(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   try {
     const userId = req.user!.id;
-    const dateStr = (req.query.date as string) || new Date().toISOString().split('T')[0];
-
-    const dayStart = new Date(`${dateStr}T00:00:00.000Z`);
-    const dayEnd = new Date(`${dateStr}T23:59:59.999Z`);
-
     const user = await prisma.user.findUnique({ where: { id: userId } });
+    const userTz = user?.timezone ?? 'Asia/Jakarta';
+    const dateStr = (req.query.date as string) || formatLocalDateString(new Date(), userTz);
+
+    const boundaries = getLocalDayBoundaries(dateStr, userTz);
+    const dayStart = boundaries.startOfDay;
+    const dayEnd = boundaries.endOfDay;
+
     const maxDailyMinutes = Math.round((user?.workHoursLimit ?? 8) * 60);
 
     const tasks = await prisma.task.findMany({

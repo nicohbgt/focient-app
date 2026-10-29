@@ -5,8 +5,8 @@ import { motionTokens } from '@focient/ui-tokens/motion-token';
 import { animationTokens } from '@focient/ui-tokens/animation-token';
 
 test('FoCient Microinteraction System, Tactile & Motion Token Suite', async (t) => {
-  const microCss = await readFile(new URL('../src/component/microinteractions.css', import.meta.url), 'utf8');
-  const compCss = await readFile(new URL('../src/component/components.css', import.meta.url), 'utf8');
+  const microCss = await readFile(new URL('../src/components/microinteractions.css', import.meta.url), 'utf8');
+  const compCss = await readFile(new URL('../src/components/components.css', import.meta.url), 'utf8');
 
   await t.test('1. Foundational Motion Tokens & DTCG Standard Contracts', () => {
     // Canonical DTCG Timing Tokens in animation-token
@@ -114,7 +114,7 @@ test('FoCient Microinteraction System, Tactile & Motion Token Suite', async (t) 
     assert.ok(microCss.includes('grid-template-rows: 1fr'), 'Accordion expanded has grid-template-rows: 1fr');
     assert.ok(microCss.includes('transform: rotate(180deg)'), 'Chevron rotates 180deg when expanded');
 
-    const accordionTsx = await readFile(new URL('../src/component/molecule/Accordion.tsx', import.meta.url), 'utf8');
+    const accordionTsx = await readFile(new URL('../src/components/molecule/Accordion.tsx', import.meta.url), 'utf8');
     assert.ok(accordionTsx.includes('data-expanded={isExpanded}'), 'Accordion sets data-expanded attribute');
     assert.ok(accordionTsx.includes('aria-expanded={isExpanded}'), 'Accordion has aria-expanded accessibility');
     assert.ok(accordionTsx.includes('role="region"'), 'Accordion content has role="region"');
@@ -137,7 +137,7 @@ test('FoCient Microinteraction System, Tactile & Motion Token Suite', async (t) 
       'Overload threshold must use Amber #D97706 and never red'
     );
 
-    const capacityTsx = await readFile(new URL('../src/component/organism/DailyCapacityMeter.tsx', import.meta.url), 'utf8');
+    const capacityTsx = await readFile(new URL('../src/components/organism/DailyCapacityMeter.tsx', import.meta.url), 'utf8');
     assert.ok(capacityTsx.includes('data-threshold='), 'DailyCapacityMeter must render data-threshold attribute');
   });
 
@@ -148,13 +148,11 @@ test('FoCient Microinteraction System, Tactile & Motion Token Suite', async (t) 
     assert.ok(microCss.includes('transform: none !important;'), 'Reduced motion disables physical transforms');
   });
 
-  await t.test('11. Dual-Directory Parity (src/component vs src/components)', async () => {
-    const compMicroCss = await readFile(new URL('../src/component/microinteractions.css', import.meta.url), 'utf8');
+  await t.test('11. Consolidated Canonical Directory Verification (src/components)', async () => {
     const compsMicroCss = await readFile(new URL('../src/components/microinteractions.css', import.meta.url), 'utf8');
-    assert.equal(compMicroCss, compsMicroCss, 'microinteractions.css must be identical in both directories');
+    assert.ok(compsMicroCss.includes('.focient-tactile'), 'microinteractions.css must define tactile tokens');
 
-    const compAccordion = await readFile(new URL('../src/component/molecule/Accordion.tsx', import.meta.url), 'utf8');
     const compsAccordion = await readFile(new URL('../src/components/molecule/Accordion.tsx', import.meta.url), 'utf8');
-    assert.equal(compAccordion, compsAccordion, 'Accordion.tsx must be identical in both directories');
+    assert.ok(compsAccordion.includes('export const Accordion'), 'Accordion.tsx must be cleanly exported from canonical components');
   });
 });

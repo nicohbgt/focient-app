@@ -1,0 +1,1025 @@
+openapi: 3.1.0
+info:
+  title: FoCient API Specification
+  version: 1.0.0
+  description: |
+    # FoCient: Guilt-Free Adaptive Productivity API
+    
+    FoCient is a human-centric productivity platform engineered around the principle of **Guilt-Free Productivity**.
+    Unlike conventional task trackers that rely on accusatory alerts, artificial deadlines, and punitive overdue counters,
+    FoCient adaptively reschedules deferred tasks, respects cognitive capacity limits, and provides calm, supportive guidance.
+
+    ### Core Guarantees:
+    - **Zero Punitive Vocabulary**: No accusatory words (*Terlambat*, *Overdue*, *Failed*, *Telat*, *Hukuman*).
+    - **Cognitive Buffer**: Automatic 10-minute non-negotiable breathing room between scheduled focus blocks.
+    - **Top-3 Priority Protection**: Strict quota of maximum 3 active Top-3 focus tasks per calendar day.
+    - **Adaptive Ripple Reschedule**: Automated forward cascade of downstream commitments when earlier blocks run over.
+    - **Timezone Resilience**: Native IANA timezone evaluation supporting 23h spring-forward and 25h fall-back DST transitions.
+
+servers:
+  - url: http://localhost:4000
+    description: Local Development Server
+  - url: https://api.focient.app
+    description: Production Environment
+
+tags:
+  - name: Auth
+    description: Authentication, Verified Google OIDC, Persistent Hashed OTP, and Session Management
+  - name: Tasks
+    description: Task creation, priority management, Top-3 quota resolution, and completion logging
+  - name: Categories
+    description: User categories and cognitive load classification
+  - name: Schedule
+    description: Today plan aggregation, silent placement, and guilt-free adaptive ripple rescheduling
+  - name: Capacity
+    description: Workload evaluation, daily capacity percentages, and burnout prevention thresholds
+  - name: Insights
+    description: Weekly reflective analytics and focus distribution without punitive metrics
+  - name: Notifications
+    description: Push notification device registration and quiet hours / notification preferences
+  - name: System
+    description: Health probes, readiness checks, and service telemetry
+
+paths:
+  /health:
+    get:
+      summary: Health check probe
+      tags: [System]
+      responses:
+        '200':
+          description: API server is healthy and accepting traffic
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /ready:
+    get:
+      summary: Readiness probe
+      tags: [System]
+      responses:
+        '200':
+          description: Server and database connection are fully ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ready
+                  database:
+                    type: string
+                    example: connected
+        '503':
+          description: Server is not ready to handle traffic
+
+  /api/auth/register:
+    post:
+      summary: Register a new user account
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error or duplicate email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/login:
+    post:
+      summary: Authenticate with email and password
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/google:
+    post:
+      summary: Authenticate via verified Google OpenID Connect (OIDC) token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [idToken]
+              properties:
+                idToken:
+                  type: string
+                  description: Cryptographically signed Google OIDC ID token
+      responses:
+        '200':
+          description: Authenticated via Google
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid or expired Google OIDC token
+
+  /api/auth/send-otp:
+    post:
+      summary: Dispatch persistent HMAC-hashed OTP code via email
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: OTP dispatched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Kode verifikasi telah dikirim ke email Anda.
+        '429':
+          description: Rate limited (30-second cooldown between requests)
+
+  /api/auth/verify-otp:
+    post:
+      summary: Verify single-use OTP code and authenticate
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code]
+              properties:
+                email:
+                  type: string
+                  format: email
+                code:
+                  type: string
+                  example: '123456'
+      responses:
+        '200':
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid or expired OTP code
+
+  /api/auth/refresh:
+    post:
+      summary: Rotate refresh token and issue a fresh access token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token pair refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Revoked, expired, or invalid refresh token
+
+  /api/auth/logout:
+    post:
+      summary: Revoke active session
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Session revoked successfully
+
+  /api/auth/me:
+    get:
+      summary: Get authenticated user profile and capacity preferences
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  /api/categories:
+    get:
+      summary: List user categories
+      tags: [Categories]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of task categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+
+  /api/tasks:
+    get:
+      summary: List tasks with optional date, status, or category filtering
+      tags: [Tasks]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          description: Calendar date filter (YYYY-MM-DD)
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [PENDING, IN_PROGRESS, COMPLETED, CANCELLED]
+      responses:
+        '200':
+          description: List of user tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+
+    post:
+      summary: Create a new task with automatic capacity evaluation and silent placement
+      tags: [Tasks]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '201':
+          description: Task created and optionally placed into schedule
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: '#/components/schemas/Task'
+                  capacityProfile:
+                    $ref: '#/components/schemas/CapacityProfile'
+
+  /api/tasks/top-3:
+    get:
+      summary: Retrieve the active Top-3 priority tasks for today
+      tags: [Tasks]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Active Top-3 tasks (max 3 items)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+
+  /api/tasks/{id}:
+    get:
+      summary: Get task details by ID
+      tags: [Tasks]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+    patch:
+      summary: Update task properties or swap Top-3 priority
+      tags: [Tasks]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+    delete:
+      summary: Delete a task
+      tags: [Tasks]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Task removed cleanly
+
+  /api/tasks/{id}/complete:
+    post:
+      summary: Mark a task as complete with energy reflection
+      tags: [Tasks]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                actualDurationMinutes:
+                  type: integer
+                  minimum: 1
+                energyLevelAtCompletion:
+                  type: string
+                  enum: [HIGH, MEDIUM, LOW]
+      responses:
+        '200':
+          description: Task marked complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: '#/components/schemas/Task'
+
+  /api/today-plan:
+    get:
+      summary: Fetch the complete Today Plan
+      description: |
+        Aggregates:
+        - Timeline schedule (tasks with start and end times)
+        - Unscheduled tasks (daily backlog)
+        - Active Top-3 focus tasks
+        - Daily capacity workload meter
+        - Supportive banner notifications (overload or reschedule recommendations)
+      tags: [Schedule]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          description: Local calendar date (defaults to today in user's timezone)
+      responses:
+        '200':
+          description: Complete Today Plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodayPlan'
+
+  /api/schedule/ripple-reschedule:
+    post:
+      summary: Calculate guilt-free ripple reschedule suggestions
+      description: |
+        Calculates a non-punitive forward shift inserting 10-minute cognitive buffers between
+        subsequent tasks.
+      tags: [Schedule]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RippleRescheduleRequest'
+      responses:
+        '200':
+          description: Ripple shift suggestions with affected downstream tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RippleRescheduleResponse'
+
+  /api/schedule/apply-reschedule:
+    post:
+      summary: Apply reschedule decision to a single task
+      tags: [Schedule]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyRescheduleRequest'
+      responses:
+        '200':
+          description: Reschedule applied
+
+  /api/schedule/batch-apply-reschedule:
+    post:
+      summary: Batch apply ripple reschedule decisions across multiple tasks
+      tags: [Schedule]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchApplyRescheduleRequest'
+      responses:
+        '200':
+          description: Batch reschedule applied
+
+  /api/schedule/export/ics:
+    get:
+      summary: Export today's plan as standard RFC 5545 iCalendar (.ics)
+      description: |
+        Provides universal calendar subscription compatibility with Google Calendar,
+        Apple Calendar, and Microsoft Outlook.
+      tags: [Schedule]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: RFC 5545 iCalendar data stream
+          content:
+            text/calendar:
+              schema:
+                type: string
+
+  /api/capacity/daily:
+    get:
+      summary: Get daily capacity workload meter
+      tags: [Capacity]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Workload metrics and threshold status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityProfile'
+
+  /api/insights/weekly:
+    get:
+      summary: Fetch weekly reflective analytics
+      tags: [Insights]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Weekly focus time, completion rates, and supportive reflections
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyInsights'
+
+  /api/notifications/preferences:
+    get:
+      summary: Retrieve notification preferences
+      tags: [Notifications]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Notification settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferences'
+
+    put:
+      summary: Update notification preferences
+      tags: [Notifications]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationPreferences'
+      responses:
+        '200':
+          description: Notification preferences updated
+
+  /api/notifications/device-token:
+    post:
+      summary: Register mobile FCM device push token
+      tags: [Notifications]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, platform]
+              properties:
+                token:
+                  type: string
+                platform:
+                  type: string
+                  enum: [android, ios, web]
+      responses:
+        '200':
+          description: Device token registered
+
+    delete:
+      summary: Unregister mobile FCM device push token
+      tags: [Notifications]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Device token unregistered
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        name:
+          type: string
+        timezone:
+          type: string
+          example: Asia/Jakarta
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserProfile'
+        token:
+          type: string
+          description: Short-lived JWT access token
+        refreshToken:
+          type: string
+          description: Rotating refresh token
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        timezone:
+          type: string
+          example: Asia/Jakarta
+        workHoursLimit:
+          type: number
+          example: 8.0
+        startWorkTime:
+          type: string
+          example: '09:00'
+        endWorkTime:
+          type: string
+          example: '17:00'
+        isOnboarded:
+          type: boolean
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        color:
+          type: string
+          example: '#3B82F6'
+        cognitiveLoad:
+          type: string
+          enum: [HIGH, MEDIUM, LOW]
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: Review Architecture Decision Record
+        description:
+          type: string
+        durationMinutes:
+          type: integer
+          example: 45
+        priority:
+          type: string
+          enum: [TOP_3, NORMAL, LOW]
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, COMPLETED, CANCELLED]
+        targetDate:
+          type: string
+          format: date
+        dateDisplay:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        scheduledStart:
+          type: string
+          format: date-time
+        scheduledEnd:
+          type: string
+          format: date-time
+        categoryId:
+          type: string
+          format: uuid
+        categoryName:
+          type: string
+        energyLevel:
+          type: string
+          enum: [HIGH, MEDIUM, LOW]
+        completedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateTaskRequest:
+      type: object
+      required: [title, durationMinutes]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 140
+        durationMinutes:
+          type: integer
+          minimum: 5
+          maximum: 480
+        priority:
+          type: string
+          enum: [TOP_3, NORMAL, LOW]
+          default: NORMAL
+        categoryId:
+          type: string
+          format: uuid
+        targetDate:
+          type: string
+          format: date
+        startTime:
+          type: string
+          format: date-time
+        energyLevel:
+          type: string
+          enum: [HIGH, MEDIUM, LOW]
+        forcePlacement:
+          type: boolean
+          default: false
+        swapTaskId:
+          type: string
+          format: uuid
+          description: Existing Top-3 task to demote to Normal if quota is reached
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        durationMinutes:
+          type: integer
+        priority:
+          type: string
+          enum: [TOP_3, NORMAL, LOW]
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, COMPLETED, CANCELLED]
+        targetDate:
+          type: string
+          format: date
+        startTime:
+          type: string
+          format: date-time
+        deadline:
+          type: string
+          format: date-time
+        categoryId:
+          type: string
+          format: uuid
+        energyLevel:
+          type: string
+        actualDurationMinutes:
+          type: integer
+        energyLevelAtCompletion:
+          type: string
+        swapTaskId:
+          type: string
+          format: uuid
+
+    CapacityProfile:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        allocatedMinutes:
+          type: integer
+        capacityMinutes:
+          type: integer
+        percentage:
+          type: number
+          example: 65.5
+        status:
+          type: string
+          enum: [LIGHT, OPTIMAL, NEAR_CAPACITY, OVERLOAD]
+        isOverloaded:
+          type: boolean
+        remainingMinutes:
+          type: integer
+        recommendation:
+          type: string
+
+    TodayPlan:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        timelineSchedule:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        unscheduledTasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        top3Priorities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        capacityProfile:
+          $ref: '#/components/schemas/CapacityProfile'
+        hasOverload:
+          type: boolean
+        supportiveBanner:
+          type: object
+          properties:
+            message:
+              type: string
+            type:
+              type: string
+              enum: [INFO, AMBER, SUCCESS]
+
+    RippleRescheduleRequest:
+      type: object
+      required: [delayedTaskId, additionalDurationMinutes]
+      properties:
+        delayedTaskId:
+          type: string
+          format: uuid
+        additionalDurationMinutes:
+          type: integer
+          minimum: 5
+
+    RippleRescheduleResponse:
+      type: object
+      properties:
+        suggestedShiftMinutes:
+          type: integer
+        affectedTasks:
+          type: array
+          items:
+            type: object
+            properties:
+              taskId:
+                type: string
+              originalStart:
+                type: string
+                format: date-time
+              proposedStart:
+                type: string
+                format: date-time
+              proposedEnd:
+                type: string
+                format: date-time
+        cognitiveBufferMinutes:
+          type: integer
+          example: 10
+        supportiveMessage:
+          type: string
+
+    ApplyRescheduleRequest:
+      type: object
+      required: [taskId, action]
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [SHIFT_FORWARD, MOVE_TO_TOMORROW, MOVE_TO_BACKLOG]
+        confirmedStartTime:
+          type: string
+          format: date-time
+
+    BatchApplyRescheduleRequest:
+      type: object
+      required: [reschedules]
+      properties:
+        reschedules:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApplyRescheduleRequest'
+
+    WeeklyInsights:
+      type: object
+      properties:
+        weekStartDate:
+          type: string
+          format: date
+        totalFocusMinutes:
+          type: integer
+        completionRatePercentage:
+          type: number
+        deepFocusPercentage:
+          type: number
+        calmReflections:
+          type: array
+          items:
+            type: string
+
+    NotificationPreferences:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        quietHoursStart:
+          type: string
+          example: '21:00'
+        quietHoursEnd:
+          type: string
+          example: '08:00'
+        focusReminders:
+          type: boolean
+        dailySummary:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: Parameter yang diberikan tidak sesuai spesifikasi.
+        error:
+          type: string
+          example: Bad Request
