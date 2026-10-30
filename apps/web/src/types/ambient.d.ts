@@ -39,6 +39,7 @@ declare module '@tanstack/react-query' {
   export interface QueryOptions<T> {
     queryKey: unknown[];
     queryFn: () => Promise<T>;
+    initialData?: T;
   }
   export interface QueryResult<T> {
     data: T | undefined;
@@ -48,20 +49,25 @@ declare module '@tanstack/react-query' {
   }
   export function useQuery<T>(options: QueryOptions<T>): QueryResult<T>;
 
-  export interface MutationOptions<TData, TVariables> {
+  export interface MutationOptions<TData, TVariables, TContext = unknown> {
     mutationFn: (variables: TVariables) => Promise<TData>;
-    onSuccess?: (data: TData) => void;
-    onError?: (error: unknown) => void;
+    onMutate?: (variables: TVariables) => Promise<TContext> | TContext;
+    onSuccess?: (data: TData, variables: TVariables, context: TContext) => void;
+    onError?: (error: unknown, variables: TVariables, context: TContext | undefined) => void;
+    onSettled?: (data: TData | undefined, error: unknown, variables: TVariables, context: TContext | undefined) => void;
   }
   export interface MutationResult<TData, TVariables> {
     mutate: (variables: TVariables) => void;
     isPending: boolean;
     isError: boolean;
   }
-  export function useMutation<TData, TVariables>(options: MutationOptions<TData, TVariables>): MutationResult<TData, TVariables>;
+  export function useMutation<TData, TVariables, TContext = unknown>(options: MutationOptions<TData, TVariables, TContext>): MutationResult<TData, TVariables>;
 
   export interface QueryClient {
     invalidateQueries(options: { queryKey: unknown[] }): Promise<void>;
+    cancelQueries(options: { queryKey: unknown[] }): Promise<void>;
+    getQueryData<T>(queryKey: unknown[]): T | undefined;
+    setQueryData<T>(queryKey: unknown[], updater: T | ((old: T | undefined) => T)): void;
   }
   export function useQueryClient(): QueryClient;
 }

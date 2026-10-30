@@ -19,18 +19,21 @@ class CreateTaskBottomSheet extends StatefulWidget {
   final List<WorkspaceCategory> availableCategories;
   final int defaultRestMinutes;
   final ValueChanged<OnboardingTask>? onTaskCreated;
+  final OnboardingTask? initialTask;
 
   const CreateTaskBottomSheet({
     super.key,
     required this.availableCategories,
     this.defaultRestMinutes = 20,
     this.onTaskCreated,
+    this.initialTask,
   });
 
   static Future<OnboardingTask?> show(
     BuildContext context, {
     required List<WorkspaceCategory> availableCategories,
     int defaultRestMinutes = 20,
+    OnboardingTask? initialTask,
   }) {
     return showModalBottomSheet<OnboardingTask>(
       context: context,
@@ -39,6 +42,7 @@ class CreateTaskBottomSheet extends StatefulWidget {
       builder: (ctx) => CreateTaskBottomSheet(
         availableCategories: availableCategories,
         defaultRestMinutes: defaultRestMinutes,
+        initialTask: initialTask,
       ),
     );
   }
@@ -55,7 +59,7 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
   String? _dateDisplay;
   String? _startHourDisplay;
   bool _isBacklog = false;
-  bool _needsRestAfter = true;
+  bool _needsRestAfter = false;
   String? _errorMessage;
 
   final List<int> _durations = [10, 15, 20, 25, 30, 45, 60];
@@ -63,13 +67,34 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
   @override
   void initState() {
     super.initState();
-    // Rule: Every input form must start in an empty state first
-    _nameController = TextEditingController();
-    _selectedCategory = null;
-    _selectedDurationMinutes = null;
-    _selectedFocusType = null;
-    _dateDisplay = null;
-    _startHourDisplay = null;
+    if (widget.initialTask != null) {
+      final t = widget.initialTask!;
+      _nameController = TextEditingController(text: t.title);
+      try {
+        _selectedCategory = widget.availableCategories.firstWhere((c) => c.name == t.categoryName);
+      } catch (_) {
+        _selectedCategory = WorkspaceCategory(
+          name: t.categoryName,
+          color: t.categoryColor,
+          colorHex: '#7C3AED',
+        );
+      }
+      _selectedDurationMinutes = t.durationMinutes;
+      _selectedFocusType = t.focusType;
+      _dateDisplay = t.dateDisplay;
+      _startHourDisplay = t.startHourDisplay;
+      _isBacklog = t.isBacklog;
+      _needsRestAfter = t.needsRestAfter;
+    } else {
+      // Rule: Every new input form must start in an empty state first
+      _nameController = TextEditingController();
+      _selectedCategory = null;
+      _selectedDurationMinutes = null;
+      _selectedFocusType = null;
+      _dateDisplay = null;
+      _startHourDisplay = null;
+      _needsRestAfter = false;
+    }
   }
 
   @override
@@ -98,12 +123,18 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
     final picked = await showTimePicker(
       context: context,
       initialTime: const TimeOfDay(hour: 10, minute: 0),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+        child: child!,
+      ),
     );
     if (picked != null) {
-      final hourStr = picked.hour.toString().padLeft(2, '0');
+      final period = picked.period == DayPeriod.am ? 'AM' : 'PM';
+      final hourOfPeriod = picked.hourOfPeriod == 0 ? 12 : picked.hourOfPeriod;
+      final hourStr = hourOfPeriod.toString().padLeft(2, '0');
       final minStr = picked.minute.toString().padLeft(2, '0');
       setState(() {
-        _startHourDisplay = '$hourStr:$minStr';
+        _startHourDisplay = '$hourStr:$minStr $period';
         _errorMessage = null;
       });
     }
@@ -148,17 +179,21 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
     }
 
     final now = DateTime.now();
-    final effectiveDate = _dateDisplay ?? '${_monthName(now.month)}, ${now.day}th ${now.year}';
-    final effectiveHour = _startHourDisplay ?? '09:00';
+    final effectiveDate = _isBacklog
+        ? 'Backlog'
+        : (_dateDisplay ?? '${_monthName(now.month)}, ${now.day}th ${now.year}');
+    final effectiveHour = _isBacklog
+        ? '--:--'
+        : (_startHourDisplay ?? '10:00 AM');
 
     final task = OnboardingTask(
-      id: 'task_${DateTime.now().millisecondsSinceEpoch}',
+      id: widget.initialTask?.id ?? 'task_${DateTime.now().millisecondsSinceEpoch}',
       title: title,
       categoryName: _selectedCategory!.name,
       categoryColor: _selectedCategory!.color,
       durationMinutes: _selectedDurationMinutes!,
       focusType: _selectedFocusType!,
-      dateDisplay: effectiveDate.split(' ').take(2).join(' '),
+      dateDisplay: effectiveDate.contains('Backlog') ? 'Backlog' : effectiveDate.split(' ').take(2).join(' '),
       startHourDisplay: effectiveHour,
       isBacklog: _isBacklog,
       needsRestAfter: _needsRestAfter,
@@ -226,7 +261,7 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
 
             // Modal Header Title
             Text(
-              'Create Your Task',
+              widget.initialTask != null ? 'Edit Your Task' : 'Create Your Task',
               style: TextStyle(
                 fontFamily: FocientTypographyTokens.fontFamily,
                 fontSize: 18,
@@ -404,7 +439,7 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
             ),
             const SizedBox(height: 18),
 
-            // 4. Focus Type
+            // 4. Focus Type (Horizontally scrollable with complete text visibility)
             Text(
               'Focus Type',
               style: TextStyle(
@@ -415,19 +450,21 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
               ),
             ),
             const SizedBox(height: 10),
-            Row(
-              children: FocusType.values.map((type) {
-                final isSelected = _selectedFocusType == type.label;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              child: Row(
+                children: FocusType.values.map((type) {
+                  final isSelected = _selectedFocusType == type.label;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(20),
                       onTap: () {
                         setState(() => _selectedFocusType = type.label);
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
                         decoration: BoxDecoration(
                           color: type.backgroundColor,
                           borderRadius: BorderRadius.circular(20),
@@ -437,7 +474,7 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
                           ),
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               Icons.calendar_today_outlined,
@@ -445,120 +482,119 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
                               color: type.textColor,
                             ),
                             const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                type.label,
-                                style: TextStyle(
-                                  fontFamily: FocientTypographyTokens.fontFamily,
-                                  fontSize: 12,
-                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                  color: type.textColor,
-                                ),
-                                overflow: TextOverflow.ellipsis,
+                            Text(
+                              type.label,
+                              style: TextStyle(
+                                fontFamily: FocientTypographyTokens.fontFamily,
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                color: type.textColor,
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
             const SizedBox(height: 18),
 
-            // 5. Time Slot (Date & Start Hour)
-            Text(
-              'Time Slot',
-              style: TextStyle(
-                fontFamily: FocientTypographyTokens.fontFamily,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: titleColor,
+            // 5. Time Slot (Date & Start Hour) - hidden when Backlog Task is checked
+            if (!_isBacklog) ...[
+              Text(
+                'Time Slot',
+                style: TextStyle(
+                  fontFamily: FocientTypographyTokens.fontFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: titleColor,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Date',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: subtitleColor,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      InkWell(
-                        borderRadius: BorderRadius.circular(10),
-                        onTap: _pickDate,
-                        child: Container(
-                          height: 44,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: fieldBg,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: fieldBorder),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Date',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: subtitleColor,
                           ),
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            _dateDisplay ?? 'Select date',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: _dateDisplay != null ? titleColor : subtitleColor,
+                        ),
+                        const SizedBox(height: 4),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: _pickDate,
+                          child: Container(
+                            height: 44,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: fieldBg,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: fieldBorder),
                             ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Start Hour',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: subtitleColor,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      InkWell(
-                        borderRadius: BorderRadius.circular(10),
-                        onTap: _pickTime,
-                        child: Container(
-                          height: 44,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: fieldBg,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: fieldBorder),
-                          ),
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            _startHourDisplay ?? 'Select hour',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: _startHourDisplay != null ? titleColor : subtitleColor,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              _dateDisplay ?? 'Select date',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _dateDisplay != null ? titleColor : subtitleColor,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Start Hour',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: subtitleColor,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: _pickTime,
+                          child: Container(
+                            height: 44,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: fieldBg,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: fieldBorder),
+                            ),
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              _startHourDisplay ?? 'Select hour',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _startHourDisplay != null ? titleColor : subtitleColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+            ],
 
             // 6. Backlog Task Toggle
             Row(

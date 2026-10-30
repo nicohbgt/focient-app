@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../data/onboarding_task.dart';
+import '../../data/workspace_category.dart';
 
 /// FoCient Add Task Card (A)
 ///
@@ -192,28 +193,6 @@ class FocientTaskAddedCard extends StatelessWidget {
                   ),
                 ),
 
-                // Rest Duration Badge: e.g. 20" Rest (if rest enabled)
-                if (task.needsRestAfter)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                      ),
-                    ),
-                    child: Text(
-                      '${task.restMinutes}" Rest',
-                      style: TextStyle(
-                        fontFamily: FocientTypographyTokens.fontFamily,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? Colors.white : const Color(0xFF475569),
-                      ),
-                    ),
-                  ),
-
                 // Category Badge (Dot + Name)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -249,26 +228,31 @@ class FocientTaskAddedCard extends StatelessWidget {
                   ),
                 ),
 
-                // Focus Type Badge
+                // Focus Type Badge with unified canonical tokens
                 if (task.focusType.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFE4E6),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: const Color(0xFFFECDD3),
-                      ),
-                    ),
-                    child: Text(
-                      task.focusType,
-                      style: const TextStyle(
-                        fontFamily: FocientTypographyTokens.fontFamily,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF9F1239),
-                      ),
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final ft = FocusTypeExtension.fromString(task.focusType);
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: ft.backgroundColor,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: ft.borderColor.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Text(
+                          task.focusType,
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: ft.textColor,
+                          ),
+                        ),
+                      );
+                    },
                   ),
               ],
             ),

@@ -4,10 +4,13 @@ import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../../data/auth_state.dart';
 import '../../../data/focient_repository.dart';
 import '../../../data/task_state.dart';
+import '../../../data/workspace_category.dart';
 import '../../primitive/focient_button.dart';
 import '../../primitive/focient_input_field.dart';
 import '../../riverpod_providers.dart';
+import '../insight/focient_insight_screen.dart';
 import '../plan/focient_today_plan_screen.dart';
+import '../settings/focient_settings_screen.dart';
 import '../task/focient_add_task_screen.dart';
 import '../task/focient_task_list_screen.dart';
 
@@ -259,6 +262,12 @@ class _FocientDashboardScreenState
         onNavigateTab: (idx) => setState(() => _activeNavIndex = idx),
       );
     }
+    if (_activeNavIndex == 4) {
+      return FocientInsightScreen(
+        onBack: () => setState(() => _activeNavIndex = 0),
+        onNavigateTab: (idx) => setState(() => _activeNavIndex = idx),
+      );
+    }
 
     final authState = ref.watch(authProvider);
     final user = authState.user;
@@ -501,18 +510,22 @@ class _FocientDashboardScreenState
       child: Row(
         children: [
           // Profile User Icon Outline
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFBFDBFE)),
-            ),
-            child: const Icon(
-              Icons.person_outline_rounded,
-              size: 20,
-              color: Color(0xFF2563EB),
+          InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: () => _confirmLogout(context, ref),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFBFDBFE)),
+              ),
+              child: const Icon(
+                Icons.person_outline_rounded,
+                size: 20,
+                color: Color(0xFF2563EB),
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -572,12 +585,20 @@ class _FocientDashboardScreenState
             },
             tooltip: 'Notifications',
           ),
-          // Settings Gear Icon
+          // Settings Gear Icon (Image 2)
           IconButton(
             icon: const Icon(Icons.settings_outlined, size: 22),
             color: subtitleColor,
-            onPressed: () => _confirmLogout(context, ref),
-            tooltip: 'Settings / Logout',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => FocientSettingsScreen(
+                    onBack: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Settings',
           ),
         ],
       ),
@@ -1008,6 +1029,7 @@ class _FocientDashboardScreenState
     required Color subtitleColor,
     required List<MobileTask> top3Tasks,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     // Dynamically adjust to server saved data
     final displayTasks = top3Tasks.isNotEmpty
         ? top3Tasks
@@ -1172,9 +1194,9 @@ class _FocientDashboardScreenState
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1198,7 +1220,7 @@ class _FocientDashboardScreenState
                         ),
                       ),
                       const SizedBox(height: 10),
-                      // Badges Row: Duration | Rest | Category | Focus Type
+                      // Badges Row: Duration | Category | Focus Type
                       Wrap(
                         spacing: 8,
                         runSpacing: 6,
@@ -1220,24 +1242,6 @@ class _FocientDashboardScreenState
                               ),
                             ),
                           ),
-                          if (task.restMinutes > 0)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEFF6FF),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFBFDBFE)),
-                              ),
-                              child: Text(
-                                '${task.restMinutes}" Rest',
-                                style: const TextStyle(
-                                  fontFamily: FocientTypographyTokens.fontFamily,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2563EB),
-                                ),
-                              ),
-                            ),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
@@ -1268,22 +1272,27 @@ class _FocientDashboardScreenState
                               ],
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFE4E6),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFFECDD3)),
-                            ),
-                            child: Text(
-                              task.focusType.isNotEmpty ? task.focusType : 'Deep Focus',
-                              style: const TextStyle(
-                                fontFamily: FocientTypographyTokens.fontFamily,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF9F1239),
-                              ),
-                            ),
+                          Builder(
+                            builder: (context) {
+                              final ft = FocusTypeExtension.fromString(task.focusType);
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: ft.backgroundColor,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: ft.borderColor.withValues(alpha: 0.35)),
+                                ),
+                                child: Text(
+                                  task.focusType.isNotEmpty ? task.focusType : 'Deep Focus',
+                                  style: TextStyle(
+                                    fontFamily: FocientTypographyTokens.fontFamily,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: ft.textColor,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -1612,24 +1621,12 @@ class _FocientDashboardScreenState
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: ['Deep Focus', 'Medium', 'Light Focus'].map((type) {
+              children: ['Deep Focus', 'Medium', 'Light'].map((type) {
                 final isSelected = _selectedFocusType == type;
-                Color activeBg;
-                Color activeBorder;
-                Color activeText;
-                if (type == 'Deep Focus') {
-                  activeBg = const Color(0xFFFFE4E6);
-                  activeBorder = const Color(0xFFFECDD3);
-                  activeText = const Color(0xFF9F1239);
-                } else if (type == 'Medium') {
-                  activeBg = const Color(0xFFFEF3C7);
-                  activeBorder = const Color(0xFFFDE68A);
-                  activeText = const Color(0xFF92400E);
-                } else {
-                  activeBg = const Color(0xFFE0F2FE);
-                  activeBorder = const Color(0xFFBAE6FD);
-                  activeText = const Color(0xFF075985);
-                }
+                final ft = FocusTypeExtension.fromString(type);
+                final activeBg = ft.backgroundColor;
+                final activeBorder = ft.borderColor;
+                final activeText = ft.textColor;
 
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),

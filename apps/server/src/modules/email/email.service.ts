@@ -134,6 +134,10 @@ export class EmailService {
   }
 
   async sendRegistrationOtp(email: string, code: string): Promise<EmailResult> {
+    if (process.env.NODE_ENV !== 'production') {
+      logger.info(`[Dev OTP Delivery] Real-time OTP dispatched to ${email}: [Code: ${code}]`);
+    }
+
     const subject = 'Kode Verifikasi Pendaftaran FoCient';
     const text = [
       'Halo!',
@@ -171,6 +175,10 @@ export class EmailService {
   }
 
   async sendPasswordResetOtp(email: string, code: string): Promise<EmailResult> {
+    if (process.env.NODE_ENV !== 'production') {
+      logger.info(`[Dev OTP Delivery] Real-time Password Reset OTP dispatched to ${email}: [Code: ${code}]`);
+    }
+
     const subject = 'Kode Pemulihan Kata Sandi FoCient';
     const text = [
       'Halo!',

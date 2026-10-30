@@ -600,6 +600,33 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     setToast(null);
   }, []);
 
+  // Browser Storage Persistence ($0 operational cost, local-first client)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !emptyStateMode) {
+      try {
+        const stored = window.localStorage.getItem('focient_web_tasks');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setTasks(parsed);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem('focient_web_tasks', JSON.stringify(tasks));
+      } catch {
+        // ignore
+      }
+    }
+  }, [tasks]);
+
   // Sync Empty State Mode
   useEffect(() => {
     if (emptyStateMode) {

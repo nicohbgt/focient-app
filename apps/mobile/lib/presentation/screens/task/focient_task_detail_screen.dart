@@ -4,6 +4,7 @@ import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../../data/focient_repository.dart';
 import '../../../data/task_state.dart';
 import '../../riverpod_providers.dart';
+import '../settings/focient_settings_screen.dart';
 import 'focient_add_task_screen.dart';
 
 /// FoCient Task Detail Screen
@@ -471,7 +472,16 @@ class _FocientTaskDetailScreenState extends ConsumerState<FocientTaskDetailScree
             splashRadius: 20,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => FocientSettingsScreen(
+                    onBack: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Settings',
           ),
         ],
       ),

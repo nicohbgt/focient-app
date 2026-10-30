@@ -15,6 +15,9 @@ import {
 
 export const TodayPlanScreen: React.FC = () => {
   const {
+    tasks,
+    toggleTaskComplete,
+    setIsAddTaskModalOpen,
     categoryBudgets,
     weeklyWorkloads,
     rebalanceProposal,
@@ -32,6 +35,9 @@ export const TodayPlanScreen: React.FC = () => {
     const h = (mins / 60).toFixed(mins % 60 === 0 ? 0 : 1);
     return `${h}h`;
   };
+
+  const allTasksCompleted = tasks.length > 0 && tasks.every((t) => t.status === 'completed');
+  const activeTasksCount = tasks.filter((t) => t.status !== 'completed').length;
 
   return (
     <div className="space-y-6 pb-20 animate-fade-in max-w-4xl mx-auto">
@@ -61,6 +67,139 @@ export const TodayPlanScreen: React.FC = () => {
           </span>
         </div>
       </div>
+
+      {/* Today Focus Tasks Section: 4 Data-Driven UI States */}
+      {tasks.length === 0 ? (
+        /* Empty State */
+        <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm text-center flex flex-col items-center justify-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-[#F0FDFA] flex items-center justify-center text-[#0D9488]">
+            <SparklesIcon size="md" />
+          </div>
+          <div className="max-w-md space-y-1">
+            <h3 className="text-base font-bold text-slate-900">
+              {language === 'id' ? 'Mulai Hari dengan Ritme Tenang' : 'Start Your Day in a Calm Rhythm'}
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              {language === 'id'
+                ? 'Belum ada agenda terencana. Tambahkan aktivitas pertamamu untuk memulai fokus.'
+                : 'No scheduled agenda yet. Add your first activity to start your focus.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsAddTaskModalOpen(true)}
+            className="px-5 py-2.5 rounded-xl bg-[#0D9488] hover:bg-[#0f766e] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+          >
+            <PlusIcon size="xs" />
+            <span>{language === 'id' ? '+ Buat Rencana Pertama' : '+ Create First Plan'}</span>
+          </button>
+        </div>
+      ) : allTasksCompleted ? (
+        /* All-Tasks-Completed State (Zero Inbox) */
+        <div className="bg-[#F0FDF4] rounded-2xl p-6 border border-[#A7F3D0] text-center flex flex-col items-center justify-center space-y-3">
+          <div className="w-14 h-14 rounded-full bg-[#DCFCE7] flex items-center justify-center text-[#059669]">
+            <CheckIcon size="md" />
+          </div>
+          <div className="max-w-md space-y-1">
+            <h3 className="text-base font-bold text-[#065F46]">
+              {language === 'id' ? 'Fokus Hari Ini Telah Tuntas' : "Today's Focus Is Complete"}
+            </h3>
+            <p className="text-xs text-[#047857] leading-relaxed">
+              {language === 'id'
+                ? 'Semua agenda terencana telah diselesaikan dengan tenang. Nikmati waktu istirahat tanpa rasa bersalah.'
+                : 'All planned activities are completed calmly. Enjoy your well-deserved break without guilt.'}
+            </p>
+          </div>
+        </div>
+      ) : (
+        /* Populated State */
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900">
+                {language === 'id' ? 'Rencana Fokus Hari Ini' : "Today's Focus Tasks"}
+              </h3>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                {activeTasksCount} {language === 'id' ? 'Aktif' : 'Active'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAddTaskModalOpen(true)}
+              className="text-xs font-bold text-[#0D9488] hover:text-[#0f766e] flex items-center gap-1 transition-colors"
+            >
+              <PlusIcon size="xs" />
+              <span>{language === 'id' ? '+ Tambah' : '+ Add'}</span>
+            </button>
+          </div>
+
+          <div className="space-y-2.5">
+            {tasks.map((task) => {
+              const isTop3 = task.priority === 'top3';
+              const isCompleted = task.status === 'completed';
+
+              return (
+                <div
+                  key={task.id}
+                  className={`p-3.5 rounded-xl transition-all duration-150 flex items-center justify-between ${
+                    isTop3
+                      ? 'border-2 border-[#2563EB] bg-blue-50/20 shadow-sm'
+                      : 'border border-slate-200 bg-white hover:border-slate-300'
+                  } ${isCompleted ? 'opacity-60' : 'opacity-100'}`}
+                >
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => toggleTaskComplete(task.id)}
+                      className={`w-5 h-5 rounded-md flex items-center justify-center transition-all duration-150 border ${
+                        isCompleted
+                          ? 'bg-[#0D9488] border-[#0D9488] text-white'
+                          : 'border-slate-300 hover:border-[#0D9488] bg-white'
+                      }`}
+                    >
+                      {isCompleted && <CheckIcon size="xs" />}
+                    </button>
+
+                    <div className="truncate">
+                      <div className="flex items-center gap-2">
+                        {isTop3 && (
+                          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200">
+                            Top 3 Focus
+                          </span>
+                        )}
+                        <span
+                          className={`text-xs font-bold truncate ${
+                            isCompleted ? 'line-through text-slate-400' : 'text-slate-900'
+                          }`}
+                        >
+                          {task.title}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                        <span className="flex items-center gap-1">
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: task.categoryColor || '#7C3AED' }}
+                          />
+                          <span>{task.categoryName}</span>
+                        </span>
+                        <span>•</span>
+                        <span className="tabular-nums font-semibold">{task.durationMinutes}m</span>
+                        {task.focusType === 'Deep Focus' && (
+                          <>
+                            <span>•</span>
+                            <span className="text-indigo-600 font-semibold">Deep Focus</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Section 1: Task Category Budgets */}
       <div className="space-y-2">

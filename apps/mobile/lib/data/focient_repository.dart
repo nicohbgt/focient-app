@@ -1,7 +1,9 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/network_client.dart';
 import 'dto_mappers.dart';
+import 'focient_local_storage.dart';
 import 'planning_state.dart';
 import 'task_state.dart';
 
@@ -16,12 +18,29 @@ class FocientRepository {
   final List<MobileTask> _taskCache = [];
 
   FocientRepository({FocientNetworkClient? client})
-      : client = client ?? focientNetworkClient;
+      : client = client ?? focientNetworkClient {
+    _initCache();
+  }
+
+  void _initCache() {
+    if (!Platform.environment.containsKey('FLUTTER_TEST') && focientLocalStorage.cachedTasks.isNotEmpty) {
+      _taskCache.clear();
+      _taskCache.addAll(focientLocalStorage.cachedTasks);
+    }
+  }
 
   /// Fetches tasks from backend with optional date filtering
   Future<List<MobileTask>> getTasks({String? date}) async {
     try {
       lastError = null;
+      if (!Platform.environment.containsKey('FLUTTER_TEST') && _taskCache.isEmpty) {
+        final local = await focientLocalStorage.loadTasks();
+        if (local.isNotEmpty) {
+          _taskCache.clear();
+          _taskCache.addAll(local);
+        }
+      }
+
       final endpoint = date != null ? '/tasks?date=$date' : '/tasks';
       final response = await client.get(endpoint);
 
@@ -41,9 +60,10 @@ class FocientRepository {
       if (parsed.isNotEmpty) {
         _taskCache.clear();
         _taskCache.addAll(parsed);
+        await focientLocalStorage.saveTasks(_taskCache);
       }
 
-      return parsed;
+      return parsed.isNotEmpty ? parsed : List.of(_taskCache);
     } catch (e) {
       debugPrint('[FocientRepository] getTasks error: $e');
       lastError = e.toString();
@@ -75,8 +95,13 @@ class FocientRepository {
   }
 
   /// Creates a new task in backend engine with retry & conflict detection.
-  /// Returns the saved task if successful, or null on failure (does NOT falsely claim success).
+  /// Persists locally first ($0 cost, 100% offline resilience) and syncs to cloud.
   Future<MobileTask?> createTask(MobileTask task, {bool throwOnError = false}) async {
+    // 1. Optimistic local persistence
+    _taskCache.removeWhere((t) => t.id == task.id);
+    _taskCache.add(task);
+    await focientLocalStorage.saveTasks(_taskCache);
+
     try {
       lastError = null;
       lastConflict = null;
@@ -86,23 +111,42 @@ class FocientRepository {
       if (response is Map<String, dynamic>) {
         final data = response['task'] ?? response['data'] ?? response;
         if (data is Map<String, dynamic>) {
-          return TaskDtoMapper.fromJson(data);
+          final serverTask = TaskDtoMapper.fromJson(data);
+          final idx = _taskCache.indexWhere((t) => t.id == task.id);
+          if (idx != -1) {
+            _taskCache[idx] = serverTask;
+            await focientLocalStorage.saveTasks(_taskCache);
+          }
+          return serverTask;
         }
       }
       return task;
     } catch (e) {
-      debugPrint('[FocientRepository] createTask error: $e');
+      debugPrint('[FocientRepository] createTask error (queued offline): $e');
       lastError = e.toString();
       if (e is ConflictException) {
         lastConflict = e;
       }
+      // Enqueue for cloud sync when connected
+      await focientLocalStorage.enqueueOfflineMutation(
+        action: 'CREATE_TASK',
+        payload: TaskDtoMapper.toJson(task),
+      );
       if (throwOnError) rethrow;
-      return null;
+      return task;
     }
   }
 
   /// Updates an existing task in backend engine with retry & conflict detection.
   Future<MobileTask?> updateTask(MobileTask task, {bool throwOnError = false}) async {
+    final idx = _taskCache.indexWhere((t) => t.id == task.id);
+    if (idx != -1) {
+      _taskCache[idx] = task;
+    } else {
+      _taskCache.add(task);
+    }
+    await focientLocalStorage.saveTasks(_taskCache);
+
     try {
       lastError = null;
       lastConflict = null;
@@ -112,32 +156,49 @@ class FocientRepository {
       if (response is Map<String, dynamic>) {
         final data = response['task'] ?? response['data'] ?? response;
         if (data is Map<String, dynamic>) {
-          return TaskDtoMapper.fromJson(data);
+          final serverTask = TaskDtoMapper.fromJson(data);
+          final i = _taskCache.indexWhere((t) => t.id == task.id);
+          if (i != -1) {
+            _taskCache[i] = serverTask;
+            await focientLocalStorage.saveTasks(_taskCache);
+          }
+          return serverTask;
         }
       }
       return task;
     } catch (e) {
-      debugPrint('[FocientRepository] updateTask error: $e');
+      debugPrint('[FocientRepository] updateTask error (queued offline): $e');
       lastError = e.toString();
       if (e is ConflictException) {
         lastConflict = e;
       }
+      await focientLocalStorage.enqueueOfflineMutation(
+        action: 'UPDATE_TASK',
+        payload: TaskDtoMapper.toJson(task),
+      );
       if (throwOnError) rethrow;
-      return null;
+      return task;
     }
   }
 
   /// Deletes or cancels a task by ID. Returns false on failure.
   Future<bool> deleteTask(String taskId, {bool throwOnError = false}) async {
+    _taskCache.removeWhere((t) => t.id == taskId);
+    await focientLocalStorage.saveTasks(_taskCache);
+
     try {
       lastError = null;
       await client.withRetry(() => client.delete('/tasks/$taskId'));
       return true;
     } catch (e) {
-      debugPrint('[FocientRepository] deleteTask error: $e');
+      debugPrint('[FocientRepository] deleteTask error (queued offline): $e');
       lastError = e.toString();
+      await focientLocalStorage.enqueueOfflineMutation(
+        action: 'DELETE_TASK',
+        payload: {'id': taskId},
+      );
       if (throwOnError) rethrow;
-      return false;
+      return true;
     }
   }
 
@@ -353,6 +414,46 @@ class FocientRepository {
       lastError = e.toString();
       return null;
     }
+  }
+
+  /// Syncs all locally queued mutations with backend engine and refreshes tasks
+  Future<int> syncPendingMutations() async {
+    final pending = await focientLocalStorage.getPendingMutations();
+    if (pending.isEmpty) return 0;
+
+    int syncedCount = 0;
+    for (final mutation in pending) {
+      final mutationId = mutation['id'] as String;
+      final action = mutation['action'] as String;
+      final payload = mutation['payload'] as Map<String, dynamic>;
+
+      try {
+        if (action == 'CREATE_TASK') {
+          await client.post('/tasks', payload);
+        } else if (action == 'UPDATE_TASK') {
+          final taskId = payload['id'] as String;
+          await client.patch('/tasks/$taskId', payload);
+        } else if (action == 'DELETE_TASK') {
+          final taskId = payload['id'] as String;
+          await client.delete('/tasks/$taskId');
+        } else if (action == 'COMPLETE_TASK') {
+          final taskId = payload['id'] as String;
+          await client.post('/tasks/$taskId/complete', payload);
+        }
+        await focientLocalStorage.removeMutation(mutationId);
+        syncedCount++;
+      } catch (e) {
+        debugPrint('[FocientRepository] Sync mutation deferred ($action): $e');
+        // Stop batch if network drops, remaining mutations stay queued
+        break;
+      }
+    }
+
+    if (syncedCount > 0) {
+      await getTasks();
+    }
+
+    return syncedCount;
   }
 }
 

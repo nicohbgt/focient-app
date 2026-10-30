@@ -53,12 +53,8 @@ class _FocientOnboardingWorkspaceScreenState
   @override
   void initState() {
     super.initState();
-    final currentUser = ref.read(authProvider).user;
-    final usernameText = widget.initialUsername ??
-        currentUser?.username ??
-        currentUser?.name ??
-        ref.read(authProvider).pendingName ??
-        '';
+    // Rule: Username field must start in empty state first unless explicitly provided
+    final usernameText = widget.initialUsername ?? '';
 
     _usernameController = TextEditingController(text: usernameText);
     _selectedOccupancy = widget.initialOccupancy;

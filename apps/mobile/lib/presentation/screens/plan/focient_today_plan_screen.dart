@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../../data/focient_repository.dart';
 import '../../../data/planning_state.dart';
+import '../../../data/task_state.dart';
 import '../../riverpod_providers.dart';
+import '../settings/focient_settings_screen.dart';
+import 'quick_task_input_sheet.dart';
 
 /// FoCient Today Plan Screen ("Your Planning")
 ///
@@ -51,7 +54,10 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
       _errorMessage = null;
     });
     try {
-      await ref.read(focientRepositoryProvider).getWeeklyPlanning();
+      await Future.wait([
+        ref.read(taskListProvider.notifier).loadFromStorage(),
+        ref.read(focientRepositoryProvider).getWeeklyPlanning(),
+      ]);
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -65,6 +71,15 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
         });
       }
     }
+  }
+
+  void _openQuickTaskInput() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => const QuickTaskInputSheet(),
+    );
   }
 
   void _onRescheduleTask() {
@@ -174,6 +189,7 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
   @override
   Widget build(BuildContext context) {
     final planningState = ref.watch(planningProvider);
+    final tasks = ref.watch(taskListProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bgColor = isDark
@@ -254,6 +270,20 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
                             ],
                           ),
                         ),
+                      // Section 0: Today Focus Tasks (4 Lifecycle States: Loading, Empty, Populated, All-Completed)
+                      _buildTodayFocusLifecycleSection(
+                        context: context,
+                        tasks: tasks,
+                        isLoading: _isLoading && tasks.isEmpty,
+                        isDark: isDark,
+                        cardBg: cardBg,
+                        borderColor: borderColor,
+                        titleColor: titleColor,
+                        subtitleColor: subtitleColor,
+                      ),
+
+                      const SizedBox(height: 16),
+
                       // Section 1: Task Categories
                       _buildTaskCategoriesSection(
                       categories: planningState.categories,
@@ -430,13 +460,15 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Pengaturan perencanaan dibuka.'),
-                  duration: Duration(seconds: 2),
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => FocientSettingsScreen(
+                    onBack: () => Navigator.of(context).pop(),
+                  ),
                 ),
               );
             },
+            tooltip: 'Settings',
           ),
         ],
       ),
@@ -1286,6 +1318,538 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
               );
             }).toList(),
           ),
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // TODAY FOCUS TASKS: 4 DATA-DRIVEN LIFECYCLE STATES
+  // ===========================================================================
+  Widget _buildTodayFocusLifecycleSection({
+    required BuildContext context,
+    required List<MobileTask> tasks,
+    required bool isLoading,
+    required bool isDark,
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    // a. Loading State: Skeleton shimmer berlatar #F1F5F9 saat inisialisasi awal
+    if (isLoading) {
+      return _buildSkeletonLoadingState(isDark);
+    }
+
+    // b. Empty State: Data Kosong / Pengguna Baru
+    if (tasks.isEmpty) {
+      return _buildEmptyState(
+        context: context,
+        isDark: isDark,
+        cardBg: cardBg,
+        borderColor: borderColor,
+        titleColor: titleColor,
+        subtitleColor: subtitleColor,
+      );
+    }
+
+    // d. All-Tasks-Completed State (Zero Inbox): Semua tugas telah selesai
+    final allCompleted = tasks.every((t) => t.isCompleted);
+    if (allCompleted) {
+      return _buildAllCompletedState(
+        isDark: isDark,
+        borderColor: borderColor,
+      );
+    }
+
+    // c. Populated State: Data Terisi dengan Optimistic micro-animation & Top 3 border
+    return _buildPopulatedTasksState(
+      context: context,
+      tasks: tasks,
+      isDark: isDark,
+      cardBg: cardBg,
+      borderColor: borderColor,
+      titleColor: titleColor,
+      subtitleColor: subtitleColor,
+    );
+  }
+
+  Widget _buildSkeletonLoadingState(bool isDark) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 150,
+            height: 18,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE2E8F0),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: 14),
+          _buildSkeletonTaskCard(),
+          const SizedBox(height: 10),
+          _buildSkeletonTaskCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkeletonTaskCard() {
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFFCBD5E1)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 90,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState({
+    required BuildContext context,
+    required bool isDark,
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Circular container (#F0FDFA) with Lucide/Teal lembut (#0D9488) icon
+          Container(
+            width: 72,
+            height: 72,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF0FDFA),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.spa_rounded,
+              color: Color(0xFF0D9488),
+              size: 36,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Headline
+          Text(
+            'Mulai Hari dengan Ritme Tenang',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Subtitle
+          Text(
+            'Belum ada agenda terencana. Tambahkan aktivitas pertamamu untuk memulai fokus.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 13,
+              height: 1.4,
+              color: subtitleColor,
+            ),
+          ),
+          const SizedBox(height: 20),
+          // CTA Outlined/Filled Teal: "+ Buat Rencana Pertama"
+          ElevatedButton.icon(
+            onPressed: _openQuickTaskInput,
+            icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+            label: const Text(
+              '+ Buat Rencana Pertama',
+              style: TextStyle(
+                fontFamily: FocientTypographyTokens.fontFamily,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0D9488),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAllCompletedState({
+    required bool isDark,
+    required Color borderColor,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.25) : const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF059669) : const Color(0xFFA7F3D0),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: const BoxDecoration(
+              color: Color(0xFFDCFCE7),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_circle_rounded,
+              color: Color(0xFF059669),
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Fokus Hari Ini Telah Tuntas',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: isDark ? const Color(0xFFA7F3D0) : const Color(0xFF065F46),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Semua agenda terencana telah diselesaikan dengan tenang. Nikmati waktu istirahat tanpa rasa bersalah.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 13,
+              height: 1.4,
+              color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF047857),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPopulatedTasksState({
+    required BuildContext context,
+    required List<MobileTask> tasks,
+    required bool isDark,
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    final activeCount = tasks.where((t) => !t.isCompleted).length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Rencana Fokus Hari Ini',
+              style: TextStyle(
+                fontFamily: FocientTypographyTokens.fontFamily,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: titleColor,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
+              ),
+              child: Text(
+                '$activeCount Aktif',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1D4ED8),
+                ),
+              ),
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: _openQuickTaskInput,
+              icon: const Icon(Icons.add_rounded, size: 16, color: Color(0xFF0D9488)),
+              label: const Text(
+                '+ Tambah',
+                style: TextStyle(
+                  fontFamily: FocientTypographyTokens.fontFamily,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0D9488),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: tasks.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            final task = tasks[index];
+            final isTop3 = task.priority == TaskPriorityEnum.top3;
+
+            return _buildTaskCardItem(
+              task: task,
+              isTop3: isTop3,
+              isDark: isDark,
+              cardBg: cardBg,
+              borderColor: borderColor,
+              titleColor: titleColor,
+              subtitleColor: subtitleColor,
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTaskCardItem({
+    required MobileTask task,
+    required bool isTop3,
+    required bool isDark,
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    // 150ms micro-animation, strikethrough, opasitas 0.6
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 150),
+      opacity: task.isCompleted ? 0.6 : 1.0,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(14),
+          // Sorotan visual Top 3 Priorities: border Cobalt Blue #2563EB dan aksen halus
+          border: Border.all(
+            color: isTop3 ? const Color(0xFF2563EB) : borderColor,
+            width: isTop3 ? 1.5 : 1.0,
+          ),
+          boxShadow: isTop3
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.12),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : const [
+                  BoxShadow(
+                    color: Color(0x06000000),
+                    blurRadius: 4,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Checkbox with 150ms animation
+            GestureDetector(
+              key: ValueKey('task_checkbox_${task.id}'),
+              onTap: () {
+                ref.read(taskListProvider.notifier).toggleComplete(task.id);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: task.isCompleted ? const Color(0xFF0D9488) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: task.isCompleted ? const Color(0xFF0D9488) : const Color(0xFF94A3B8),
+                    width: 2,
+                  ),
+                ),
+                child: task.isCompleted
+                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                    : null,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      // Top 3 Priority Badge
+                      if (isTop3) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                          ),
+                          child: const Text(
+                            'Top 3 Focus',
+                            style: TextStyle(
+                              fontFamily: FocientTypographyTokens.fontFamily,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF2563EB),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Expanded(
+                        child: Text(
+                          task.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                            decorationColor: const Color(0xFF94A3B8),
+                            color: task.isCompleted
+                                ? const Color(0xFF94A3B8)
+                                : titleColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: task.categoryColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        task.categoryName,
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: subtitleColor,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '• ${task.durationMinutes}m',
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: subtitleColor,
+                        ),
+                      ),
+                      if (task.focusType == 'Deep Focus') ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '• Deep Focus',
+                          style: const TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF7C3AED),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

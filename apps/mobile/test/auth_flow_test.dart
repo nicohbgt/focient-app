@@ -24,6 +24,10 @@ import 'package:focient_mobile/presentation/screens/plan/focient_today_plan_scre
 import 'package:focient_mobile/presentation/screens/task/focient_add_task_screen.dart';
 import 'package:focient_mobile/presentation/screens/task/focient_task_detail_screen.dart';
 import 'package:focient_mobile/presentation/screens/task/focient_task_list_screen.dart';
+import 'package:focient_mobile/presentation/screens/insight/focient_insight_screen.dart';
+import 'package:focient_mobile/presentation/screens/settings/focient_settings_screen.dart';
+import 'package:focient_mobile/presentation/screens/onboarding/create_task_bottom_sheet.dart';
+import 'package:focient_mobile/presentation/primitive/focient_input_field.dart';
 import 'package:focient_mobile/data/planning_state.dart';
 import 'package:focient_mobile/data/task_state.dart';
 import 'package:focient_mobile/presentation/riverpod_providers.dart';
@@ -399,6 +403,10 @@ void main() {
       await tester.tap(find.text('General'));
       await tester.pumpAndSettle();
       expect(find.text('Personal'), findsOneWidget);
+
+      // Item 8: Username field starts empty, so user enters their name
+      await tester.enterText(find.byType(FocientInputField).first, 'Alex Morgan');
+      await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Next'));
       await tester.tap(find.text('Next'));
@@ -1021,7 +1029,8 @@ void main() {
       expect(find.byType(FocientTaskAddedCard), findsOneWidget);
       expect(find.text('Create the Annual OKR'), findsOneWidget);
       expect(find.text('25" Task'), findsOneWidget);
-      expect(find.text('20" Rest'), findsOneWidget);
+      // Item 2: Rest badge is removed across all task cards
+      expect(find.text('20" Rest'), findsNothing);
       expect(find.text('Strategic'), findsAtLeastNWidgets(1));
 
       // Tap Next to submit
@@ -1156,7 +1165,8 @@ void main() {
       expect(find.text('Create the Annual OKR'), findsOneWidget);
       expect(find.text('October, 10th - 10:00'), findsOneWidget);
       expect(find.text('25" Task'), findsOneWidget);
-      expect(find.text('20" Rest'), findsOneWidget);
+      // Item 2: Rest badge removed across all task cards
+      expect(find.text('20" Rest'), findsNothing);
       expect(find.text('Strategic'), findsAtLeastNWidgets(1));
 
       // Section 4: Today Timeline
@@ -1682,6 +1692,186 @@ void main() {
 
       expect(find.text('Cancel Task?'), findsOneWidget);
       expect(find.text('Delete Task'), findsOneWidget);
+    });
+  });
+
+  group('FoCient Insight Screen (Image 1 Specifications)', () {
+    testWidgets('Renders all Insight elements, switches period data, and displays metric overviews', (tester) async {
+      int navigatedTab = -1;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: FocientInsightScreen(
+              onNavigateTab: (tab) => navigatedTab = tab,
+            ),
+          ),
+        ),
+      );
+
+      // 1. Top Bar
+      expect(find.text('Insight'), findsOneWidget);
+      expect(find.text('60%'), findsOneWidget);
+
+      // 2. Section 1: Workload Overview & Period Pills
+      expect(find.text('Workload Overview'), findsOneWidget);
+      expect(find.text('3 days'), findsOneWidget);
+      expect(find.text('7 days'), findsOneWidget);
+      expect(find.text('30 days'), findsOneWidget);
+      expect(find.text('90 days'), findsOneWidget);
+
+      // Default: 3 days data matching Image 1
+      expect(find.text('Avg. Workload'), findsOneWidget);
+      expect(find.text('67.4%'), findsOneWidget);
+      expect(find.text('Overload Day'), findsOneWidget);
+      expect(find.text('2 Days'), findsAtLeastNWidgets(2)); // Overload & Light day
+      expect(find.text('Optimal Day'), findsOneWidget);
+      expect(find.text('3 Days'), findsOneWidget);
+
+      // 3. Section 2: Metric Overview
+      expect(find.text('Metric Overview'), findsOneWidget);
+      expect(find.text('Task Completion Rate'), findsOneWidget);
+      expect(find.text('86%'), findsOneWidget);
+      expect(find.text('Top 3 Task Alignment'), findsAtLeastNWidgets(1));
+      expect(find.text('100%'), findsOneWidget);
+
+      // Detailed Metric Card
+      expect(find.text('Detailed Metric'), findsOneWidget);
+      expect(find.text('Buffer Retention Rate'), findsOneWidget);
+      expect(find.text('65%'), findsOneWidget);
+      expect(find.text('84%'), findsOneWidget);
+      expect(find.text('Peak Hour Focus'), findsOneWidget);
+      expect(find.text('08:30 - 12:30'), findsOneWidget);
+
+      // 4. Section 3: Time Allocation
+      await tester.ensureVisible(find.text('Time Allocation'));
+      expect(find.text('Time Allocation'), findsOneWidget);
+      expect(find.text('Total Time'), findsOneWidget);
+      expect(find.text('100 Hours'), findsOneWidget);
+      expect(find.text('Project'), findsOneWidget);
+      expect(find.text('36 / 50 Hours'), findsOneWidget);
+      expect(find.text('Personal'), findsOneWidget);
+      expect(find.text('15 / 30 Hours'), findsOneWidget);
+      expect(find.text('Relationship'), findsOneWidget);
+      expect(find.text('12 / 20 Hours'), findsOneWidget);
+
+      // 5. Test dynamic period pill tap: tap '7 days'
+      await tester.ensureVisible(find.text('7 days'));
+      await tester.tap(find.text('7 days'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('71.2%'), findsOneWidget);
+      expect(find.text('88%'), findsOneWidget);
+
+      // 6. Bottom navigation
+      await tester.tap(find.text('Home'));
+      await tester.pumpAndSettle();
+      expect(navigatedTab, 0);
+    });
+  });
+
+  group('FoCient Settings Screen (Image 2 Specifications)', () {
+    testWidgets('Renders all 6 grouped settings sections and interactive sheets', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: const FocientSettingsScreen(),
+          ),
+        ),
+      );
+
+      // Top Bar
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('60%'), findsOneWidget);
+
+      // Section 1: User Profile
+      expect(find.text('User Profile'), findsOneWidget);
+      expect(find.text('Username and Identity'), findsOneWidget);
+      expect(find.text('Main Role'), findsOneWidget);
+      expect(find.text('Connected Account'), findsOneWidget);
+
+      // Section 2: Workload Engine
+      expect(find.text('Workload Engine'), findsOneWidget);
+      expect(find.text('Daily Active Hour'), findsOneWidget);
+      expect(find.text('Maximum Focus Hour'), findsOneWidget);
+      expect(find.text('Guilt-Free Buffer Hour'), findsOneWidget);
+      expect(find.text('Working Rhythm'), findsOneWidget);
+
+      // Section 3: Preferences
+      await tester.ensureVisible(find.text('Preferences'));
+      expect(find.text('Preferences'), findsOneWidget);
+      expect(find.text('Reschedule Setup'), findsOneWidget);
+      expect(find.text('Advice and Recommendation'), findsOneWidget);
+      expect(find.text('Overload Detection'), findsOneWidget);
+
+      // Section 4: Notification
+      await tester.ensureVisible(find.text('Notification').first);
+      expect(find.text('Notification'), findsNWidgets(2)); // Section header & row item
+      expect(find.text('Buffer Alert'), findsOneWidget);
+      expect(find.text('Quiet Hour'), findsOneWidget);
+
+      // Section 5: Tools Integration
+      await tester.ensureVisible(find.text('Tools Integration'));
+      expect(find.text('Tools Integration'), findsOneWidget);
+      expect(find.text('Google Calendar'), findsOneWidget);
+      expect(find.text('Synchronize'), findsOneWidget);
+
+      // Section 6: Data, Privacy and Account
+      await tester.ensureVisible(find.text('Data, Privacy and Account'));
+      expect(find.text('Data, Privacy and Account'), findsOneWidget);
+      expect(find.text('Export Data'), findsOneWidget);
+      expect(find.text('Data Privacy Terms'), findsOneWidget);
+      expect(find.text('Term and Conditions'), findsOneWidget);
+      expect(find.text('History'), findsOneWidget);
+      expect(find.text('Delete Account'), findsOneWidget);
+      expect(find.text('Sign out'), findsOneWidget);
+
+      // Tap Sign out opens confirmation
+      await tester.ensureVisible(find.text('Sign out'));
+      await tester.tap(find.text('Sign out'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Are you sure you want to sign out from your FoCient account?'), findsOneWidget);
+    });
+  });
+
+  group('FoCient Create Task Modal Enhancements', () {
+    testWidgets('Deep Focus badge is horizontally scrollable and Backlog toggle hides Time Slot', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (ctx) => ElevatedButton(
+                onPressed: () {
+                  CreateTaskBottomSheet.show(
+                    ctx,
+                    availableCategories: const [
+                      WorkspaceCategory(name: 'Strategic', color: Color(0xFF7C3AED), colorHex: '#7C3AED'),
+                    ],
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      // Deep Focus badge is rendered with full text
+      expect(find.text('Deep Focus'), findsOneWidget);
+      expect(find.text('Time Slot'), findsOneWidget);
+
+      // Tap Backlog Task toggle switch
+      await tester.ensureVisible(find.text('Backlog Task'));
+      final switchFinder = find.byType(Switch);
+      await tester.tap(switchFinder.first);
+      await tester.pumpAndSettle();
+
+      // Time Slot is hidden when backlog task is on
+      expect(find.text('Time Slot'), findsNothing);
     });
   });
 }

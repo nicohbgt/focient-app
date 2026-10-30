@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
+import '../../data/workspace_category.dart';
 import '../primitive/focient_badge.dart';
 import '../primitive/focient_button.dart';
 import '../primitive/focient_checkbox.dart';
@@ -167,22 +168,27 @@ class FocientTaskCard extends StatelessWidget {
                               ),
                             ),
                           if (focusType != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFE4E6),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFFECDD3)),
-                              ),
-                              child: Text(
-                                focusType!,
-                                style: const TextStyle(
-                                  fontFamily: FocientTypographyTokens.fontFamily,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF9F1239),
-                                ),
-                              ),
+                            Builder(
+                              builder: (context) {
+                                final ft = FocusTypeExtension.fromString(focusType);
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: ft.backgroundColor,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: ft.borderColor.withValues(alpha: 0.35)),
+                                  ),
+                                  child: Text(
+                                    focusType!,
+                                    style: TextStyle(
+                                      fontFamily: FocientTypographyTokens.fontFamily,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: ft.textColor,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                         ],
                       ),

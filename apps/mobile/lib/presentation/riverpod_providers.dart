@@ -1,5 +1,8 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../data/focient_local_storage.dart';
+import '../data/focient_repository.dart';
 import '../data/planning_state.dart';
 import '../data/task_state.dart';
 import 'focient_copywriting.dart';
@@ -33,46 +36,120 @@ final copywritingProvider = Provider<FoCientCopywriting>((ref) {
 /// Tasks are dynamically populated during user onboarding or loaded via API/local cache.
 final taskListProvider =
     StateNotifierProvider<TaskListNotifier, List<MobileTask>>((ref) {
-  return TaskListNotifier([]);
+  final repo = ref.watch(focientRepositoryProvider);
+  final initial = (!Platform.environment.containsKey('FLUTTER_TEST') && focientLocalStorage.cachedTasks.isNotEmpty)
+      ? focientLocalStorage.cachedTasks
+      : <MobileTask>[];
+  return TaskListNotifier(initial, repo);
 });
 
 class TaskListNotifier extends StateNotifier<List<MobileTask>> {
-  TaskListNotifier([List<MobileTask>? initialTasks])
-      : super(initialTasks ?? []);
+  final FocientRepository? repository;
+
+  TaskListNotifier([List<MobileTask>? initialTasks, this.repository])
+      : super(initialTasks ?? (!Platform.environment.containsKey('FLUTTER_TEST') && focientLocalStorage.cachedTasks.isNotEmpty ? focientLocalStorage.cachedTasks : []));
+
+  Future<void> loadFromStorage() async {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
+    if (repository != null) {
+      try {
+        final remote = await repository!.getTasks();
+        if (remote.isNotEmpty) {
+          state = List.unmodifiable(remote);
+          return;
+        }
+      } catch (e) {
+        debugPrint('[TaskListNotifier] getTasks error: $e');
+      }
+    }
+    final loaded = await focientLocalStorage.loadTasks();
+    if (loaded.isNotEmpty) {
+      state = List.unmodifiable(loaded);
+    }
+  }
 
   void setTasks(List<MobileTask> tasks) {
     state = List.unmodifiable(tasks);
+    if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+      focientLocalStorage.saveTasks(state);
+    }
   }
 
-  void addTask(MobileTask task) {
+  Future<void> addTask(MobileTask task) async {
     state = [...state, task];
+    if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+      await focientLocalStorage.saveTasks(state);
+    }
+    if (repository != null) {
+      try {
+        await repository!.createTask(task);
+      } catch (e) {
+        debugPrint('[TaskListNotifier] addTask error: $e');
+      }
+    }
   }
 
-  void updateTask(MobileTask updatedTask) {
+  Future<void> updateTask(MobileTask updatedTask) async {
     state = [
       for (final task in state)
         if (task.id == updatedTask.id) updatedTask else task
     ];
+    if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+      await focientLocalStorage.saveTasks(state);
+    }
+    if (repository != null) {
+      try {
+        await repository!.updateTask(updatedTask);
+      } catch (e) {
+        debugPrint('[TaskListNotifier] updateTask error: $e');
+      }
+    }
   }
 
-  void removeTask(String id) {
+  Future<void> removeTask(String id) async {
     state = state.where((t) => t.id != id).toList();
+    if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+      await focientLocalStorage.saveTasks(state);
+    }
+    if (repository != null) {
+      try {
+        await repository!.deleteTask(id);
+      } catch (e) {
+        debugPrint('[TaskListNotifier] removeTask error: $e');
+      }
+    }
   }
 
-  void toggleComplete(String id) {
+  Future<void> toggleComplete(String id) async {
+    MobileTask? updated;
     state = [
       for (final task in state)
         if (task.id == id)
-          task.copyWith(
-            status: task.isCompleted ? TaskStatusEnum.todo : TaskStatusEnum.completed,
-          )
+          (() {
+            final nextStatus = task.isCompleted ? TaskStatusEnum.todo : TaskStatusEnum.completed;
+            updated = task.copyWith(status: nextStatus);
+            return updated!;
+          })()
         else
           task
     ];
+    if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+      await focientLocalStorage.saveTasks(state);
+    }
+    if (repository != null && updated != null) {
+      try {
+        await repository!.updateTask(updated!);
+      } catch (e) {
+        debugPrint('[TaskListNotifier] toggleComplete error: $e');
+      }
+    }
   }
 
   void clear() {
     state = const [];
+    if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+      focientLocalStorage.saveTasks(state);
+    }
   }
 
   void seedSampleTasks() {

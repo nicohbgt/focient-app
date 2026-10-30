@@ -84,8 +84,11 @@ class MobileTask {
 
 /// FoCient Mobile Task & Capacity State Manager
 class TaskState extends ChangeNotifier {
+  final dynamic repository;
   final List<MobileTask> _tasks = [];
   int _dailyCapacityMinutes = 480;
+
+  TaskState({this.repository});
 
   List<MobileTask> get tasks => List.unmodifiable(_tasks);
 
@@ -104,6 +107,11 @@ class TaskState extends ChangeNotifier {
 
   void addTask(MobileTask task) {
     _tasks.add(task);
+    if (repository != null) {
+      try {
+        repository.createTask(task);
+      } catch (_) {}
+    }
     notifyListeners();
   }
 
@@ -113,6 +121,11 @@ class TaskState extends ChangeNotifier {
       _tasks[index] = _tasks[index].copyWith(
         status: isCompleted ? TaskStatusEnum.completed : TaskStatusEnum.todo,
       );
+      if (repository != null) {
+        try {
+          repository.updateTask(_tasks[index]);
+        } catch (_) {}
+      }
       notifyListeners();
     }
   }

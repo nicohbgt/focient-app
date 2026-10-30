@@ -4,6 +4,7 @@ import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../../data/focient_repository.dart';
 import '../../../data/task_state.dart';
 import '../../riverpod_providers.dart';
+import '../settings/focient_settings_screen.dart';
 
 /// FoCient Add / Edit Task Screen
 ///
@@ -745,7 +746,16 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
             splashRadius: 20,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => FocientSettingsScreen(
+                    onBack: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Settings',
           ),
         ],
       ),

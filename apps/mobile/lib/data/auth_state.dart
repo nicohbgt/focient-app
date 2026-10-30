@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../core/network_client.dart';
+import 'focient_local_storage.dart';
 import 'workspace_category.dart';
 
 enum AuthStatus {
@@ -127,6 +128,7 @@ class AuthUser {
 
 class AuthState {
   final AuthStatus status;
+  final bool isLoading;
   final AuthUser? user;
   final String? pendingEmail;
   final String? pendingName;
@@ -138,6 +140,7 @@ class AuthState {
 
   const AuthState({
     this.status = AuthStatus.unauthenticated,
+    this.isLoading = false,
     this.user,
     this.pendingEmail,
     this.pendingName,
@@ -149,12 +152,12 @@ class AuthState {
   });
 
   bool get isAuthenticated => status == AuthStatus.authenticated && user != null;
-  bool get isLoading => status == AuthStatus.loading;
   bool get isOtpPending => status == AuthStatus.otpVerificationPending;
   bool get isResetPasswordPending => status == AuthStatus.resetPasswordPending;
 
   AuthState copyWith({
     AuthStatus? status,
+    bool? isLoading,
     AuthUser? user,
     String? pendingEmail,
     String? pendingName,
@@ -167,6 +170,7 @@ class AuthState {
   }) {
     return AuthState(
       status: status ?? this.status,
+      isLoading: isLoading ?? this.isLoading,
       user: user ?? this.user,
       pendingEmail: pendingEmail ?? this.pendingEmail,
       pendingName: pendingName ?? this.pendingName,
@@ -182,7 +186,26 @@ class AuthState {
 class AuthNotifier extends StateNotifier<AuthState> {
   Timer? _countdownTimer;
 
-  AuthNotifier() : super(const AuthState());
+  AuthNotifier([AuthState? initial]) : super(initial ?? const AuthState());
+
+  /// Restores session from local persistent storage on cold boot
+  Future<bool> restoreSession() async {
+    try {
+      final session = await focientLocalStorage.loadSession();
+      if (session != null && session['token'] != null && session['user'] != null) {
+        final token = session['token'] as String;
+        focientNetworkClient.setAuthToken(token);
+        final user = AuthUser.fromJson(session['user'] as Map<String, dynamic>);
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          user: user,
+          clearError: true,
+        );
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
 
   @override
   void dispose() {
@@ -209,7 +232,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String email,
     required String password,
   }) async {
-    state = state.copyWith(status: AuthStatus.loading, clearError: true);
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       final trimmedEmail = email.trim().toLowerCase();
@@ -226,6 +249,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       state = state.copyWith(
         status: AuthStatus.otpVerificationPending,
+        isLoading: false,
         otpPurpose: OtpPurpose.registration,
         pendingName: trimmedName,
         pendingEmail: trimmedEmail,
@@ -238,6 +262,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.error,
+        isLoading: false,
         errorMessage: e.toString(),
       );
       return false;
@@ -246,7 +271,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Sends real 6-digit OTP for Forgot Password flow with prototype/offline fallback
   Future<bool> requestPasswordReset(String email) async {
-    state = state.copyWith(status: AuthStatus.loading, clearError: true);
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       final trimmedEmail = email.trim().toLowerCase();
@@ -261,6 +286,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       state = state.copyWith(
         status: AuthStatus.otpVerificationPending,
+        isLoading: false,
         otpPurpose: OtpPurpose.forgotPassword,
         pendingEmail: trimmedEmail,
         clearError: true,
@@ -271,6 +297,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
+        isLoading: false,
         errorMessage: e.toString(),
       );
       return false;
@@ -287,7 +314,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return false;
     }
 
-    state = state.copyWith(status: AuthStatus.loading, clearError: true);
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       if (state.otpPurpose == OtpPurpose.forgotPassword) {
@@ -304,6 +331,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         _countdownTimer?.cancel();
         state = state.copyWith(
           status: AuthStatus.resetPasswordPending,
+          isLoading: false,
           resetPasswordOtp: trimmedCode,
           otpCooldownSeconds: 0,
           clearError: true,
@@ -340,10 +368,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
           focientNetworkClient.setAuthToken(token);
 
           final authenticatedUser = AuthUser.fromJson(res['user'] as Map<String, dynamic>);
+          await focientLocalStorage.saveSession(user: authenticatedUser, token: token);
 
           _countdownTimer?.cancel();
           state = state.copyWith(
             status: AuthStatus.authenticated,
+            isLoading: false,
             user: authenticatedUser,
             otpCooldownSeconds: 0,
             clearError: true,
@@ -357,6 +387,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.otpVerificationPending,
+        isLoading: false,
         errorMessage: e.toString(),
       );
       return false;
@@ -365,7 +396,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Submits new password after successful OTP verification
   Future<bool> resetPassword({required String newPassword}) async {
-    state = state.copyWith(status: AuthStatus.loading, clearError: true);
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       try {
@@ -380,6 +411,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
+        isLoading: false,
         resetPasswordOtp: null,
         clearError: true,
       );
@@ -388,6 +420,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.resetPasswordPending,
+        isLoading: false,
         errorMessage: e.toString(),
       );
       return false;
@@ -428,7 +461,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String email,
     required String password,
   }) async {
-    state = state.copyWith(status: AuthStatus.loading, clearError: true);
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       dynamic res;
@@ -457,9 +490,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         focientNetworkClient.setAuthToken(token);
 
         final authenticatedUser = AuthUser.fromJson(res['user'] as Map<String, dynamic>);
+        await focientLocalStorage.saveSession(user: authenticatedUser, token: token);
 
         state = state.copyWith(
           status: AuthStatus.authenticated,
+          isLoading: false,
           user: authenticatedUser,
           clearError: true,
         );
@@ -471,6 +506,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
+        isLoading: false,
         errorMessage: e.toString(),
       );
       return false;
@@ -479,7 +515,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Real Google OAuth 2.0 Sign-In via Native Google Sign-In SDK
   Future<bool> loginWithGoogle() async {
-    state = state.copyWith(status: AuthStatus.loading, clearError: true);
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
@@ -487,7 +523,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (googleAccount == null) {
         // User dismissed Google OAuth picker
-        state = state.copyWith(status: AuthStatus.unauthenticated);
+        state = state.copyWith(status: AuthStatus.unauthenticated, isLoading: false);
         return false;
       }
 
@@ -507,9 +543,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         focientNetworkClient.setAuthToken(token);
 
         final authenticatedUser = AuthUser.fromJson(res['user'] as Map<String, dynamic>);
+        await focientLocalStorage.saveSession(user: authenticatedUser, token: token);
 
         state = state.copyWith(
           status: AuthStatus.authenticated,
+          isLoading: false,
           user: authenticatedUser,
           clearError: true,
         );
@@ -521,6 +559,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
+        isLoading: false,
         errorMessage: e.toString(),
       );
       return false;
@@ -538,7 +577,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     String endWorkTime = '17:00',
     int restTimeMinutesPerTask = 10,
   }) async {
-    state = state.copyWith(status: AuthStatus.loading, clearError: true);
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       final categoryNames = categories.map((c) => c.name).toList();
@@ -582,13 +621,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       state = state.copyWith(
         status: AuthStatus.authenticated,
+        isLoading: false,
         user: updatedUser,
         clearError: true,
       );
+
+      final currentToken = focientLocalStorage.cachedSession?['token'] as String? ?? 'offline-token';
+      await focientLocalStorage.saveSession(user: updatedUser, token: currentToken);
+
       return true;
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.authenticated,
+        isLoading: false,
         errorMessage: e.toString(),
       );
       return false;
@@ -599,6 +644,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   void logout() {
     _countdownTimer?.cancel();
     focientNetworkClient.clearAuthToken();
+    focientLocalStorage.clearSession();
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 

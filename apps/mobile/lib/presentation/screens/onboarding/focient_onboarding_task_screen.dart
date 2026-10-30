@@ -63,6 +63,22 @@ class _FocientOnboardingTaskScreenState
     }
   }
 
+  Future<void> _editTask(int index, OnboardingTask task) async {
+    final updatedTask = await CreateTaskBottomSheet.show(
+      context,
+      availableCategories: widget.categories,
+      defaultRestMinutes: widget.defaultRestMinutes,
+      initialTask: task,
+    );
+
+    if (updatedTask != null && mounted) {
+      setState(() {
+        _tasks[index] = updatedTask;
+        _errorMessage = null;
+      });
+    }
+  }
+
   void _removeTask(int index) {
     setState(() {
       _tasks.removeAt(index);
@@ -334,6 +350,7 @@ class _FocientOnboardingTaskScreenState
                           padding: const EdgeInsets.only(bottom: 12.0),
                           child: FocientTaskAddedCard(
                             task: task,
+                            onTap: () => _editTask(index, task),
                             onDelete: () => _removeTask(index),
                           ),
                         );

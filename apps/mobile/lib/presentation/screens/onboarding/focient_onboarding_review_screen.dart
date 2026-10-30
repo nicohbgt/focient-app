@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../../data/onboarding_task.dart';
+import '../../../data/workspace_category.dart';
 import '../../primitive/focient_button.dart';
 
 /// FoCient Onboarding Step 5: Your first plan is complete Screen
@@ -358,7 +359,9 @@ class _FocientOnboardingReviewScreenState
                           else
                             // Detailed card view: full card with title, badges (category, focus type, duration)
                             ...widget.tasks.map((task) {
+                              final ft = FocusTypeExtension.fromString(task.focusType);
                               return Container(
+                                width: double.infinity,
                                 margin: const EdgeInsets.only(bottom: 10.0),
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
@@ -400,19 +403,12 @@ class _FocientOnboardingReviewScreenState
                                           borderColor: const Color(0xFFBFDBFE),
                                           textColor: const Color(0xFF2563EB),
                                         ),
-                                        if (task.needsRestAfter)
-                                          _buildPillBadge(
-                                            label: '${task.restMinutes}" Rest',
-                                            bgColor: const Color(0xFFEFF6FF),
-                                            borderColor: const Color(0xFFBFDBFE),
-                                            textColor: const Color(0xFF2563EB),
-                                          ),
                                         _buildCategoryPill(task),
                                         _buildPillBadge(
                                           label: task.focusType.isNotEmpty ? task.focusType : 'Deep Focus',
-                                          bgColor: const Color(0xFFFFE4E6),
-                                          borderColor: const Color(0xFFFECDD3),
-                                          textColor: const Color(0xFF9F1239),
+                                          bgColor: ft.backgroundColor,
+                                          borderColor: ft.borderColor.withValues(alpha: 0.35),
+                                          textColor: ft.textColor,
                                         ),
                                       ],
                                     ),
