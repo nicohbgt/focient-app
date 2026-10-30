@@ -151,3 +151,12 @@ authRouter.get('/me', authenticate, async (req: AuthenticatedRequest, res: Respo
   }
 });
 
+authRouter.patch('/profile', authenticate, async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const user = await authService.updateProfile(req.user!.id, req.body);
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+});
+

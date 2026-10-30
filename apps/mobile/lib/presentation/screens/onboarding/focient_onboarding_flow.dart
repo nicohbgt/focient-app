@@ -158,12 +158,7 @@ class _FocientOnboardingFlowState extends ConsumerState<FocientOnboardingFlow> {
             setState(() => _currentStep = 3);
           },
           onNext: (tasks) {
-            // Replace tasks in state
-            for (final t in tasks) {
-              if (!onboarding.tasks.any((existing) => existing.id == t.id)) {
-                notifier.addTask(t);
-              }
-            }
+            notifier.setTasks(tasks);
             setState(() => _currentStep = 5);
           },
         );

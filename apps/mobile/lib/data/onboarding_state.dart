@@ -262,6 +262,15 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     );
   }
 
+  /// Step 4: Set full tasks list directly
+  void setTasks(List<OnboardingTask> tasks) {
+    state = state.copyWith(
+      tasks: List.unmodifiable(tasks),
+      lifecycle: OnboardingLifecycle.editing,
+      clearError: true,
+    );
+  }
+
   /// Step 4: Remove task by index
   void removeTask(int index) {
     final updated = List<OnboardingTask>.from(state.tasks);

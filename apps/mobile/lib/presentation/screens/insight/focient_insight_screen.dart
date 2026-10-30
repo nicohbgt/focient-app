@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
+import '../../../data/task_state.dart';
+import '../../riverpod_providers.dart';
 import '../settings/focient_settings_screen.dart';
 
 /// FoCient Insight Screen
@@ -118,6 +120,49 @@ class _FocientInsightScreenState extends ConsumerState<FocientInsightScreen> {
     }
   }
 
+  Map<String, dynamic> _computeDynamicMetrics(List<MobileTask> tasks, Map<String, dynamic> base) {
+    if (tasks.isEmpty) return base;
+    final completedCount = tasks.where((t) => t.isCompleted).length;
+    final completionRate = tasks.isNotEmpty
+        ? ((completedCount / tasks.length) * 100).round()
+        : base['completionRate'];
+
+    final top3 = tasks.where((t) => t.priority == TaskPriorityEnum.top3).toList();
+    final top3Done = top3.where((t) => t.isCompleted).length;
+    final top3Alignment = top3.isNotEmpty
+        ? ((top3Done / top3.length) * 100).round()
+        : base['top3Alignment'];
+
+    int projectMinutes = 0;
+    int personalMinutes = 0;
+    int relationMinutes = 0;
+    for (final t in tasks) {
+      final name = t.categoryName.toLowerCase();
+      if (name.contains('proj') || name.contains('dev') || name.contains('exec') || name.contains('strat')) {
+        projectMinutes += t.durationMinutes;
+      } else if (name.contains('pers') || name.contains('life') || name.contains('grow')) {
+        personalMinutes += t.durationMinutes;
+      } else if (name.contains('rel') || name.contains('fam') || name.contains('soc') || name.contains('team')) {
+        relationMinutes += t.durationMinutes;
+      } else {
+        projectMinutes += t.durationMinutes;
+      }
+    }
+
+    final dynamicProjectHours = (projectMinutes / 60.0).round();
+    final dynamicPersonalHours = (personalMinutes / 60.0).round();
+    final dynamicRelationHours = (relationMinutes / 60.0).round();
+
+    return {
+      ...base,
+      'completionRate': completionRate > 0 ? completionRate : base['completionRate'],
+      'top3Alignment': top3Alignment > 0 ? top3Alignment : base['top3Alignment'],
+      if (projectMinutes > 0) 'projectHours': dynamicProjectHours > 0 ? dynamicProjectHours : 1,
+      if (personalMinutes > 0) 'personalHours': dynamicPersonalHours > 0 ? dynamicPersonalHours : 1,
+      if (relationMinutes > 0) 'relationshipHours': dynamicRelationHours > 0 ? dynamicRelationHours : 1,
+    };
+  }
+
   void _openSettings() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -138,7 +183,8 @@ class _FocientInsightScreenState extends ConsumerState<FocientInsightScreen> {
     final titleColor = isDark ? FocientColorDarkTokens.neutralTextBold : const Color(0xFF0F172A);
     final subtitleColor = isDark ? FocientColorDarkTokens.neutralTextMuted : const Color(0xFF64748B);
 
-    final data = _periodData;
+    final allTasks = ref.watch(taskListProvider);
+    final data = _computeDynamicMetrics(allTasks, _periodData);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -553,7 +599,7 @@ class _FocientInsightScreenState extends ConsumerState<FocientInsightScreen> {
             ),
           ),
           const Spacer(),
-          // Workload 60% pill
+          // Workload reactive pill
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
@@ -565,9 +611,9 @@ class _FocientInsightScreenState extends ConsumerState<FocientInsightScreen> {
               children: [
                 const Icon(Icons.notifications_none_rounded, size: 14, color: Color(0xFF2563EB)),
                 const SizedBox(width: 4),
-                const Text(
-                  '60%',
-                  style: TextStyle(
+                Text(
+                  '${ref.watch(currentWorkloadProvider).percent}%',
+                  style: const TextStyle(
                     fontFamily: FocientTypographyTokens.fontFamily,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,

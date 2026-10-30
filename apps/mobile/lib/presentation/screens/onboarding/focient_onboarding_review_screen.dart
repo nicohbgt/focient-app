@@ -479,8 +479,9 @@ class _FocientOnboardingReviewScreenState
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3E8FF),
+        color: task.categoryColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: task.categoryColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

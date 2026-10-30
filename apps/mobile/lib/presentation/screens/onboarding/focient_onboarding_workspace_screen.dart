@@ -45,6 +45,7 @@ class _FocientOnboardingWorkspaceScreenState
   late final TextEditingController _usernameController;
   String? _selectedOccupancy;
   late List<WorkspaceCategory> _categories;
+  late List<String> _occupancies;
 
   String? _usernameError;
   String? _categoryError;
@@ -58,6 +59,11 @@ class _FocientOnboardingWorkspaceScreenState
 
     _usernameController = TextEditingController(text: usernameText);
     _selectedOccupancy = widget.initialOccupancy;
+
+    _occupancies = List<String>.from(kOccupanciesList);
+    if (widget.initialOccupancy != null && !_occupancies.contains(widget.initialOccupancy)) {
+      _occupancies.add(widget.initialOccupancy!);
+    }
 
     if (widget.initialCategories != null) {
       _categories = List<WorkspaceCategory>.from(widget.initialCategories!);
@@ -90,6 +96,88 @@ class _FocientOnboardingWorkspaceScreenState
         }
       }
     });
+  }
+
+  Future<void> _openAddCustomOccupancyDialog() async {
+    final controller = TextEditingController();
+    final customRole = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Custom Occupancy',
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+            ),
+          ),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'e.g. Architect, Consultant...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                final val = controller.text.trim();
+                if (val.isNotEmpty) {
+                  Navigator.of(ctx).pop(val);
+                }
+              },
+              child: const Text('Add Role'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (customRole != null && customRole.isNotEmpty && mounted) {
+      setState(() {
+        if (!_occupancies.contains(customRole)) {
+          _occupancies.add(customRole);
+        }
+        _selectedOccupancy = customRole;
+        if (_categories.isEmpty) {
+          _categories = [
+            const WorkspaceCategory(
+              name: 'Core Work',
+              color: Color(0xFF2563EB),
+              colorHex: '#2563EB',
+              focusType: FocusType.deepFocus,
+            ),
+            const WorkspaceCategory(
+              name: 'Personal Growth',
+              color: Color(0xFF0D9488),
+              colorHex: '#0D9488',
+              focusType: FocusType.medium,
+            ),
+            const WorkspaceCategory(
+              name: 'Administration',
+              color: Color(0xFF7C3AED),
+              colorHex: '#7C3AED',
+              focusType: FocusType.light,
+            ),
+          ];
+          _categoryError = null;
+        }
+      });
+    }
   }
 
   Future<void> _openAddCategorySheet() async {
@@ -313,7 +401,8 @@ class _FocientOnboardingWorkspaceScreenState
                       scrollDirection: Axis.horizontal,
                       clipBehavior: Clip.none,
                       child: Row(
-                        children: kOccupanciesList.map((occupancy) {
+                        children: [
+                          ..._occupancies.map((occupancy) {
                           final isSelected = _selectedOccupancy == occupancy;
                           return Padding(
                             padding: const EdgeInsets.only(right: 8.0),
@@ -368,7 +457,57 @@ class _FocientOnboardingWorkspaceScreenState
                               ),
                             ),
                           );
-                        }).toList(),
+                        }),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: _openAddCustomOccupancyDialog,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF1E293B)
+                                    : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isDark
+                                      ? const Color(0xFF334155)
+                                      : const Color(0xFFCBD5E1),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.add_rounded,
+                                    size: 14,
+                                    color: isDark
+                                        ? Colors.white70
+                                        : const Color(0xFF475569),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Custom',
+                                    style: TextStyle(
+                                      fontFamily: FocientTypographyTokens.fontFamily,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : const Color(0xFF475569),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                       ),
                     ),
                     const SizedBox(height: 28),

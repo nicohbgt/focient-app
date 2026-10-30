@@ -5,6 +5,7 @@ import '../../../data/focient_repository.dart';
 import '../../../data/planning_state.dart';
 import '../../../data/task_state.dart';
 import '../../riverpod_providers.dart';
+import '../onboarding/add_task_category_sheet.dart';
 import '../settings/focient_settings_screen.dart';
 import 'quick_task_input_sheet.dart';
 
@@ -36,8 +37,16 @@ class FocientTodayPlanScreen extends ConsumerStatefulWidget {
 
 class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen> {
   int _activeNavIndex = 1; // Plan is active
+  int _weekOffset = 0;
   bool _isLoading = false;
   String? _errorMessage;
+
+  String _formatWeekRange(int offset) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final baseMon = DateTime(2026, 10, 5).add(Duration(days: offset * 7));
+    final endSun = baseMon.add(const Duration(days: 6));
+    return '${months[baseMon.month - 1]} ${baseMon.day} - ${months[endSun.month - 1]} ${endSun.day}, ${baseMon.year}';
+  }
 
   @override
   void initState() {
@@ -486,14 +495,52 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Task Categories',
-          style: TextStyle(
-            fontFamily: FocientTypographyTokens.fontFamily,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: titleColor,
-          ),
+        Row(
+          children: [
+            Text(
+              'Task Categories',
+              style: TextStyle(
+                fontFamily: FocientTypographyTokens.fontFamily,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: titleColor,
+              ),
+            ),
+            const Spacer(),
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () async {
+                final newCat = await AddTaskCategorySheet.show(context);
+                if (newCat != null && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Category "${newCat.name}" added to budget.'),
+                      backgroundColor: const Color(0xFF059669),
+                    ),
+                  );
+                }
+              },
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, size: 14, color: Color(0xFF2563EB)),
+                    SizedBox(width: 4),
+                    Text(
+                      'Setup',
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF2563EB),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 10),
 
@@ -564,25 +611,53 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Text(
-            'Weekly Workload Distribution',
-            style: TextStyle(
-              fontFamily: FocientTypographyTokens.fontFamily,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: titleColor,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'Monday, October 5th 2026',
-            style: TextStyle(
-              fontFamily: FocientTypographyTokens.fontFamily,
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: subtitleColor,
-            ),
+          // Header with Week Navigator
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Weekly Workload Distribution',
+                    style: TextStyle(
+                      fontFamily: FocientTypographyTokens.fontFamily,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: titleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _weekOffset == 0 ? 'Monday, October 5th 2026' : _formatWeekRange(_weekOffset),
+                    style: TextStyle(
+                      fontFamily: FocientTypographyTokens.fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: subtitleColor,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_rounded, size: 14),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    onPressed: () => setState(() => _weekOffset--),
+                    tooltip: 'Previous Week',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    onPressed: () => setState(() => _weekOffset++),
+                    tooltip: 'Next Week',
+                  ),
+                ],
+              ),
+            ],
           ),
           const SizedBox(height: 20),
 
@@ -1140,9 +1215,9 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F3FF),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFDDD6FE), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1162,7 +1237,7 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
               fontFamily: FocientTypographyTokens.fontFamily,
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF6B21A8),
+              color: color,
             ),
           ),
         ],

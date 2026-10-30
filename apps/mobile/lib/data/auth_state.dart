@@ -640,6 +640,96 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Updates user identity (Name and Username) and synchronizes with backend & storage
+  Future<bool> updateUserIdentity({
+    required String name,
+    required String username,
+  }) async {
+    final currentUser = state.user;
+    if (currentUser == null) return false;
+
+    final updated = currentUser.copyWith(
+      name: name.trim(),
+      username: username.trim(),
+    );
+
+    state = state.copyWith(user: updated);
+    final currentToken = focientLocalStorage.cachedSession?['token'] as String? ?? 'offline-token';
+    await focientLocalStorage.saveSession(user: updated, token: currentToken);
+
+    try {
+      await focientNetworkClient.patch('/auth/profile', {
+        'name': name.trim(),
+        'username': username.trim(),
+      });
+    } catch (_) {}
+
+    return true;
+  }
+
+  /// Updates user occupancy/role and synchronizes with backend & storage
+  Future<bool> updateUserRole(String role) async {
+    final currentUser = state.user;
+    if (currentUser == null) return false;
+
+    final updated = currentUser.copyWith(
+      roleArchetype: role.trim(),
+    );
+
+    state = state.copyWith(user: updated);
+    final currentToken = focientLocalStorage.cachedSession?['token'] as String? ?? 'offline-token';
+    await focientLocalStorage.saveSession(user: updated, token: currentToken);
+
+    try {
+      await focientNetworkClient.patch('/auth/profile', {
+        'roleArchetype': role.trim(),
+        'occupancy': role.trim(),
+      });
+    } catch (_) {}
+
+    return true;
+  }
+
+  /// Updates workload settings (Active hours, Daily capacity, Rhythm, Buffer) and synchronizes
+  Future<bool> updateWorkloadSettings({
+    String? startWorkTime,
+    String? endWorkTime,
+    int? dailyCapacityMinutes,
+    int? restTimeMinutesPerTask,
+    String? energyRhythm,
+    String? schedulingStyle,
+  }) async {
+    final currentUser = state.user;
+    if (currentUser == null) return false;
+
+    final updated = currentUser.copyWith(
+      startWorkTime: startWorkTime ?? currentUser.startWorkTime,
+      endWorkTime: endWorkTime ?? currentUser.endWorkTime,
+      dailyCapacityMinutes: dailyCapacityMinutes ?? currentUser.dailyCapacityMinutes,
+      restTimeMinutesPerTask: restTimeMinutesPerTask ?? currentUser.restTimeMinutesPerTask,
+      energyRhythm: energyRhythm ?? currentUser.energyRhythm,
+      schedulingStyle: schedulingStyle ?? currentUser.schedulingStyle,
+    );
+
+    state = state.copyWith(user: updated);
+    final currentToken = focientLocalStorage.cachedSession?['token'] as String? ?? 'offline-token';
+    await focientLocalStorage.saveSession(user: updated, token: currentToken);
+
+    try {
+      final payload = <String, dynamic>{};
+      if (startWorkTime != null) payload['startWorkTime'] = startWorkTime;
+      if (endWorkTime != null) payload['endWorkTime'] = endWorkTime;
+      if (dailyCapacityMinutes != null) payload['dailyCapacityMinutes'] = dailyCapacityMinutes;
+      if (restTimeMinutesPerTask != null) payload['restTimeMinutesPerTask'] = restTimeMinutesPerTask;
+      if (energyRhythm != null) payload['energyRhythm'] = energyRhythm;
+      if (schedulingStyle != null) payload['schedulingStyle'] = schedulingStyle;
+
+      await focientNetworkClient.patch('/auth/profile', payload);
+    } catch (_) {}
+
+    return true;
+  }
+
   /// Reset to unauthenticated (Logout)
   void logout() {
     _countdownTimer?.cancel();

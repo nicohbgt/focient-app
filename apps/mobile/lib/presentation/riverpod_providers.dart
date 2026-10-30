@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../data/auth_state.dart';
 import '../data/focient_local_storage.dart';
 import '../data/focient_repository.dart';
 import '../data/planning_state.dart';
@@ -455,6 +456,61 @@ final dailyCapacityProvider = Provider<Map<String, dynamic>>((ref) {
     'percentage': percentage,
     'status': status,
   };
+});
+
+/// Data-driven Workload State representing real-time account task capacity and load.
+class CurrentWorkloadState {
+  final int percent;
+  final int allocatedMinutes;
+  final int capacityMinutes;
+  final String status;
+
+  const CurrentWorkloadState({
+    required this.percent,
+    required this.allocatedMinutes,
+    required this.capacityMinutes,
+    required this.status,
+  });
+}
+
+/// Dynamic reactive Workload Provider based on current account tasks and user capacity.
+final currentWorkloadProvider = Provider<CurrentWorkloadState>((ref) {
+  final allTasks = ref.watch(taskListProvider);
+  final auth = ref.watch(authProvider);
+
+  final userCapacity = auth.user?.dailyCapacityMinutes ?? 480;
+  final capacityMinutes = userCapacity > 0 ? userCapacity : 480;
+
+  // Active today tasks that are not backlog
+  final activeTasks = allTasks.where((t) => !t.isBacklog && !t.isCompleted).toList();
+  final allocated = activeTasks.fold<int>(
+    0,
+    (sum, t) => sum + t.durationMinutes + (t.needRestAfter ? t.restMinutes : 0),
+  );
+
+  final percent = allocated > 0
+      ? (capacityMinutes > 0 ? ((allocated / capacityMinutes) * 100).round() : 60)
+      : 60;
+
+  String status = 'EMPTY';
+  if (allocated == 0) {
+    status = 'EMPTY';
+  } else if (percent >= 90) {
+    status = 'OVERLOAD';
+  } else if (percent >= 75) {
+    status = 'NEAR_CAPACITY';
+  } else if (percent >= 40) {
+    status = 'OPTIMAL';
+  } else {
+    status = 'LIGHT';
+  }
+
+  return CurrentWorkloadState(
+    percent: percent,
+    allocatedMinutes: allocated,
+    capacityMinutes: capacityMinutes,
+    status: status,
+  );
 });
 
 /// Data-driven Planning Provider managing "Your Planning" screen state.

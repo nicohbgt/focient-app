@@ -1153,8 +1153,9 @@ class _FocientDashboardScreenState
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF3E8FF),
+                          color: task.categoryColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: task.categoryColor.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1245,8 +1246,9 @@ class _FocientDashboardScreenState
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF3E8FF),
+                              color: task.categoryColor.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: task.categoryColor.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -1506,6 +1508,7 @@ class _FocientDashboardScreenState
             child: Row(
               children: _availableCategories.map((catName) {
                 final isSelected = _selectedCategoryName == catName;
+                final catColor = _categoryColors[catName] ?? const Color(0xFF2563EB);
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: InkWell(
@@ -1513,35 +1516,50 @@ class _FocientDashboardScreenState
                     onTap: () {
                       setState(() {
                         _selectedCategoryName = catName;
-                        _selectedCategoryColor =
-                            _categoryColors[catName] ?? const Color(0xFF7C3AED);
+                        _selectedCategoryColor = catColor;
                       });
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
+                        horizontal: 14,
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFFEDE9FE)
-                            : const Color(0xFFF3E8FF),
+                            ? catColor.withValues(alpha: 0.16)
+                            : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC)),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isSelected
-                              ? const Color(0xFF7C3AED)
-                              : const Color(0xFFDDD6FE),
+                              ? catColor
+                              : (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
                           width: isSelected ? 1.5 : 1.0,
                         ),
                       ),
-                      child: Text(
-                        catName,
-                        style: TextStyle(
-                          fontFamily: FocientTypographyTokens.fontFamily,
-                          fontSize: 13,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: const Color(0xFF6D28D9),
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: catColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            catName,
+                            style: TextStyle(
+                              fontFamily: FocientTypographyTokens.fontFamily,
+                              fontSize: 13,
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              color: isSelected
+                                  ? catColor
+                                  : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -1621,7 +1639,7 @@ class _FocientDashboardScreenState
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: ['Deep Focus', 'Medium', 'Light'].map((type) {
+              children: ['Light', 'Medium', 'Deep Focus'].map((type) {
                 final isSelected = _selectedFocusType == type;
                 final ft = FocusTypeExtension.fromString(type);
                 final activeBg = ft.backgroundColor;

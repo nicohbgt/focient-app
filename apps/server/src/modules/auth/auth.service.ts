@@ -561,6 +561,60 @@ export class AuthService {
     return this.formatProfile(user);
   }
 
+  async updateProfile(userId: string, data: Record<string, any>): Promise<UserProfileDto> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundError('Pengguna tidak ditemukan');
+    }
+
+    const updateData: Record<string, any> = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.username !== undefined) updateData.username = data.username;
+    if (data.roleArchetype !== undefined) updateData.roleArchetype = data.roleArchetype;
+    if (data.occupancy !== undefined) {
+      updateData.occupancy = data.occupancy;
+      updateData.roleArchetype = data.occupancy;
+    }
+    if (data.startWorkTime !== undefined) {
+      updateData.startWorkTime = data.startWorkTime;
+      updateData.workHourStart = data.startWorkTime;
+    }
+    if (data.endWorkTime !== undefined) {
+      updateData.endWorkTime = data.endWorkTime;
+      updateData.workHourEnd = data.endWorkTime;
+    }
+    if (data.dailyCapacityMinutes !== undefined) {
+      updateData.dailyCapacityMinutes = Number(data.dailyCapacityMinutes);
+      updateData.workHoursLimit = Number(data.dailyCapacityMinutes) / 60.0;
+    }
+    if (data.restTimeMinutesPerTask !== undefined) {
+      updateData.restTimePerTask = Number(data.restTimeMinutesPerTask);
+    }
+    if (data.restTimePerTask !== undefined) {
+      updateData.restTimePerTask = Number(data.restTimePerTask);
+    }
+    if (data.energyRhythm !== undefined) {
+      updateData.workingRhythm = data.energyRhythm;
+    }
+    if (data.workingRhythm !== undefined) {
+      updateData.workingRhythm = data.workingRhythm;
+    }
+    if (data.schedulingStyle !== undefined) {
+      updateData.schedulingStyle = data.schedulingStyle;
+      updateData.workStyle = data.schedulingStyle;
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+
+    return this.formatProfile(updatedUser);
+  }
+
   async verifyToken(token: string): Promise<{ sub: string; sessionId?: string }> {
     return sessionService.verifyAccessToken(token);
   }

@@ -228,7 +228,12 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
         ? const Color(0xFF334155)
         : const Color(0xFFCBD5E1);
 
+    final topPadding = MediaQuery.of(context).padding.top;
+    final viewInsetsBottom = MediaQuery.of(context).viewInsets.bottom;
+    final maxHeight = MediaQuery.of(context).size.height - topPadding - 24;
+
     return Container(
+      constraints: BoxConstraints(maxHeight: maxHeight),
       decoration: BoxDecoration(
         color: sheetBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -238,10 +243,10 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
         bottom: true,
         child: Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: viewInsetsBottom,
           ),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,

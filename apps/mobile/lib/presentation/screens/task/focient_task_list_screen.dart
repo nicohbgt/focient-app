@@ -4,6 +4,7 @@ import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../../data/focient_repository.dart';
 import '../../../data/models/task_item.dart';
 import '../../../data/task_state.dart';
+import '../../focient_copywriting.dart';
 import '../../riverpod_providers.dart';
 import '../settings/focient_settings_screen.dart';
 import 'focient_add_task_screen.dart';
@@ -39,7 +40,7 @@ class FocientTaskListScreen extends ConsumerStatefulWidget {
 class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
   int _activeNavIndex = 3; // Task List is active
   late int _selectedDay;
-  final int _selectedYear = 2026;
+  DateTime _currentMonth = DateTime(2026, 10, 1);
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -102,6 +103,14 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
     );
   }
 
+  String _formatMonthYear(DateTime dt) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[dt.month - 1]} ${dt.year}';
+  }
+
   String _formatSelectedDateTitle() {
     String suffix = 'th';
     if (_selectedDay == 1 || _selectedDay == 21 || _selectedDay == 31) {
@@ -111,7 +120,12 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
     } else if (_selectedDay == 3 || _selectedDay == 23) {
       suffix = 'rd';
     }
-    return 'October, $_selectedDay$suffix $_selectedYear';
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    final mName = months[_currentMonth.month - 1];
+    return '$mName, $_selectedDay$suffix ${_currentMonth.year}';
   }
 
   @override
@@ -261,7 +275,13 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
     // 2. All Tasks Completed (Zero Inbox)
     final bool allDone = tasks.every((t) => t.isCompleted);
     if (allDone) {
-      return _buildZeroInboxState();
+      return Column(
+        children: [
+          _buildZeroInboxState(),
+          const SizedBox(height: 16),
+          _buildTaskList(tasks),
+        ],
+      );
     }
 
     // 3. Populated State (Tampilan Berisi)
@@ -403,6 +423,26 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
     );
   }
 
+  List<(int, bool)> _generateMonthGrid(DateTime monthDate) {
+    final firstDay = DateTime(monthDate.year, monthDate.month, 1);
+    final daysInMonth = DateTime(monthDate.year, monthDate.month + 1, 0).day;
+    final prevMonthDays = DateTime(monthDate.year, monthDate.month, 0).day;
+    final startOffset = firstDay.weekday % 7;
+
+    final List<(int, bool)> items = [];
+    for (int i = 0; i < startOffset; i++) {
+      items.add((prevMonthDays - startOffset + 1 + i, true));
+    }
+    for (int d = 1; d <= daysInMonth; d++) {
+      items.add((d, false));
+    }
+    final remaining = (35 - (items.length % 35)) % 35;
+    for (int n = 1; n <= remaining; n++) {
+      items.add((n, true));
+    }
+    return items.take(35).toList();
+  }
+
   // --- 1. Month Navigator ---
   Widget _buildMonthNavigator(Color titleColor) {
     return Row(
@@ -413,16 +453,41 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
           color: titleColor,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          onPressed: () {},
+          onPressed: () {
+            setState(() {
+              _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
+            });
+          },
+          tooltip: 'Previous Month',
         ),
         const SizedBox(width: 24),
-        Text(
-          'October 2026',
-          style: TextStyle(
-            fontFamily: FocientTypographyTokens.fontFamily,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: titleColor,
+        InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: DateTime(_currentMonth.year, _currentMonth.month, _selectedDay.clamp(1, 28)),
+              firstDate: DateTime(2020),
+              lastDate: DateTime(2035),
+            );
+            if (picked != null && mounted) {
+              setState(() {
+                _currentMonth = DateTime(picked.year, picked.month, 1);
+                _selectedDay = picked.day;
+              });
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Text(
+              _formatMonthYear(_currentMonth),
+              style: TextStyle(
+                fontFamily: FocientTypographyTokens.fontFamily,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: titleColor,
+              ),
+            ),
           ),
         ),
         const SizedBox(width: 24),
@@ -431,7 +496,12 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
           color: titleColor,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          onPressed: () {},
+          onPressed: () {
+            setState(() {
+              _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
+            });
+          },
+          tooltip: 'Next Month',
         ),
       ],
     );
@@ -440,20 +510,7 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
   // --- 2. Calendar Grid ---
   Widget _buildCalendarGrid(Color titleColor, Color subtitleColor) {
     const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-    // 5 Weeks grid for October 2026 (starting Sunday Sep 27)
-    final gridItems = [
-      // Row 1
-      (27, true), (28, true), (29, true), (30, true), (1, false), (2, false), (3, false),
-      // Row 2
-      (4, false), (5, false), (6, false), (7, false), (8, false), (9, false), (10, false),
-      // Row 3
-      (11, false), (12, false), (13, false), (14, false), (15, false), (16, false), (17, false),
-      // Row 4
-      (18, false), (19, false), (20, false), (21, false), (22, false), (23, false), (24, false),
-      // Row 5
-      (25, false), (26, false), (27, false), (28, false), (29, false), (30, false), (31, false),
-    ];
+    final gridItems = _generateMonthGrid(_currentMonth);
 
     return Column(
       children: [
@@ -551,8 +608,29 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
   }) {
     final List<Widget> widgets = [];
 
-    for (int i = 0; i < tasks.length; i++) {
-      final task = tasks[i];
+    int parseHour(String h) {
+      try {
+        final clean = h.trim().toLowerCase();
+        final isPm = clean.contains('pm');
+        final isAm = clean.contains('am');
+        final parts = clean.replaceAll('am', '').replaceAll('pm', '').trim().split(':');
+        var hr = int.parse(parts[0]);
+        var mn = parts.length > 1 ? int.parse(parts[1]) : 0;
+        if (isPm && hr < 12) hr += 12;
+        if (isAm && hr == 12) hr = 0;
+        return hr * 60 + mn;
+      } catch (_) {
+        return 0;
+      }
+    }
+
+    final sortedTasks = [...tasks];
+    sortedTasks.sort((a, b) => parseHour(a.startHourDisplay).compareTo(parseHour(b.startHourDisplay)));
+    final lang = ref.watch(languageProvider);
+    final doneLabel = lang == FoCientLanguage.id ? 'Selesai' : 'Task Done';
+
+    for (int i = 0; i < sortedTasks.length; i++) {
+      final task = sortedTasks[i];
 
       // Task Row
       widgets.add(
@@ -599,7 +677,8 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
                             fontFamily: FocientTypographyTokens.fontFamily,
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: titleColor,
+                            color: task.isCompleted ? subtitleColor : titleColor,
+                            decoration: task.isCompleted ? TextDecoration.lineThrough : null,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -607,6 +686,31 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
                           spacing: 8,
                           runSpacing: 4,
                           children: [
+                            if (task.isCompleted)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFECFDF5),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFF10B981)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.check_circle_rounded, size: 12, color: Color(0xFF059669)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      doneLabel,
+                                      style: const TextStyle(
+                                        fontFamily: FocientTypographyTokens.fontFamily,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF059669),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             _buildCategoryBadge(
                               categoryName: task.categoryName,
                               color: task.categoryColor,
@@ -630,26 +734,35 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
         ),
       );
 
-      // Inline Resting Buffer (if task has rest or needRestAfter)
+      // Inline Resting Buffer (Full width without indent)
       if (task.needRestAfter && task.restMinutes > 0) {
-        final shortTitle = task.title.length > 15
-            ? '${task.title.substring(0, 15)}..'
+        final shortTitle = task.title.length > 20
+            ? '${task.title.substring(0, 20)}..'
             : task.title;
 
         widgets.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 12.0),
-            child: Row(
-              children: [
-                const SizedBox(width: 58), // Align with task card
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: borderColor, width: 1),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF93C5FD), width: 1),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF2563EB),
+                      shape: BoxShape.circle,
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
                     child: Text(
                       'Resting After "$shortTitle"',
                       style: TextStyle(
@@ -658,10 +771,27 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
                         fontWeight: FontWeight.w700,
                         color: titleColor,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ),
-              ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${task.restMinutes}m',
+                      style: const TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF2563EB),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -728,9 +858,9 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBBF7D0), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -746,11 +876,11 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
           const SizedBox(width: 5),
           Text(
             categoryName,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: FocientTypographyTokens.fontFamily,
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF0F172A),
+              color: color,
             ),
           ),
         ],
@@ -760,6 +890,8 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
 
   // --- 4. Top App Bar ---
   Widget _buildTopAppBar({required bool isDark, required Color titleColor}) {
+    final workload = ref.watch(currentWorkloadProvider);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -814,12 +946,12 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
                 const Icon(Icons.notifications_none_rounded, size: 14, color: Color(0xFF2563EB)),
                 const SizedBox(width: 4),
                 Text(
-                  '60%',
-                  style: TextStyle(
+                  '${workload.percent}%',
+                  style: const TextStyle(
                     fontFamily: FocientTypographyTokens.fontFamily,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1E40AF),
+                    color: Color(0xFF1E40AF),
                   ),
                 ),
               ],
