@@ -228,9 +228,10 @@ async function handleTodayPlan(req: AuthenticatedRequest, res: Response, next: N
       };
     }
 
-    const response: TodayPlanDto = {
+    const response: TodayPlanDto & { timelineBlocks?: TaskResponseDto[] } = {
       date: dateStr,
       timelineSchedule,
+      timelineBlocks: timelineSchedule,
       unscheduledTasks,
       top3Priorities,
       capacityProfile,

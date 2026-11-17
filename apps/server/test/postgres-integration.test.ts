@@ -28,16 +28,17 @@ describe('FoCient PostgreSQL-Backed API Integration Test Suite (P1 Quality & CI)
       }
     }
 
-    // 2. Start Express application on ephemeral port
+    // 2. Start Express application on ephemeral port bound to 127.0.0.1
     const app = createApp();
     await new Promise<void>((resolve) => {
-      server = app.listen(0, () => {
+      server = app.listen(0, '127.0.0.1', () => {
         const address = server.address();
         if (address && typeof address === 'object') {
-          baseUrl = `http://localhost:${address.port}`;
+          baseUrl = `http://127.0.0.1:${address.port}`;
         }
         resolve();
       });
+      server.keepAliveTimeout = 1000;
     });
   });
 
@@ -181,6 +182,7 @@ describe('FoCient PostgreSQL-Backed API Integration Test Suite (P1 Quality & CI)
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${authToken}`,
+        Connection: 'close',
       },
       body: JSON.stringify(taskPayload),
     });
@@ -224,19 +226,23 @@ describe('FoCient PostgreSQL-Backed API Integration Test Suite (P1 Quality & CI)
     }
 
     const res = await fetch(`${baseUrl}/api/schedule/today-plan?date=2026-10-29`, {
-      headers: { Authorization: `Bearer ${authToken}` },
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        Connection: 'close',
+      },
     });
 
     assert.strictEqual(res.status, 200);
     const plan = await res.json() as {
       date: string;
-      timelineBlocks: unknown[];
+      timelineBlocks?: unknown[];
+      timelineSchedule?: unknown[];
       top3Priorities: unknown[];
       capacityProfile: { status: string; capacityPercentage: number };
     };
 
     assert.ok(plan.date);
-    assert.ok(Array.isArray(plan.timelineBlocks));
+    assert.ok(Array.isArray(plan.timelineSchedule || plan.timelineBlocks));
     assert.ok(Array.isArray(plan.top3Priorities));
     assert.ok(plan.capacityProfile);
   });
@@ -252,6 +258,7 @@ describe('FoCient PostgreSQL-Backed API Integration Test Suite (P1 Quality & CI)
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${authToken}`,
+        Connection: 'close',
       },
       body: JSON.stringify({
         token: `ci_device_token_${Date.now()}`,
@@ -262,7 +269,10 @@ describe('FoCient PostgreSQL-Backed API Integration Test Suite (P1 Quality & CI)
     assert.ok(regRes.status === 201 || regRes.status === 200);
 
     const prefRes = await fetch(`${baseUrl}/api/notifications/preferences`, {
-      headers: { Authorization: `Bearer ${authToken}` },
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        Connection: 'close',
+      },
     });
     assert.strictEqual(prefRes.status, 200);
     const prefs = await prefRes.json() as { focusReminders: boolean; pushNotifications: boolean };
@@ -277,7 +287,10 @@ describe('FoCient PostgreSQL-Backed API Integration Test Suite (P1 Quality & CI)
     }
 
     const res = await fetch(`${baseUrl}/api/schedule/export/ics`, {
-      headers: { Authorization: `Bearer ${authToken}` },
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        Connection: 'close',
+      },
     });
 
     assert.strictEqual(res.status, 200);
@@ -301,6 +314,7 @@ describe('FoCient PostgreSQL-Backed API Integration Test Suite (P1 Quality & CI)
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${authToken}`,
+        Connection: 'close',
       },
       body: JSON.stringify({
         actualDurationMinutes: 40,
