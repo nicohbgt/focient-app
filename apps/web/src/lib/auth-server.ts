@@ -225,15 +225,18 @@ export async function updateUserPasswordInAllStores(email: string, newPassword: 
   let prismaUpdated = false;
   if (isDbAvailable()) {
     try {
-      const updated = await prisma.user.update({
-        where: { email: cleanEmail },
-        data: { passwordHash: newPasswordHash },
-      });
-      if (updated) {
-        prismaUpdated = true;
-        await prisma.session.deleteMany({
-          where: { userId: updated.id },
-        }).catch(() => {});
+      const existing = await prisma.user.findUnique({ where: { email: cleanEmail } });
+      if (existing) {
+        const updated = await prisma.user.update({
+          where: { email: cleanEmail },
+          data: { passwordHash: newPasswordHash },
+        });
+        if (updated) {
+          prismaUpdated = true;
+          await prisma.session.deleteMany({
+            where: { userId: updated.id },
+          }).catch(() => {});
+        }
       }
     } catch (err) {
       handleDbError(err);

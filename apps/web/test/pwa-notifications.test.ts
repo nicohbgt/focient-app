@@ -14,10 +14,10 @@ import type { AppNotification, NotificationCategory } from '../src/state/focient
 
 describe('FoCient PWA & Web Notification System Test Suite', () => {
   it('1. PWA Web App Manifest is valid and configured with standalone display', () => {
-    const manifestPath = path.resolve('public/manifest.json');
-    assert.equal(fs.existsSync(manifestPath), true, 'manifest.json must exist in apps/web/public');
+    const manifestUrl = new URL('../public/manifest.json', import.meta.url);
+    assert.equal(fs.existsSync(manifestUrl), true, 'manifest.json must exist in apps/web/public');
 
-    const manifestContent = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const manifestContent = JSON.parse(fs.readFileSync(manifestUrl, 'utf8'));
     assert.equal(manifestContent.name, 'FoCient - Guilt-Free Focus & Pacing');
     assert.equal(manifestContent.short_name, 'FoCient');
     assert.equal(manifestContent.display, 'standalone');
@@ -27,10 +27,10 @@ describe('FoCient PWA & Web Notification System Test Suite', () => {
   });
 
   it('2. PWA Service Worker sw.js exists and handles push & notificationclick events', () => {
-    const swPath = path.resolve('public/sw.js');
-    assert.equal(fs.existsSync(swPath), true, 'sw.js must exist in apps/web/public');
+    const swUrl = new URL('../public/sw.js', import.meta.url);
+    assert.equal(fs.existsSync(swUrl), true, 'sw.js must exist in apps/web/public');
 
-    const swCode = fs.readFileSync(swPath, 'utf8');
+    const swCode = fs.readFileSync(swUrl, 'utf8');
     assert.ok(swCode.includes("addEventListener('push'"), 'sw.js must listen for push notifications');
     assert.ok(swCode.includes("addEventListener('notificationclick'"), 'sw.js must handle notification click navigation');
     assert.ok(swCode.includes('showNotification'), 'sw.js must trigger native browser notification');
@@ -160,17 +160,17 @@ describe('FoCient PWA & Web Notification System Test Suite', () => {
   });
 
   it('10. Background Web Push API route files exist and export standard Next.js handlers', () => {
-    const vapidRoutePath = path.resolve('src/app/api/notifications/vapid-key/route.ts');
-    const subscribeRoutePath = path.resolve('src/app/api/notifications/subscribe/route.ts');
-    const pushRoutePath = path.resolve('src/app/api/notifications/push/route.ts');
+    const vapidRouteUrl = new URL('../src/app/api/notifications/vapid-key/route.ts', import.meta.url);
+    const subscribeRouteUrl = new URL('../src/app/api/notifications/subscribe/route.ts', import.meta.url);
+    const pushRouteUrl = new URL('../src/app/api/notifications/push/route.ts', import.meta.url);
 
-    assert.equal(fs.existsSync(vapidRoutePath), true, 'vapid-key route must exist');
-    assert.equal(fs.existsSync(subscribeRoutePath), true, 'subscribe route must exist');
-    assert.equal(fs.existsSync(pushRoutePath), true, 'push route must exist');
+    assert.equal(fs.existsSync(vapidRouteUrl), true, 'vapid-key route must exist');
+    assert.equal(fs.existsSync(subscribeRouteUrl), true, 'subscribe route must exist');
+    assert.equal(fs.existsSync(pushRouteUrl), true, 'push route must exist');
 
-    const vapidCode = fs.readFileSync(vapidRoutePath, 'utf8');
-    const subscribeCode = fs.readFileSync(subscribeRoutePath, 'utf8');
-    const pushCode = fs.readFileSync(pushRoutePath, 'utf8');
+    const vapidCode = fs.readFileSync(vapidRouteUrl, 'utf8');
+    const subscribeCode = fs.readFileSync(subscribeRouteUrl, 'utf8');
+    const pushCode = fs.readFileSync(pushRouteUrl, 'utf8');
 
     assert.ok(vapidCode.includes('GET'), 'vapid-key route must export GET');
     assert.ok(subscribeCode.includes('POST'), 'subscribe route must export POST');

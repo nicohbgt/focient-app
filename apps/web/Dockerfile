@@ -11,7 +11,7 @@ COPY apps/web/package.json ./apps/web/
 COPY apps/server/package.json ./apps/server/
 
 # Install dependencies (ignoring postinstall until schema is copied)
-RUN npm ci --ignore-scripts
+RUN npm ci --ignore-scripts --force
 
 # Copy source codes
 COPY packages/ ./packages/
