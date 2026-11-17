@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:focient_mobile/core/validators/focient_validators.dart';
 import 'package:focient_mobile/data/auth_state.dart';
 import 'package:focient_mobile/data/workspace_category.dart';
-import 'package:focient_mobile/presentation/primitive/focient_otp_input.dart';
 import 'package:focient_mobile/presentation/screens/auth/focient_auth_flow.dart';
 import 'package:focient_mobile/presentation/screens/auth/focient_forgot_password_screen.dart';
 import 'package:focient_mobile/presentation/screens/auth/focient_otp_screen.dart';

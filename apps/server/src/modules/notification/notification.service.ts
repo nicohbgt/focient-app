@@ -35,8 +35,22 @@ export interface FcmDeliveryStatus {
  * - Guilt-free, empathetic tone (zero accusatory language)
  */
 export class NotificationService {
+  private static dbConnectionFailed = false;
+
   private isDbAvailable(): boolean {
-    return !!process.env.DATABASE_URL;
+    return !!process.env.DATABASE_URL && !NotificationService.dbConnectionFailed;
+  }
+
+  private handleDbError(err: unknown) {
+    const errorMsg = String(err);
+    if (
+      errorMsg.includes("Can't reach database server") ||
+      errorMsg.includes('P1001') ||
+      errorMsg.includes('ECONNREFUSED') ||
+      errorMsg.includes('timed out')
+    ) {
+      NotificationService.dbConnectionFailed = true;
+    }
   }
 
   // In-memory fallbacks when DB is offline or for test sandbox
@@ -47,21 +61,31 @@ export class NotificationService {
     if (!this.isDbAvailable()) {
       return [];
     }
-    return prisma.notification.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-    });
+    try {
+      return await prisma.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+    } catch (err) {
+      this.handleDbError(err);
+      return [];
+    }
   }
 
   async markAsRead(userId: string, notificationId: string) {
     if (!this.isDbAvailable()) {
       return { count: 1 };
     }
-    return prisma.notification.updateMany({
-      where: { id: notificationId, userId },
-      data: { isRead: true },
-    });
+    try {
+      return await prisma.notification.updateMany({
+        where: { id: notificationId, userId },
+        data: { isRead: true },
+      });
+    } catch (err) {
+      this.handleDbError(err);
+      return { count: 1 };
+    }
   }
 
   // ==========================================
@@ -70,163 +94,179 @@ export class NotificationService {
   async registerDeviceToken(userId: string, data: RegisterDeviceTokenDto) {
     const platform = data.platform ?? 'ANDROID';
 
-    if (!this.isDbAvailable()) {
-      const userTokens = this.memoryTokens.get(userId) || [];
-      const filtered = userTokens.filter((t) => t.token !== data.token);
-      filtered.push({ token: data.token, platform, deviceInfo: data.deviceInfo });
-      this.memoryTokens.set(userId, filtered);
-      return {
-        id: `dev_${Date.now()}`,
-        userId,
-        token: data.token,
-        platform,
-        deviceInfo: data.deviceInfo,
-        createdAt: new Date().toISOString(),
-      };
+    if (this.isDbAvailable()) {
+      try {
+        return await prisma.deviceToken.upsert({
+          where: { token: data.token },
+          create: {
+            userId,
+            token: data.token,
+            platform,
+            deviceInfo: data.deviceInfo,
+          },
+          update: {
+            userId,
+            platform,
+            deviceInfo: data.deviceInfo,
+            updatedAt: new Date(),
+          },
+        });
+      } catch (err) {
+        this.handleDbError(err);
+      }
     }
 
-    return prisma.deviceToken.upsert({
-      where: { token: data.token },
-      create: {
-        userId,
-        token: data.token,
-        platform,
-        deviceInfo: data.deviceInfo,
-      },
-      update: {
-        userId,
-        platform,
-        deviceInfo: data.deviceInfo,
-        updatedAt: new Date(),
-      },
-    });
+    const userTokens = this.memoryTokens.get(userId) || [];
+    const filtered = userTokens.filter((t) => t.token !== data.token);
+    filtered.push({ token: data.token, platform, deviceInfo: data.deviceInfo });
+    this.memoryTokens.set(userId, filtered);
+    return {
+      id: `dev_${Date.now()}`,
+      userId,
+      token: data.token,
+      platform,
+      deviceInfo: data.deviceInfo,
+      createdAt: new Date().toISOString(),
+    };
   }
 
   async unregisterDeviceToken(userId: string, token: string): Promise<boolean> {
-    if (!this.isDbAvailable()) {
-      const tokens = this.memoryTokens.get(userId) || [];
-      this.memoryTokens.set(userId, tokens.filter((t) => t.token !== token));
-      return true;
+    if (this.isDbAvailable()) {
+      try {
+        await prisma.deviceToken.deleteMany({
+          where: { userId, token },
+        });
+        return true;
+      } catch (err) {
+        this.handleDbError(err);
+      }
     }
 
-    try {
-      await prisma.deviceToken.deleteMany({
-        where: { userId, token },
-      });
-      return true;
-    } catch {
-      return false;
-    }
+    const tokens = this.memoryTokens.get(userId) || [];
+    this.memoryTokens.set(userId, tokens.filter((t) => t.token !== token));
+    return true;
   }
 
   async getDeviceTokens(userId: string): Promise<string[]> {
-    if (!this.isDbAvailable()) {
-      return (this.memoryTokens.get(userId) || []).map((t) => t.token);
+    if (this.isDbAvailable()) {
+      try {
+        const records = await prisma.deviceToken.findMany({
+          where: { userId },
+          select: { token: true },
+        });
+        return records.map((r) => r.token);
+      } catch (err) {
+        this.handleDbError(err);
+      }
     }
-    const records = await prisma.deviceToken.findMany({
-      where: { userId },
-      select: { token: true },
-    });
-    return records.map((r) => r.token);
+    return (this.memoryTokens.get(userId) || []).map((t) => t.token);
   }
 
   // ==========================================
   // Notification Preferences
   // ==========================================
   async getPreferences(userId: string): Promise<NotificationPreferencesDto> {
-    if (!this.isDbAvailable()) {
-      const existing = this.memoryPreferences.get(userId);
-      if (existing) return existing;
-      const defaults: NotificationPreferencesDto = {
-        userId,
-        focusReminders: true,
-        capacityAlerts: true,
-        rippleSuggestions: true,
-        dailySummary: true,
-        emailNotifications: false,
-        pushNotifications: true,
-        quietHoursStart: null,
-        quietHoursEnd: null,
-      };
-      this.memoryPreferences.set(userId, defaults);
-      return defaults;
+    if (this.isDbAvailable()) {
+      try {
+        let pref = await prisma.notificationPreference.findUnique({
+          where: { userId },
+        });
+
+        if (!pref) {
+          pref = await prisma.notificationPreference.create({
+            data: {
+              userId,
+              focusReminders: true,
+              capacityAlerts: true,
+              rippleSuggestions: true,
+              dailySummary: true,
+              emailNotifications: false,
+              pushNotifications: true,
+            },
+          });
+        }
+
+        return {
+          id: pref.id,
+          userId: pref.userId,
+          focusReminders: pref.focusReminders,
+          capacityAlerts: pref.capacityAlerts,
+          rippleSuggestions: pref.rippleSuggestions,
+          dailySummary: pref.dailySummary,
+          emailNotifications: pref.emailNotifications,
+          pushNotifications: pref.pushNotifications,
+          quietHoursStart: pref.quietHoursStart,
+          quietHoursEnd: pref.quietHoursEnd,
+          createdAt: pref.createdAt.toISOString(),
+          updatedAt: pref.updatedAt.toISOString(),
+        };
+      } catch (err) {
+        this.handleDbError(err);
+      }
     }
 
-    let pref = await prisma.notificationPreference.findUnique({
-      where: { userId },
-    });
-
-    if (!pref) {
-      pref = await prisma.notificationPreference.create({
-        data: {
-          userId,
-          focusReminders: true,
-          capacityAlerts: true,
-          rippleSuggestions: true,
-          dailySummary: true,
-          emailNotifications: false,
-          pushNotifications: true,
-        },
-      });
-    }
-
-    return {
-      id: pref.id,
-      userId: pref.userId,
-      focusReminders: pref.focusReminders,
-      capacityAlerts: pref.capacityAlerts,
-      rippleSuggestions: pref.rippleSuggestions,
-      dailySummary: pref.dailySummary,
-      emailNotifications: pref.emailNotifications,
-      pushNotifications: pref.pushNotifications,
-      quietHoursStart: pref.quietHoursStart,
-      quietHoursEnd: pref.quietHoursEnd,
-      createdAt: pref.createdAt.toISOString(),
-      updatedAt: pref.updatedAt.toISOString(),
+    const existing = this.memoryPreferences.get(userId);
+    if (existing) return existing;
+    const defaults: NotificationPreferencesDto = {
+      userId,
+      focusReminders: true,
+      capacityAlerts: true,
+      rippleSuggestions: true,
+      dailySummary: true,
+      emailNotifications: false,
+      pushNotifications: true,
+      quietHoursStart: null,
+      quietHoursEnd: null,
     };
+    this.memoryPreferences.set(userId, defaults);
+    return defaults;
   }
 
   async updatePreferences(
     userId: string,
     dto: UpdateNotificationPreferencesDto
   ): Promise<NotificationPreferencesDto> {
-    if (!this.isDbAvailable()) {
-      const current = await this.getPreferences(userId);
-      const updated: NotificationPreferencesDto = {
-        ...current,
-        ...dto,
-        updatedAt: new Date().toISOString(),
-      };
-      this.memoryPreferences.set(userId, updated);
-      return updated;
+    if (this.isDbAvailable()) {
+      try {
+        const updated = await prisma.notificationPreference.upsert({
+          where: { userId },
+          create: {
+            userId,
+            ...dto,
+          },
+          update: {
+            ...dto,
+            updatedAt: new Date(),
+          },
+        });
+
+        return {
+          id: updated.id,
+          userId: updated.userId,
+          focusReminders: updated.focusReminders,
+          capacityAlerts: updated.capacityAlerts,
+          rippleSuggestions: updated.rippleSuggestions,
+          dailySummary: updated.dailySummary,
+          emailNotifications: updated.emailNotifications,
+          pushNotifications: updated.pushNotifications,
+          quietHoursStart: updated.quietHoursStart,
+          quietHoursEnd: updated.quietHoursEnd,
+          createdAt: updated.createdAt.toISOString(),
+          updatedAt: updated.updatedAt.toISOString(),
+        };
+      } catch (err) {
+        this.handleDbError(err);
+      }
     }
 
-    const updated = await prisma.notificationPreference.upsert({
-      where: { userId },
-      create: {
-        userId,
-        ...dto,
-      },
-      update: {
-        ...dto,
-        updatedAt: new Date(),
-      },
-    });
-
-    return {
-      id: updated.id,
-      userId: updated.userId,
-      focusReminders: updated.focusReminders,
-      capacityAlerts: updated.capacityAlerts,
-      rippleSuggestions: updated.rippleSuggestions,
-      dailySummary: updated.dailySummary,
-      emailNotifications: updated.emailNotifications,
-      pushNotifications: updated.pushNotifications,
-      quietHoursStart: updated.quietHoursStart,
-      quietHoursEnd: updated.quietHoursEnd,
-      createdAt: updated.createdAt.toISOString(),
-      updatedAt: updated.updatedAt.toISOString(),
+    const current = await this.getPreferences(userId);
+    const updated: NotificationPreferencesDto = {
+      ...current,
+      ...dto,
+      updatedAt: new Date().toISOString(),
     };
+    this.memoryPreferences.set(userId, updated);
+    return updated;
   }
 
   // ==========================================

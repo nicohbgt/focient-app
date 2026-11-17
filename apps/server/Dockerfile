@@ -17,10 +17,12 @@ RUN npm ci --ignore-scripts
 COPY packages/ ./packages/
 COPY apps/server/ ./apps/server/
 
-# Generate database client & build server
+# Generate database client & build contracts
 WORKDIR /app
 RUN npm run db:generate --prefix packages/database
+RUN npm run build --prefix packages/contracts
 
+# Build server
 WORKDIR /app/apps/server
 RUN npm run build
 

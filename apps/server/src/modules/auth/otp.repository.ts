@@ -29,9 +29,22 @@ export interface StoredOtpRecord {
 export class OtpRepository {
   // Resilient fallback storage for standalone tests or environments without PostgreSQL
   private fallbackStore = new Map<string, StoredOtpRecord>();
+  private static dbConnectionFailed = false;
 
   private get isDbAvailable(): boolean {
-    return Boolean(process.env.DATABASE_URL);
+    return Boolean(process.env.DATABASE_URL) && !OtpRepository.dbConnectionFailed;
+  }
+
+  private handleDbError(err: unknown) {
+    const errorMsg = String(err);
+    if (
+      errorMsg.includes("Can't reach database server") ||
+      errorMsg.includes('P1001') ||
+      errorMsg.includes('ECONNREFUSED') ||
+      errorMsg.includes('timed out')
+    ) {
+      OtpRepository.dbConnectionFailed = true;
+    }
   }
 
   /**
@@ -102,7 +115,8 @@ export class OtpRepository {
             maxAttempts: 5,
           },
         });
-      } catch {
+      } catch (err) {
+        this.handleDbError(err);
         // Fallback in case database is unreachable
       }
     }
@@ -172,7 +186,8 @@ export class OtpRepository {
           },
         });
         if (record) return record;
-      } catch {
+      } catch (err) {
+        this.handleDbError(err);
         // Fallback
       }
     }
@@ -191,7 +206,8 @@ export class OtpRepository {
           where: { id },
           data: { attempts: newAttempts },
         });
-      } catch {
+      } catch (err) {
+        this.handleDbError(err);
         // Fallback
       }
     }
@@ -209,7 +225,8 @@ export class OtpRepository {
           where: { id },
           data: { usedAt: new Date() },
         });
-      } catch {
+      } catch (err) {
+        this.handleDbError(err);
         // Fallback
       }
     }
@@ -226,7 +243,8 @@ export class OtpRepository {
         await prisma.otp.delete({
           where: { id },
         });
-      } catch {
+      } catch (err) {
+        this.handleDbError(err);
         // Fallback
       }
     }

@@ -46,9 +46,22 @@ export interface StoredSession {
 export class SessionService {
   // Resilient fallback storage for test environments without live PostgreSQL
   private fallbackSessions = new Map<string, StoredSession>();
+  private static dbConnectionFailed = false;
 
   private get isDbAvailable(): boolean {
-    return Boolean(process.env.DATABASE_URL);
+    return Boolean(process.env.DATABASE_URL) && !SessionService.dbConnectionFailed;
+  }
+
+  private handleDbError(err: unknown) {
+    const errorMsg = String(err);
+    if (
+      errorMsg.includes("Can't reach database server") ||
+      errorMsg.includes('P1001') ||
+      errorMsg.includes('ECONNREFUSED') ||
+      errorMsg.includes('timed out')
+    ) {
+      SessionService.dbConnectionFailed = true;
+    }
   }
 
   private hashToken(token: string): string {
@@ -94,7 +107,8 @@ export class SessionService {
             expiresAt,
           },
         });
-      } catch {
+      } catch (err) {
+        this.handleDbError(err);
         // Use fallback if database fails
       }
     }
@@ -207,7 +221,8 @@ export class SessionService {
             refreshToken: newRefreshToken,
           },
         });
-      } catch {
+      } catch (err) {
+        this.handleDbError(err);
         // Fallback
       }
     }
@@ -232,7 +247,8 @@ export class SessionService {
           where: { id: sessionId },
           data: { revokedAt: new Date() },
         });
-      } catch {
+      } catch (err) {
+        this.handleDbError(err);
         // Fallback
       }
     }
@@ -260,7 +276,8 @@ export class SessionService {
           where: { userId, revokedAt: null },
           data: { revokedAt: new Date() },
         });
-      } catch {
+      } catch (err) {
+        this.handleDbError(err);
         // Fallback
       }
     }
@@ -283,7 +300,8 @@ export class SessionService {
           if (session.expiresAt && new Date() > session.expiresAt) return true;
           return false;
         }
-      } catch {
+      } catch (err) {
+        this.handleDbError(err);
         // Fallback
       }
     }
@@ -301,7 +319,8 @@ export class SessionService {
           where: { id: sessionId },
         });
         if (s) return s;
-      } catch {
+      } catch (err) {
+        this.handleDbError(err);
         // Fallback
       }
     }

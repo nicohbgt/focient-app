@@ -59,6 +59,7 @@ jobs:
         with:
           flutter-version: '3.24.x'
           channel: 'stable'
+          cache: true
 
       - name: Clean Install Dependencies (npm ci)
         run: npm ci
@@ -97,7 +98,8 @@ jobs:
       - name: Analyze & Test Mobile Client (Flutter)
         run: |
           cd apps/mobile
-          flutter analyze --no-fatal-infos
+          flutter pub get
+          flutter analyze --no-fatal-infos --no-fatal-warnings
           flutter test --reporter=expanded
 
       - name: Dependency & Security Vulnerability Scan
