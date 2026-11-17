@@ -170,10 +170,18 @@ export class RedisCacheService implements ICacheService {
   async disconnect(): Promise<void> {
     if (this.redisClient) {
       try {
-        await this.redisClient.quit();
+        await Promise.race([
+          this.redisClient.quit(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1000)),
+        ]);
       } catch {
-        // Ignore disconnect errors
+        try {
+          this.redisClient.disconnect();
+        } catch {
+          // Ignore
+        }
       }
+      this.redisClient = null;
       this.connected = false;
     }
   }

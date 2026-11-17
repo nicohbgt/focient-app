@@ -10,6 +10,7 @@ jobs:
   validate-and-test:
     name: Build, Migrate, Test & Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       postgres:
@@ -82,20 +83,25 @@ jobs:
         run: npm run build
 
       - name: Test Server & PostgreSQL-Backed API Integration
+        timeout-minutes: 3
         run: |
-          npx tsx --test apps/server/test/postgres-integration.test.ts
+          npx tsx --test --test-timeout=20000 apps/server/test/postgres-integration.test.ts
           npm run test:server
 
       - name: Test Web & Browser E2E Accessibility (WCAG AAA)
+        timeout-minutes: 3
         run: npm run test:web
 
       - name: Enforce Coverage Thresholds
+        timeout-minutes: 3
         run: npm run test:coverage
 
       - name: Run Production Smoke Tests
+        timeout-minutes: 3
         run: npm run smoke
 
       - name: Analyze & Test Mobile Client (Flutter)
+        timeout-minutes: 5
         run: |
           cd apps/mobile
           flutter pub get

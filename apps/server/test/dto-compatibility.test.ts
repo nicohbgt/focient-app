@@ -1,5 +1,6 @@
-import { describe, it } from 'node:test';
+import { describe, it, after } from 'node:test';
 import assert from 'node:assert';
+import { prisma } from '@focient/database';
 import {
   CreateTaskSchema,
   UpdateTaskSchema,
@@ -335,6 +336,20 @@ describe('FoCient DTO, Contract & Mobile Compatibility Specification (P1 Data & 
       assert.ok(icsString.includes('END:VEVENT'));
       assert.ok(!icsString.includes('Terlambat') && !icsString.includes('Overdue'));
     });
+  });
+
+  after(async () => {
+    try {
+      await cache.disconnect();
+      await jobQueue.close();
+    } catch {
+      // Ignore
+    }
+    try {
+      await prisma.$disconnect();
+    } catch {
+      // Ignore
+    }
   });
 
 });

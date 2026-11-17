@@ -10,7 +10,7 @@ console.log('📊 FoCient Test Coverage Verification & Threshold Enforcer...\n')
 console.log('🔬 Testing Server Core Algorithms & Modules with Coverage:');
 const serverResult = spawnSync(
   'npx',
-  ['tsx', '--test', '--experimental-test-coverage', 'test/workload-engine.test.ts', 'test/top-3-priority.test.ts', 'test/placement-engine.test.ts', 'test/reschedule-engine.test.ts', 'test/dto-compatibility.test.ts', 'test/security-auth.test.ts'],
+  ['tsx', '--test', '--test-timeout=20000', '--experimental-test-coverage', 'test/workload-engine.test.ts', 'test/top-3-priority.test.ts', 'test/placement-engine.test.ts', 'test/reschedule-engine.test.ts', 'test/dto-compatibility.test.ts', 'test/security-auth.test.ts'],
   {
     cwd: 'apps/server',
     encoding: 'utf-8',

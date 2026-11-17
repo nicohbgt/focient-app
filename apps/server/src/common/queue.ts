@@ -164,10 +164,20 @@ export class BackgroundJobQueue {
    */
   async close(): Promise<void> {
     if (this.bullWorker) {
-      await this.bullWorker.close();
+      try {
+        await this.bullWorker.close(true);
+      } catch {
+        // Ignore
+      }
+      this.bullWorker = null;
     }
     if (this.bullQueue) {
-      await this.bullQueue.close();
+      try {
+        await this.bullQueue.close();
+      } catch {
+        // Ignore
+      }
+      this.bullQueue = null;
     }
     this.isBullMqActive = false;
   }

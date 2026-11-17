@@ -76,6 +76,13 @@ describe('FoCient PostgreSQL-Backed API Integration Test Suite (P1 Quality & CI)
     }
 
     if (server) {
+      try {
+        if (typeof (server as any).closeAllConnections === 'function') {
+          (server as any).closeAllConnections();
+        }
+      } catch {
+        // Ignore
+      }
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }
   });
