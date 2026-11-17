@@ -5,8 +5,10 @@ import { motionTokens } from '@focient/ui-tokens/motion-token';
 import { animationTokens } from '@focient/ui-tokens/animation-token';
 
 test('FoCient Microinteraction System, Tactile & Motion Token Suite', async (t) => {
-  const microCss = await readFile(new URL('../src/components/microinteractions.css', import.meta.url), 'utf8');
-  const compCss = await readFile(new URL('../src/components/components.css', import.meta.url), 'utf8');
+  const rawMicroCss = await readFile(new URL('../src/components/microinteractions.css', import.meta.url), 'utf8');
+  const microCss = rawMicroCss.replace(/\r\n/g, '\n');
+  const rawCompCss = await readFile(new URL('../src/components/components.css', import.meta.url), 'utf8');
+  const compCss = rawCompCss.replace(/\r\n/g, '\n');
 
   await t.test('1. Foundational Motion Tokens & DTCG Standard Contracts', () => {
     // Canonical DTCG Timing Tokens in animation-token
