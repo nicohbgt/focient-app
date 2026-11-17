@@ -1,0 +1,31 @@
+{
+  "name": "@focient/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "db:generate": "prisma generate",
+    "db:migrate": "dotenv -e ../../.env -e .env -- prisma migrate deploy",
+    "db:push": "dotenv -e ../../.env -e .env -- prisma db push",
+    "db:reset": "dotenv -e ../../.env -e .env -- prisma migrate reset --force",
+    "db:studio": "dotenv -e ../../.env -e .env -- prisma studio",
+    "db:seed": "node --loader ts-node/esm seeds/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.21.1"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^11.1.0",
+    "prisma": "^5.21.1",
+    "typescript": "^5.6.3"
+  }
+}

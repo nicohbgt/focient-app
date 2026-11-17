@@ -1,0 +1,28 @@
+/**
+ * FoCient Structured Application Logger
+ * Outputs structured JSON logs in production and readable output in development.
+ */
+export const logger = {
+  info: (message: string, meta?: Record<string, unknown>) => {
+    console.log(JSON.stringify({ level: 'info', timestamp: new Date().toISOString(), message, ...meta }));
+  },
+  warn: (message: string, meta?: Record<string, unknown>) => {
+    console.warn(JSON.stringify({ level: 'warn', timestamp: new Date().toISOString(), message, ...meta }));
+  },
+  error: (message: string, error?: unknown, meta?: Record<string, unknown>) => {
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        timestamp: new Date().toISOString(),
+        message,
+        error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : error,
+        ...meta,
+      })
+    );
+  },
+  debug: (message: string, meta?: Record<string, unknown>) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.debug(JSON.stringify({ level: 'debug', timestamp: new Date().toISOString(), message, ...meta }));
+    }
+  },
+};

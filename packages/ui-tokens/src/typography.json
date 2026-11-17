@@ -1,0 +1,57 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "typography": {
+    "font": {
+      "family": {
+        "$type": "fontFamily",
+        "$value": ["Inter", "-apple-system", "BlinkMacSystemFont", "sans-serif"]
+      },
+      "weight": {
+        "regular": { "$type": "fontWeight", "$value": 400 },
+        "medium": { "$type": "fontWeight", "$value": 500 },
+        "semibold": { "$type": "fontWeight", "$value": 600 }
+      }
+    },
+    "feature": {
+      "tabularFigures": { "$type": "string", "$value": "tnum" }
+    },
+    "scale": {
+      "display": {
+        "mobile": { "$type": "typography", "$value": { "fontSize": "32px", "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": 600 } },
+        "desktop": { "$type": "typography", "$value": { "fontSize": "40px", "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": 600 } }
+      },
+      "h1": {
+        "mobile": { "$type": "typography", "$value": { "fontSize": "24px", "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": 600 } },
+        "desktop": { "$type": "typography", "$value": { "fontSize": "28px", "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": 600 } }
+      },
+      "h2": {
+        "mobile": { "$type": "typography", "$value": { "fontSize": "20px", "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": 600 } },
+        "desktop": { "$type": "typography", "$value": { "fontSize": "22px", "lineHeight": "30px", "letterSpacing": "-0.01em", "fontWeight": 600 } }
+      },
+      "h3": {
+        "mobile": { "$type": "typography", "$value": { "fontSize": "16px", "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": 600 } },
+        "desktop": { "$type": "typography", "$value": { "fontSize": "18px", "lineHeight": "26px", "letterSpacing": "0em", "fontWeight": 600 } }
+      },
+      "body-lg": {
+        "mobile": { "$type": "typography", "$value": { "fontSize": "16px", "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": 400 } },
+        "desktop": { "$type": "typography", "$value": { "fontSize": "16px", "lineHeight": "26px", "letterSpacing": "0em", "fontWeight": 400 } }
+      },
+      "body-md": {
+        "mobile": { "$type": "typography", "$value": { "fontSize": "14px", "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": 400 } },
+        "desktop": { "$type": "typography", "$value": { "fontSize": "14px", "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": 400 } }
+      },
+      "label-md": {
+        "mobile": { "$type": "typography", "$value": { "fontSize": "14px", "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": 500 } },
+        "desktop": { "$type": "typography", "$value": { "fontSize": "14px", "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": 500 } }
+      },
+      "caption": {
+        "mobile": { "$type": "typography", "$value": { "fontSize": "12px", "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": 500 } },
+        "desktop": { "$type": "typography", "$value": { "fontSize": "12px", "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": 500 } }
+      },
+      "micro": {
+        "mobile": { "$type": "typography", "$value": { "fontSize": "11px", "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": 600 } },
+        "desktop": { "$type": "typography", "$value": { "fontSize": "11px", "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": 600 } }
+      }
+    }
+  }
+}

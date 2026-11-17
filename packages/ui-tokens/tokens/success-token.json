@@ -1,0 +1,76 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "success": {
+    "surface": {
+      "subtle": {
+        "$type": "color",
+        "$value": "#ECFDF5",
+        "$description": "Latar belakang lembut untuk modul capaian harian, toast sukses, dan kartu tugas selesai."
+      }
+    },
+    "border": {
+      "subtle": {
+        "$type": "color",
+        "$value": "#A7F3D0",
+        "$description": "Garis tepi 1px lembut untuk notifikasi toast sukses dan banner capaian."
+      }
+    },
+    "action": {
+      "base": {
+        "$type": "color",
+        "$value": "#059669",
+        "$description": "Warna dasar aksi sukses, isian checkbox aktif, dan tombol feedback tersimpan."
+      }
+    },
+    "text": {
+      "bold": {
+        "$type": "color",
+        "$value": "#065F46",
+        "$description": "Warna teks pesan sukses berkontras tinggi (WCAG AAA) dan tombol aksi Urungkan."
+      }
+    },
+    "task": {
+      "strikethrough": {
+        "$type": "color",
+        "$value": "#94A3B8",
+        "$description": "Warna redup netral untuk label teks tugas setelah dicentang tuntas."
+      },
+      "completed-opacity": {
+        "$type": "number",
+        "$value": 0.6,
+        "$description": "Opasitas kontainer kartu tugas saat berstatus selesai."
+      }
+    },
+    "pop": {
+      "scale-start": {
+        "$type": "number",
+        "$value": 0.7,
+        "$description": "Skala awal mikro-animasi pop ikon centang tugas."
+      },
+      "scale-end": {
+        "$type": "number",
+        "$value": 1.0,
+        "$description": "Skala akhir mikro-animasi pop ikon centang tugas."
+      },
+      "duration": {
+        "$type": "duration",
+        "$value": "150ms",
+        "$description": "Durasi mikro-letupan ikon centang tugas selesai."
+      }
+    },
+    "toast": {
+      "duration": {
+        "$type": "duration",
+        "$value": "4000ms",
+        "$description": "Durasi tampil notifikasi toast sukses sebelum auto-dismiss (4 detik)."
+      }
+    },
+    "button": {
+      "transition-duration": {
+        "$type": "duration",
+        "$value": "600ms",
+        "$description": "Durasi transisi feedback status tersimpan pada tombol aksi."
+      }
+    }
+  }
+}

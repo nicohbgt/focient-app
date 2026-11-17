@@ -1,0 +1,61 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "layout": {
+    "grid": {
+      "desktop": {
+        "breakpoint-min": { "$type": "dimension", "$value": "1024px" },
+        "columns": { "$type": "number", "$value": 12 },
+        "margin": { "$type": "dimension", "$value": "32px" },
+        "gutter": { "$type": "dimension", "$value": "24px" },
+        "container-max-width": { "$type": "dimension", "$value": "1280px" }
+      },
+      "tablet": {
+        "breakpoint-min": { "$type": "dimension", "$value": "600px" },
+        "breakpoint-max": { "$type": "dimension", "$value": "1024px" },
+        "columns": { "$type": "number", "$value": 8 },
+        "margin": { "$type": "dimension", "$value": "24px" },
+        "gutter": { "$type": "dimension", "$value": "20px" },
+        "container-max-width": { "$type": "dimension", "$value": "100%" }
+      },
+      "mobile": {
+        "breakpoint-max": { "$type": "dimension", "$value": "600px" },
+        "columns": { "$type": "number", "$value": 4 },
+        "margin": { "$type": "dimension", "$value": "20px" },
+        "gutter": { "$type": "dimension", "$value": "16px" },
+        "container-max-width": { "$type": "dimension", "$value": "100%" }
+      }
+    },
+    "span": {
+      "desktop": {
+        "navigation": { "$type": "number", "$value": 3 },
+        "workspace": { "$type": "number", "$value": 6 },
+        "capacity": { "$type": "number", "$value": 3 }
+      },
+      "tablet": {
+        "navigation": { "$type": "number", "$value": 3 },
+        "workspace": { "$type": "number", "$value": 5 }
+      },
+      "mobile": {
+        "full": { "$type": "number", "$value": 4 }
+      }
+    },
+    "modal": {
+      "mobile": {
+        "width": { "$type": "dimension", "$value": "100%" },
+        "max-height": { "$type": "dimension", "$value": "80vh" }
+      },
+      "tablet": {
+        "width": { "$type": "dimension", "$value": "480px" },
+        "padding": { "$type": "dimension", "$value": "32px" }
+      },
+      "desktop": {
+        "width": { "$type": "dimension", "$value": "560px" },
+        "padding": { "$type": "dimension", "$value": "32px" }
+      }
+    },
+    "navigation": {
+      "mobile-bottom-bar-height": { "$type": "dimension", "$value": "64px" },
+      "desktop-sidebar-width": { "$type": "dimension", "$value": "256px" }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+/** GENERATED FILE. Source: ../tokens/spacing-token.json */
+export const spacingTokens = Object.freeze(
+  {
+  "space-1": "4px",
+  "space-2": "8px",
+  "space-3": "12px",
+  "space-4": "16px",
+  "space-5": "20px",
+  "space-6": "24px",
+  "space-7": "28px",
+  "space-8": "32px",
+  "space-9": "36px",
+  "space-10": "40px",
+  "space-11": "44px",
+  "space-12": "48px",
+  "space-13": "52px",
+  "space-14": "56px",
+  "space-15": "60px",
+  "space-16": "64px",
+  "space-17": "68px",
+  "space-18": "72px",
+  "space-19": "76px",
+  "space-20": "80px",
+  "space-21": "84px",
+  "space-22": "88px",
+  "space-23": "92px",
+  "space-24": "96px",
+  "space-tight-2": "8px"
+},
+);

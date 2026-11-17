@@ -1,0 +1,11 @@
+name: focient_ui_tokens
+description: Shared semantic color tokens for FoCient Flutter applications.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  flutter:
+    sdk: flutter

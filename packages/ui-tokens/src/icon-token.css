@@ -1,0 +1,29 @@
+/**
+ * GENERATED FILE. Source: ../tokens/icon-token.json
+ * Import this file once at the web application entry point.
+ */
+:root {
+  --icon-size-xs: 1rem;
+  --icon-size-sm: 1.5rem;
+  --icon-size-md: 2rem;
+  --icon-size-lg: 2.25rem;
+  --icon-size-xl: 2.5rem;
+  --icon-size-2xl: 3rem;
+  --icon-size-3xl: 3.5rem;
+  --icon-size-4xl: 4rem;
+  --icon-stroke-xs: 0.5px;
+  --icon-stroke-sm: 0.5px;
+  --icon-stroke-md: 1px;
+  --icon-stroke-lg: 1px;
+  --icon-stroke-xl: 1px;
+  --icon-stroke-2xl: 1px;
+  --icon-stroke-3xl: 1.5px;
+  --icon-stroke-4xl: 1.5px;
+  --icon-style-outline: outline;
+  --icon-style-filled: filled;
+  --icon-spacing-xs: 0.25rem;
+  --icon-spacing-sm: 0.5rem;
+  --icon-spacing-md: 0.75rem;
+  --icon-spacing-lg: 1rem;
+  --icon-spacing-xl: 1.25rem;
+}

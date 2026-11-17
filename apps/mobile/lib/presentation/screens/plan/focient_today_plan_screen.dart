@@ -1,0 +1,1932 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:focient_ui_tokens/focient_ui_tokens.dart';
+import '../../../data/focient_repository.dart';
+import '../../../data/planning_state.dart';
+import '../../../data/task_state.dart';
+import '../../riverpod_providers.dart';
+import '../onboarding/add_task_category_sheet.dart';
+import '../settings/focient_settings_screen.dart';
+import 'quick_task_input_sheet.dart';
+
+/// FoCient Today Plan Screen ("Your Planning")
+///
+/// Implements:
+/// - Top Bar: Back arrow button, "Your Planning" title, dynamic workload bell pill (e.g. 60%), notification bell & settings gear.
+/// - Section 1: Task Categories horizontal scrollable list with allocation vs max budget.
+/// - Section 2: Weekly Workload Distribution card with 7-day bar chart (Mon - Sun) and summary metrics (Active Hours, Buffer Hours, Scheduled Tasks).
+/// - Section 3: Smart Rebalancer card with empathetic overload resolution, "Show More" / "Show Less" toggle (Image 1 compact vs Image 2 detailed cards), "Reschedule Task" (Orange) and "Keep The Schedule" (Green) CTAs.
+/// - Section 4: Backlog Scheduler card with "Not yet scheduled" status pills and category badges.
+/// - 5-tab Bottom Navigation Bar: Home, Plan (Active), Add Task, Task List, Insights.
+class FocientTodayPlanScreen extends ConsumerStatefulWidget {
+  final VoidCallback? onBack;
+  final ValueChanged<int>? onNavigateTab;
+  final bool showBottomNav;
+
+  const FocientTodayPlanScreen({
+    super.key,
+    this.onBack,
+    this.onNavigateTab,
+    this.showBottomNav = true,
+  });
+
+  @override
+  ConsumerState<FocientTodayPlanScreen> createState() =>
+      _FocientTodayPlanScreenState();
+}
+
+class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen> {
+  int _activeNavIndex = 1; // Plan is active
+  int _weekOffset = 0;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  String _formatWeekRange(int offset) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final baseMon = DateTime(2026, 10, 5).add(Duration(days: offset * 7));
+    final endSun = baseMon.add(const Duration(days: 6));
+    return '${months[baseMon.month - 1]} ${baseMon.day} - ${months[endSun.month - 1]} ${endSun.day}, ${baseMon.year}';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPlanningFromApi();
+    });
+  }
+
+  Future<void> _loadPlanningFromApi() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      await Future.wait([
+        ref.read(taskListProvider.notifier).loadFromStorage(),
+        ref.read(focientRepositoryProvider).getWeeklyPlanning(),
+      ]);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Tidak dapat memperbarui perencanaan dari server.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _openQuickTaskInput() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => const QuickTaskInputSheet(),
+    );
+  }
+
+  void _onRescheduleTask() {
+    ref.read(planningProvider.notifier).rescheduleOverloadedTasks();
+    ref.read(focientRepositoryProvider).rebalanceSchedule();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Schedule rebalanced successfully! 2 tasks moved to Thursday morning. Wednesday workload reduced to 65% (Optimal).',
+        ),
+        backgroundColor: Color(0xFF059669),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 4),
+      ),
+    );
+  }
+
+  void _onKeepSchedule() {
+    ref.read(planningProvider.notifier).keepCurrentSchedule();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Current schedule kept without guilt. You can adjust anytime.',
+        ),
+        backgroundColor: Color(0xFF475569),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _onScheduleBacklogItem(BacklogTaskItem task) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          top: false,
+          bottom: true,
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Schedule Backlog Task',
+                  style: TextStyle(
+                    fontFamily: FocientTypographyTokens.fontFamily,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  task.title,
+                  style: TextStyle(
+                    fontFamily: FocientTypographyTokens.fontFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF334155),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: const Icon(Icons.today_rounded, color: Color(0xFF0284C7)),
+                  title: const Text('Schedule for Today (15:00)'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ref.read(planningProvider.notifier).scheduleBacklogTask(task.id, 'Today, 15:00');
+                    ref.read(focientRepositoryProvider).scheduleBacklogTask(taskId: task.id, targetTime: 'Today, 15:00');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Task "${task.title}" scheduled for 15:00!'),
+                        backgroundColor: const Color(0xFF059669),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.next_plan_rounded, color: Color(0xFF7C3AED)),
+                  title: const Text('Schedule for Tomorrow (10:00)'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ref.read(planningProvider.notifier).scheduleBacklogTask(task.id, 'Tomorrow, 10:00');
+                    ref.read(focientRepositoryProvider).scheduleBacklogTask(taskId: task.id, targetTime: 'Tomorrow, 10:00');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Task "${task.title}" scheduled for Tomorrow at 10:00!'),
+                        backgroundColor: const Color(0xFF059669),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final planningState = ref.watch(planningProvider);
+    final tasks = ref.watch(taskListProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bgColor = isDark
+        ? FocientColorDarkTokens.neutralBgCanvas
+        : const Color(0xFFF8FAFC);
+
+    final cardBg = isDark
+        ? FocientColorDarkTokens.neutralSurfaceCard
+        : Colors.white;
+
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
+
+    final titleColor = isDark
+        ? FocientColorDarkTokens.neutralTextBold
+        : const Color(0xFF0F172A);
+
+    final subtitleColor = isDark
+        ? FocientColorDarkTokens.neutralTextMuted
+        : const Color(0xFF64748B);
+
+    return Scaffold(
+      backgroundColor: bgColor,
+      bottomNavigationBar: widget.showBottomNav ? _buildBottomNavBar(isDark: isDark) : null,
+      body: SafeArea(
+        bottom: !widget.showBottomNav,
+        child: Column(
+          children: [
+            // Top App Bar
+            _buildTopAppBar(
+              isDark: isDark,
+              titleColor: titleColor,
+              workloadPercentage: planningState.isEmptyState ? 0 : 60,
+            ),
+
+            // Scrollable Content
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _loadPlanningFromApi,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_isLoading)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 12.0),
+                          child: LinearProgressIndicator(minHeight: 2),
+                        ),
+                      if (_errorMessage != null)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF2F2),
+                            border: Border.all(color: const Color(0xFFFECACA)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.info_outline, color: Color(0xFFDC2626), size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(
+                                    color: Color(0xFF991B1B),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _loadPlanningFromApi,
+                                child: const Text('Coba Lagi', style: TextStyle(fontSize: 12)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      // Section 0: Today Focus Tasks (4 Lifecycle States: Loading, Empty, Populated, All-Completed)
+                      _buildTodayFocusLifecycleSection(
+                        context: context,
+                        tasks: tasks,
+                        isLoading: _isLoading && tasks.isEmpty,
+                        isDark: isDark,
+                        cardBg: cardBg,
+                        borderColor: borderColor,
+                        titleColor: titleColor,
+                        subtitleColor: subtitleColor,
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Section 1: Task Categories
+                      _buildTaskCategoriesSection(
+                      categories: planningState.categories,
+                      cardBg: cardBg,
+                      borderColor: borderColor,
+                      titleColor: titleColor,
+                      subtitleColor: subtitleColor,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Section 2: Weekly Workload Distribution
+                    _buildWeeklyWorkloadCard(
+                      distribution: planningState.weeklyDistribution,
+                      metrics: planningState.metrics,
+                      cardBg: cardBg,
+                      borderColor: borderColor,
+                      titleColor: titleColor,
+                      subtitleColor: subtitleColor,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Section 3: Smart Rebalancer (Only show when rebalancing suggestions exist or rebalanced)
+                    if (planningState.rebalanceSuggestions.isNotEmpty || planningState.isRebalanced) ...[
+                      _buildSmartRebalancerCard(
+                        state: planningState,
+                        cardBg: cardBg,
+                        borderColor: borderColor,
+                        titleColor: titleColor,
+                        subtitleColor: subtitleColor,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Section 4: Backlog Scheduler
+                    _buildBacklogSchedulerCard(
+                      tasks: planningState.backlogTasks,
+                      cardBg: cardBg,
+                      borderColor: borderColor,
+                      titleColor: titleColor,
+                      subtitleColor: subtitleColor,
+                    ),
+
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- 1. Top App Bar ---
+  Widget _buildTopAppBar({
+    required bool isDark,
+    required Color titleColor,
+    required int workloadPercentage,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? FocientColorDarkTokens.neutralSurfaceCard : Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Back Button
+          IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 18,
+            ),
+            color: titleColor,
+            splashRadius: 20,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            onPressed: () {
+              if (widget.onBack != null) {
+                widget.onBack!();
+              } else if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else if (widget.onNavigateTab != null) {
+                widget.onNavigateTab!(0); // Return to home
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+
+          // Screen Title
+          Expanded(
+            child: Text(
+              'Your Plan',
+              style: TextStyle(
+                fontFamily: FocientTypographyTokens.fontFamily,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: titleColor,
+              ),
+            ),
+          ),
+
+          // Workload Bell Pill
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFFBFDBFE),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.notifications_none_rounded,
+                  size: 14,
+                  color: Color(0xFF2563EB),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '$workloadPercentage%',
+                  style: TextStyle(
+                    fontFamily: FocientTypographyTokens.fontFamily,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1E40AF),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+
+          // Notification Bell
+          IconButton(
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              size: 22,
+            ),
+            color: const Color(0xFF64748B),
+            splashRadius: 20,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Tidak ada notifikasi baru.'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 6),
+
+          // Settings Gear
+          IconButton(
+            icon: const Icon(
+              Icons.settings_outlined,
+              size: 22,
+            ),
+            color: const Color(0xFF64748B),
+            splashRadius: 20,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => FocientSettingsScreen(
+                    onBack: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Settings',
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 2. Task Categories Section ---
+  Widget _buildTaskCategoriesSection({
+    required List<CategoryBudgetItem> categories,
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Task Categories',
+              style: TextStyle(
+                fontFamily: FocientTypographyTokens.fontFamily,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: titleColor,
+              ),
+            ),
+            const Spacer(),
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () async {
+                final newCat = await AddTaskCategorySheet.show(context);
+                if (newCat != null && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Category "${newCat.name}" added to budget.'),
+                      backgroundColor: const Color(0xFF059669),
+                    ),
+                  );
+                }
+              },
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, size: 14, color: Color(0xFF2563EB)),
+                    SizedBox(width: 4),
+                    Text(
+                      'Setup',
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF2563EB),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        SizedBox(
+          height: 60,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: categories.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final cat = categories[index];
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: borderColor, width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      cat.name,
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: titleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      cat.formattedAllocation,
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
+                        color: subtitleColor,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- 3. Weekly Workload Distribution Card ---
+  Widget _buildWeeklyWorkloadCard({
+    required List<DailyWorkloadItem> distribution,
+    required PlanningMetrics metrics,
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with Week Navigator
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Weekly Workload Distribution',
+                    style: TextStyle(
+                      fontFamily: FocientTypographyTokens.fontFamily,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: titleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _weekOffset == 0 ? 'Monday, October 5th 2026' : _formatWeekRange(_weekOffset),
+                    style: TextStyle(
+                      fontFamily: FocientTypographyTokens.fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: subtitleColor,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_rounded, size: 14),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    onPressed: () => setState(() => _weekOffset--),
+                    tooltip: 'Previous Week',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    onPressed: () => setState(() => _weekOffset++),
+                    tooltip: 'Next Week',
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // 7-Bar Chart
+          SizedBox(
+            height: 120,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: distribution.map((item) {
+                // Height calculation: max height 80px for 100%
+                final double barHeight = item.percentage > 0
+                    ? ((item.percentage / 100.0) * 80.0).clamp(6.0, 80.0)
+                    : 4.0;
+
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: 14,
+                      height: barHeight,
+                      decoration: BoxDecoration(
+                        color: item.barColor,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${item.percentage}%',
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: titleColor,
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+          Divider(color: borderColor, height: 1),
+          const SizedBox(height: 16),
+
+          // Summary Metrics
+          _buildMetricRow(
+            label: 'Active Hours Allocated',
+            value: '${metrics.activeHoursAllocated} Hours',
+            titleColor: titleColor,
+            labelColor: const Color(0xFF334155),
+          ),
+          const SizedBox(height: 10),
+          _buildMetricRow(
+            label: 'Buffer Hours Allocated',
+            value: '${metrics.bufferMinutesAllocated} Minutes',
+            titleColor: titleColor,
+            labelColor: const Color(0xFF334155),
+          ),
+          const SizedBox(height: 10),
+          _buildMetricRow(
+            label: 'On Scheduled Task',
+            value: '${metrics.onScheduledTaskCount} Task',
+            titleColor: titleColor,
+            labelColor: const Color(0xFF334155),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricRow({
+    required String label,
+    required String value,
+    required Color titleColor,
+    required Color labelColor,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: FocientTypographyTokens.fontFamily,
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
+            color: labelColor,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontFamily: FocientTypographyTokens.fontFamily,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: titleColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- 4. Smart Rebalancer Card ---
+  Widget _buildSmartRebalancerCard({
+    required PlanningState state,
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title
+          Text(
+            'Smart Rebalancer',
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Empathetic Description
+          if (state.isRebalanced)
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFECFDF5),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
+              ),
+              child: Text(
+                'Schedule rebalanced successfully! Wednesday workload is now 65% (Optimal) after moving 2 tasks to Thursday morning.',
+                style: TextStyle(
+                  fontFamily: FocientTypographyTokens.fontFamily,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF065F46),
+                  height: 1.4,
+                ),
+              ),
+            )
+          else if (state.isScheduleKept)
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFCBD5E1)),
+              ),
+              child: Text(
+                'Current schedule kept without guilt. You can adjust anytime.',
+                style: TextStyle(
+                  fontFamily: FocientTypographyTokens.fontFamily,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF334155),
+                  height: 1.4,
+                ),
+              ),
+            )
+          else
+            Text(
+              'Your workload at Wednesday reach 85%, we suggested you to reschedule 2 Tasks at Thursday. here is the suggested task to reschedule:',
+              style: TextStyle(
+                fontFamily: FocientTypographyTokens.fontFamily,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF475569),
+                height: 1.4,
+              ),
+            ),
+
+          const SizedBox(height: 12),
+
+          // Show More / Show Less Toggle Row
+          InkWell(
+            onTap: () {
+              ref.read(planningProvider.notifier).toggleRebalancerDetail();
+            },
+            borderRadius: BorderRadius.circular(6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    state.showDetailedRebalancer ? 'Show Less' : 'Show More',
+                    style: TextStyle(
+                      fontFamily: FocientTypographyTokens.fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF475569),
+                    ),
+                  ),
+                  Icon(
+                    state.showDetailedRebalancer
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    size: 20,
+                    color: const Color(0xFF64748B),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Collapsed View (Image 1) vs Detailed Cards (Image 2)
+          if (!state.showDetailedRebalancer) ...[
+            // Image 1: Compact Bullets
+            ...state.rebalanceSuggestions.map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFF0284C7),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        item.title,
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: titleColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ] else ...[
+            // Image 2: Detailed Task Cards
+            ...state.rebalanceSuggestions.map(
+              (item) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: borderColor, width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: titleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Previous Schedule',
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 12,
+                            color: subtitleColor,
+                          ),
+                        ),
+                        Text(
+                          item.previousSchedule,
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: titleColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'New Schedule',
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 12,
+                            color: subtitleColor,
+                          ),
+                        ),
+                        Text(
+                          item.newSchedule,
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: titleColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    // Badges Row
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        _buildPillBadge(
+                          label: '${item.taskDurationMinutes}" Task',
+                          bgColor: const Color(0xFFF0F9FF),
+                          borderColor: const Color(0xFFBAE6FD),
+                          textColor: const Color(0xFF0369A1),
+                        ),
+                        _buildPillBadge(
+                          label: '${item.restDurationMinutes}" Rest',
+                          bgColor: const Color(0xFFF0F9FF),
+                          borderColor: const Color(0xFFBAE6FD),
+                          textColor: const Color(0xFF0369A1),
+                        ),
+                        _buildCategoryBadge(
+                          categoryName: item.categoryName,
+                          color: item.categoryColor,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 12),
+
+          // Action Buttons: Reschedule Task (Orange) & Keep The Schedule (Green)
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 40,
+                  child: ElevatedButton(
+                    onPressed: state.isRebalanced ? null : _onRescheduleTask,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97706),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child: Text(
+                      'Reschedule Task',
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SizedBox(
+                  height: 40,
+                  child: ElevatedButton(
+                    onPressed: state.isScheduleKept ? null : _onKeepSchedule,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child: Text(
+                      'Keep The Schedule',
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 5. Backlog Scheduler Card ---
+  Widget _buildBacklogSchedulerCard({
+    required List<BacklogTaskItem> tasks,
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Text(
+            'Backlog Scheduler',
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          if (tasks.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Center(
+                child: Text(
+                  'No tasks in backlog yet. Add a new task to plan ahead for future work.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: FocientTypographyTokens.fontFamily,
+                    fontSize: 12.5,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            )
+          else
+            ...tasks.map(
+              (task) => InkWell(
+                onTap: () => _onScheduleBacklogItem(task),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: borderColor, width: 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.title,
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: titleColor,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          _buildPillBadge(
+                            label: task.isScheduled
+                                ? (task.scheduledTime ?? 'Scheduled')
+                                : 'Not yet scheduled',
+                            bgColor: task.isScheduled
+                                ? const Color(0xFFECFDF5)
+                                : const Color(0xFFF1F5F9),
+                            borderColor: task.isScheduled
+                                ? const Color(0xFFA7F3D0)
+                                : const Color(0xFFCBD5E1),
+                            textColor: task.isScheduled
+                                ? const Color(0xFF065F46)
+                                : const Color(0xFF475569),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildCategoryBadge(
+                            categoryName: task.categoryName,
+                            color: task.categoryColor,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // --- Badge Helpers ---
+  Widget _buildPillBadge({
+    required String label,
+    required Color bgColor,
+    required Color borderColor,
+    required Color textColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: FocientTypographyTokens.fontFamily,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryBadge({
+    required String categoryName,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            categoryName,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 6. Bottom Navigation Bar ---
+  Widget _buildBottomNavBar({required bool isDark}) {
+    final navItems = [
+      (Icons.home_outlined, Icons.home_rounded, 'Home'),
+      (Icons.calendar_today_outlined, Icons.calendar_month_rounded, 'Plan'),
+      (Icons.add_rounded, Icons.add_rounded, 'Add Task'),
+      (Icons.format_list_bulleted_rounded, Icons.format_list_bulleted_rounded, 'Task List'),
+      (Icons.insert_chart_outlined_rounded, Icons.insert_chart_rounded, 'Insights'),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? FocientColorDarkTokens.neutralSurfaceCard : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+            width: 1,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        bottom: true,
+        child: SizedBox(
+          height: 64,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: navItems.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final (iconOutlined, iconFilled, label) = entry.value;
+              final isActive = _activeNavIndex == idx;
+              final isCenterAdd = idx == 2;
+
+              void handleTap() {
+                if (idx == 0) {
+                  // Return to Home
+                  if (widget.onNavigateTab != null) {
+                    widget.onNavigateTab!(0);
+                  } else if (widget.onBack != null) {
+                    widget.onBack!();
+                  } else if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
+                  return;
+                }
+
+                if (widget.onNavigateTab != null) {
+                  widget.onNavigateTab!(idx);
+                  return;
+                }
+
+                setState(() => _activeNavIndex = idx);
+              }
+
+              if (isCenterAdd) {
+                return InkWell(
+                  onTap: handleTap,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Transform.translate(
+                    offset: const Offset(0, -6),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2563EB),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF2563EB).withValues(alpha: 0.35),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.add_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF2563EB),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return InkWell(
+                onTap: handleTap,
+                borderRadius: BorderRadius.circular(8),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isActive ? iconFilled : iconOutlined,
+                          size: 20,
+                          color: isActive
+                              ? const Color(0xFF2563EB)
+                              : const Color(0xFF64748B),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 11,
+                            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                            color: isActive
+                                ? const Color(0xFF2563EB)
+                                : const Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        if (isActive)
+                          Container(
+                            width: 4,
+                            height: 4,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF2563EB),
+                              shape: BoxShape.circle,
+                            ),
+                          )
+                        else
+                          const SizedBox(height: 4),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // TODAY FOCUS TASKS: 4 DATA-DRIVEN LIFECYCLE STATES
+  // ===========================================================================
+  Widget _buildTodayFocusLifecycleSection({
+    required BuildContext context,
+    required List<MobileTask> tasks,
+    required bool isLoading,
+    required bool isDark,
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    // a. Loading State: Skeleton shimmer berlatar #F1F5F9 saat inisialisasi awal
+    if (isLoading) {
+      return _buildSkeletonLoadingState(isDark);
+    }
+
+    // b. Empty State: Data Kosong / Pengguna Baru
+    if (tasks.isEmpty) {
+      return _buildEmptyState(
+        context: context,
+        isDark: isDark,
+        cardBg: cardBg,
+        borderColor: borderColor,
+        titleColor: titleColor,
+        subtitleColor: subtitleColor,
+      );
+    }
+
+    // d. All-Tasks-Completed State (Zero Inbox): Semua tugas telah selesai
+    final allCompleted = tasks.every((t) => t.isCompleted);
+    if (allCompleted) {
+      return _buildAllCompletedState(
+        isDark: isDark,
+        borderColor: borderColor,
+      );
+    }
+
+    // c. Populated State: Data Terisi dengan Optimistic micro-animation & Top 3 border
+    return _buildPopulatedTasksState(
+      context: context,
+      tasks: tasks,
+      isDark: isDark,
+      cardBg: cardBg,
+      borderColor: borderColor,
+      titleColor: titleColor,
+      subtitleColor: subtitleColor,
+    );
+  }
+
+  Widget _buildSkeletonLoadingState(bool isDark) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 150,
+            height: 18,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE2E8F0),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: 14),
+          _buildSkeletonTaskCard(),
+          const SizedBox(height: 10),
+          _buildSkeletonTaskCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkeletonTaskCard() {
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFFCBD5E1)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 90,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState({
+    required BuildContext context,
+    required bool isDark,
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Circular container (#F0FDFA) with Lucide/Teal lembut (#0D9488) icon
+          Container(
+            width: 72,
+            height: 72,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF0FDFA),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.spa_rounded,
+              color: Color(0xFF0D9488),
+              size: 36,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Headline
+          Text(
+            'Mulai Hari dengan Ritme Tenang',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Subtitle
+          Text(
+            'Belum ada agenda terencana. Tambahkan aktivitas pertamamu untuk memulai fokus.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 13,
+              height: 1.4,
+              color: subtitleColor,
+            ),
+          ),
+          const SizedBox(height: 20),
+          // CTA Outlined/Filled Teal: "+ Buat Rencana Pertama"
+          ElevatedButton.icon(
+            onPressed: _openQuickTaskInput,
+            icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+            label: const Text(
+              '+ Buat Rencana Pertama',
+              style: TextStyle(
+                fontFamily: FocientTypographyTokens.fontFamily,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0D9488),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAllCompletedState({
+    required bool isDark,
+    required Color borderColor,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.25) : const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF059669) : const Color(0xFFA7F3D0),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: const BoxDecoration(
+              color: Color(0xFFDCFCE7),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_circle_rounded,
+              color: Color(0xFF059669),
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Fokus Hari Ini Telah Tuntas',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: isDark ? const Color(0xFFA7F3D0) : const Color(0xFF065F46),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Semua agenda terencana telah diselesaikan dengan tenang. Nikmati waktu istirahat tanpa rasa bersalah.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 13,
+              height: 1.4,
+              color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF047857),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPopulatedTasksState({
+    required BuildContext context,
+    required List<MobileTask> tasks,
+    required bool isDark,
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    final activeCount = tasks.where((t) => !t.isCompleted).length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Rencana Fokus Hari Ini',
+              style: TextStyle(
+                fontFamily: FocientTypographyTokens.fontFamily,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: titleColor,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
+              ),
+              child: Text(
+                '$activeCount Aktif',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1D4ED8),
+                ),
+              ),
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: _openQuickTaskInput,
+              icon: const Icon(Icons.add_rounded, size: 16, color: Color(0xFF0D9488)),
+              label: const Text(
+                '+ Tambah',
+                style: TextStyle(
+                  fontFamily: FocientTypographyTokens.fontFamily,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0D9488),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: tasks.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            final task = tasks[index];
+            final isTop3 = task.priority == TaskPriorityEnum.top3;
+
+            return _buildTaskCardItem(
+              task: task,
+              isTop3: isTop3,
+              isDark: isDark,
+              cardBg: cardBg,
+              borderColor: borderColor,
+              titleColor: titleColor,
+              subtitleColor: subtitleColor,
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTaskCardItem({
+    required MobileTask task,
+    required bool isTop3,
+    required bool isDark,
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    // 150ms micro-animation, strikethrough, opasitas 0.6
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 150),
+      opacity: task.isCompleted ? 0.6 : 1.0,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(14),
+          // Sorotan visual Top 3 Priorities: border Cobalt Blue #2563EB dan aksen halus
+          border: Border.all(
+            color: isTop3 ? const Color(0xFF2563EB) : borderColor,
+            width: isTop3 ? 1.5 : 1.0,
+          ),
+          boxShadow: isTop3
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.12),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : const [
+                  BoxShadow(
+                    color: Color(0x06000000),
+                    blurRadius: 4,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Checkbox with 150ms animation
+            GestureDetector(
+              key: ValueKey('task_checkbox_${task.id}'),
+              onTap: () {
+                ref.read(taskListProvider.notifier).toggleComplete(task.id);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: task.isCompleted ? const Color(0xFF0D9488) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: task.isCompleted ? const Color(0xFF0D9488) : const Color(0xFF94A3B8),
+                    width: 2,
+                  ),
+                ),
+                child: task.isCompleted
+                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                    : null,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      // Top 3 Priority Badge
+                      if (isTop3) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                          ),
+                          child: const Text(
+                            'Top 3 Focus',
+                            style: TextStyle(
+                              fontFamily: FocientTypographyTokens.fontFamily,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF2563EB),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Expanded(
+                        child: Text(
+                          task.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                            decorationColor: const Color(0xFF94A3B8),
+                            color: task.isCompleted
+                                ? const Color(0xFF94A3B8)
+                                : titleColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: task.categoryColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        task.categoryName,
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: subtitleColor,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '• ${task.durationMinutes}m',
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: subtitleColor,
+                        ),
+                      ),
+                      if (task.focusType == 'Deep Focus') ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '• Deep Focus',
+                          style: const TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF7C3AED),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

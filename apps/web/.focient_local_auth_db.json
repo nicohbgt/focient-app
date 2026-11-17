@@ -1,0 +1,116 @@
+{
+  "users": [
+    {
+      "id": "usr_nicohbgt512_gmail_com_mwjck4ir",
+      "email": "nicohbgt512@gmail.com",
+      "name": "Nico Wiranata",
+      "username": "Nico Wiranata",
+      "passwordHash": "e6704b00353dd6bf6d0da31ef930f6da6b8d31cbd2fdbd624e4c5cf46f9af80d8c904d3bbf3851f5fc8c0d3b91eec788eb99dfeb3fe7d4c22355ac259202b8cd",
+      "roleArchetype": "General",
+      "occupancy": "General",
+      "workingRhythm": "Steady Pacer",
+      "schedulingStyle": "Structured",
+      "workHourStart": "08:00",
+      "workHourEnd": "22:00",
+      "startWorkTime": "08:00",
+      "endWorkTime": "22:00",
+      "dailyCapacityMinutes": 840,
+      "restTimePerTask": 10,
+      "isOnboardingCompleted": true,
+      "createdAt": "2026-11-16T14:16:36.579Z",
+      "quietHourStart": "00:00",
+      "quietHourEnd": "00:00",
+      "quietHourEnabled": false
+    }
+  ],
+  "sessions": [
+    {
+      "token": "c4254e4b3a15841944b32e62b48805a67fbcecf4b23ea4126074627e97514d02",
+      "tokenHash": "8fcb0a6461f088c62506ad95403e0e658163438a09537ffa7239648a777544ab",
+      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
+      "expiresAt": "2026-12-16T14:16:36.585Z",
+      "revokedAt": null
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-1794838618386",
+      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
+      "title": "Arrange Meeting",
+      "durationMinutes": 30,
+      "categoryName": "Admin",
+      "categoryColor": "#64748B",
+      "priority": "REGULAR",
+      "energyLevel": "LOW",
+      "focusType": "Low",
+      "restMinutes": 0,
+      "needRestAfter": false,
+      "isBacklog": false,
+      "isRecurring": false,
+      "recurrencePattern": "daily",
+      "recurrenceDays": null,
+      "startHourDisplay": "16:00",
+      "dateDisplay": "2026-11-16",
+      "status": "TODO",
+      "createdAt": "2026-11-16T14:16:58.475Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat_1794838619934_hdpo6",
+      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
+      "name": "Focus",
+      "colorHex": "#059669",
+      "focusType": "High",
+      "isDefault": true,
+      "createdAt": "2026-11-16T14:16:59.934Z"
+    },
+    {
+      "id": "cat_1794838619934_r7cgw",
+      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
+      "name": "Sync",
+      "colorHex": "#059669",
+      "focusType": "High",
+      "isDefault": true,
+      "createdAt": "2026-11-16T14:16:59.934Z"
+    },
+    {
+      "id": "cat_1794838619934_9uf89",
+      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
+      "name": "Admin",
+      "colorHex": "#64748B",
+      "focusType": "High",
+      "isDefault": true,
+      "createdAt": "2026-11-16T14:16:59.934Z"
+    },
+    {
+      "id": "cat_1794838619934_5hzwq",
+      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
+      "name": "Personal",
+      "colorHex": "#059669",
+      "focusType": "High",
+      "isDefault": true,
+      "createdAt": "2026-11-16T14:16:59.934Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif_1794841200722_3dwnx",
+      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
+      "title": "Daily Calm Summary",
+      "message": "0 focus tasks completed with 0m mindful rest buffers protected. Rest peacefully tonight.",
+      "type": "DAILY_SUMMARY",
+      "isRead": false,
+      "createdAt": "2026-11-16T15:00:00.722Z"
+    },
+    {
+      "id": "notif_1794838618885_8mk2y",
+      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
+      "title": "Task Added to System",
+      "message": "Task \"Arrange Meeting\" has been scheduled (16:00).",
+      "type": "FOCUS_REMINDER",
+      "isRead": false,
+      "createdAt": "2026-11-16T14:16:58.885Z"
+    }
+  ]
+}

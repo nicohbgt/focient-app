@@ -1,0 +1,82 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "empty": {
+    "canvas": {
+      "bg": {
+        "$type": "color",
+        "$value": "#F8FAFC",
+        "$description": "Latar belakang kanvas kosong yang bersih, lapang, dan menenangkan."
+      }
+    },
+    "icon": {
+      "ring": {
+        "bg": {
+          "$type": "color",
+          "$value": "#F0FDFA",
+          "$description": "Latar belakang lingkaran lembut wadah ikon utama onboarding & istirahat."
+        },
+        "success": {
+          "$type": "color",
+          "$value": "#ECFDF5",
+          "$description": "Latar belakang lingkaran lembut wadah ikon tuntas (zero inbox)."
+        },
+        "muted": {
+          "$type": "color",
+          "$value": "#F1F5F9",
+          "$description": "Latar belakang lingkaran lembut wadah pencarian nirhasil."
+        },
+        "size": {
+          "$type": "dimension",
+          "$value": "80px",
+          "$description": "Diameter lingkaran wadah ilustrasi ikon empty state."
+        }
+      },
+      "accent": {
+        "onboarding": {
+          "$type": "color",
+          "$value": "#0D9488",
+          "$description": "Warna aksen ikon alur panduan tugas pertama."
+        },
+        "success": {
+          "$type": "color",
+          "$value": "#059669",
+          "$description": "Warna aksen ikon centang semua prioritas tuntas."
+        },
+        "search": {
+          "$type": "color",
+          "$value": "#64748B",
+          "$description": "Warna aksen ikon pencarian nirhasil."
+        },
+        "rest": {
+          "$type": "color",
+          "$value": "#0D9488",
+          "$description": "Warna aksen ikon jeda istirahat dan penjagaan energi."
+        }
+      }
+    },
+    "text": {
+      "title": {
+        "$type": "color",
+        "$value": "#0F172A",
+        "$description": "Warna teks judul kondisi kosong (Inter SemiBold)."
+      },
+      "body": {
+        "$type": "color",
+        "$value": "#64748B",
+        "$description": "Warna teks deskripsi yang tenang dan suportif."
+      }
+    },
+    "layout": {
+      "min-height": {
+        "$type": "dimension",
+        "$value": "360px",
+        "$description": "Tinggi minimum kanvas empty state untuk visual breathing room."
+      },
+      "padding-y": {
+        "$type": "dimension",
+        "$value": "64px",
+        "$description": "Jarak vertikal makro lapang pada kanvas empty state."
+      }
+    }
+  }
+}
