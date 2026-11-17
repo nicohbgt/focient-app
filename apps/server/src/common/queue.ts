@@ -92,6 +92,9 @@ export class BackgroundJobQueue {
    * Registers a job processor handler for a specific job name.
    */
   registerHandler<T>(name: string, handler: JobHandler<T>): void {
+    if (!this.bullWorker && process.env.REDIS_URL) {
+      this.initBullMq();
+    }
     this.handlers.set(name, handler as JobHandler<any>);
   }
 
@@ -100,6 +103,10 @@ export class BackgroundJobQueue {
    */
   async add<T>(name: string, data: T, options?: { delayMs?: number; priority?: number }): Promise<string> {
     const id = `job_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+    if (!this.bullQueue && process.env.REDIS_URL) {
+      this.initBullMq();
+    }
 
     if (this.isBullMqActive && this.bullQueue) {
       try {

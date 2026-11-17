@@ -59,7 +59,15 @@ describe('FoCient PostgreSQL-Backed API Integration Test Suite (P1 Quality & CI)
       }
     }
 
-    // 2. Close HTTP test server
+    // 2. Disconnect redis & background queue handles
+    try {
+      await cache.disconnect();
+      await jobQueue.close();
+    } catch {
+      // Ignore
+    }
+
+    // 3. Close HTTP test server
     if (server) {
       try {
         if (typeof (server as any).closeAllConnections === 'function') {

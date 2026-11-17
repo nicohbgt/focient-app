@@ -84,9 +84,7 @@ jobs:
 
       - name: Test Server & PostgreSQL-Backed API Integration
         timeout-minutes: 5
-        run: |
-          npx tsx --test --test-timeout=20000 apps/server/test/postgres-integration.test.ts
-          npm run test:server
+        run: npm run test:server
 
       - name: Test Web & Browser E2E Accessibility (WCAG AAA)
         timeout-minutes: 3

@@ -95,6 +95,9 @@ export class RedisCacheService implements ICacheService {
   }
 
   isRedisConnected(): boolean {
+    if (!this.redisClient && !this.connectionAttempted && process.env.REDIS_URL) {
+      this.initRedis();
+    }
     return this.connected && this.redisClient !== null && this.redisClient.status === 'ready';
   }
 
@@ -183,6 +186,7 @@ export class RedisCacheService implements ICacheService {
       }
       this.redisClient = null;
       this.connected = false;
+      this.connectionAttempted = false;
     }
   }
 
