@@ -1,12 +1,63 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { authClient, UserSession } from '../lib/auth-client';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { authClient, UserSession, PendingRegistration } from '../lib/auth-client';
+import {
+  calculateCapacityMinutes,
+  formatCurrentDate,
+  getDayOfWeekIndex,
+  getDayOfWeekName,
+  getWeekDayDate,
+  isTaskOnDate,
+  isTimeOverlappingQuietHours,
+  normalizeToISODate,
+  parseTime24ToMinutes,
+} from '../lib/date-utils';
+import {
+  registerPwaServiceWorker,
+  isNotificationSupported,
+  getNotificationPermission,
+  requestNotificationPermission,
+  showPwaNotification,
+  subscribeToWebPush,
+  triggerServerWebPush,
+  buildTaskReminderCopy,
+  buildWorkloadWarningCopy,
+  buildDailySummaryCopy,
+  buildRestBufferCopy,
+  buildUrgentTaskReminderCopy,
+  buildTaskAddedCopy,
+  buildTaskCompletedCopy,
+} from '../lib/pwa-notifications';
+import { FoCientI18nProvider } from '../components/i18n/I18nContext';
 
 export type TaskStatus = 'todo' | 'inProgress' | 'completed';
 export type TaskPriority = 'top3' | 'normal' | 'low';
 export type EnergyLevel = 'low' | 'medium' | 'high';
-export type FocusType = 'Light' | 'Medium' | 'Deep Focus';
+export type FocusType = 'Low' | 'Medium' | 'High' | 'Light' | 'Deep Focus';
+export type RecurrencePattern = 'daily' | 'weekdays' | 'weekly' | 'custom';
+export type NotificationCategory = 'task' | 'workload' | 'summary' | 'rest';
+export type AuthView =
+  | 'landing'
+  | 'welcome'
+  | 'login'
+  | 'register'
+  | 'otp'
+  | 'forgotPassword'
+  | 'resetPassword'
+  | 'onboarding'
+  | 'dashboard';
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  category: NotificationCategory;
+  createdAt: string;
+  read: boolean;
+  actionUrl?: string;
+  actionLabel?: string;
+}
 
 export interface WorkspaceCategory {
   id: string;
@@ -32,6 +83,9 @@ export interface MobileTask {
   focusType: FocusType;
   isBacklog?: boolean;
   needRestAfter?: boolean;
+  isRecurring?: boolean;
+  recurrencePattern?: RecurrencePattern;
+  recurrenceDays?: number[];
 }
 
 export interface CategoryBudgetItem {
@@ -65,10 +119,12 @@ export interface BacklogTaskItem {
   categoryName: string;
   categoryColor: string;
   focusType: FocusType;
+  restMinutes?: number;
 }
 
 export type ScreenInspectorView =
   | 'fullFlow'
+  | 'landing'
   | 'welcome'
   | 'login'
   | 'register'
@@ -84,48 +140,83 @@ export type ScreenInspectorView =
   | 'todayPlan'
   | 'taskList'
   | 'addTask'
-  | 'taskDetail';
+  | 'taskDetail'
+  | 'reschedule'
+  | 'insights'
+  | 'settings';
 
-export type ActiveNavTab = 'dashboard' | 'plan' | 'addTask' | 'tasks' | 'insights' | 'reschedule';
+export type ActiveNavTab = 'dashboard' | 'plan' | 'addTask' | 'tasks' | 'insights' | 'reschedule' | 'settings';
+export type DevicePreviewMode = 'responsive' | 'mobile' | 'tablet' | 'desktop';
 export type Language = 'en' | 'id';
+
+export const kOccupanciesList = [
+  'General',
+  'Professional',
+  'Entrepreneur',
+  'Student',
+];
 
 export const kOccupancyCategoryTemplates: Record<string, WorkspaceCategory[]> = {
   General: [
-    { id: 'cat-gen-1', name: 'Strategic', colorHex: '#7C3AED', focusType: 'Deep Focus', isDefault: true },
-    { id: 'cat-gen-2', name: 'Execution', colorHex: '#0284C7', focusType: 'Deep Focus', isDefault: true },
-    { id: 'cat-gen-3', name: 'Meeting', colorHex: '#B45309', focusType: 'Medium', isDefault: true },
-    { id: 'cat-gen-4', name: 'Operation', colorHex: '#0D9488', focusType: 'Light', isDefault: true },
-    { id: 'cat-gen-5', name: 'Personal', colorHex: '#059669', focusType: 'Light', isDefault: true },
+    { id: 'cat-gen-1', name: 'Focus', colorHex: '#2563EB', focusType: 'High', isDefault: true },
+    { id: 'cat-gen-2', name: 'Sync', colorHex: '#0284C7', focusType: 'Medium', isDefault: true },
+    { id: 'cat-gen-3', name: 'Admin', colorHex: '#64748B', focusType: 'Low', isDefault: true },
+    { id: 'cat-gen-4', name: 'Personal', colorHex: '#059669', focusType: 'Low', isDefault: true },
   ],
-  'Software Engineer': [
-    { id: 'cat-swe-1', name: 'Deep Work', colorHex: '#7C3AED', focusType: 'Deep Focus', isDefault: true },
-    { id: 'cat-swe-2', name: 'Code Review', colorHex: '#0284C7', focusType: 'Medium', isDefault: true },
-    { id: 'cat-swe-3', name: 'Sprint Meeting', colorHex: '#B45309', focusType: 'Medium', isDefault: true },
-    { id: 'cat-swe-4', name: 'Bug Fixing', colorHex: '#E11D48', focusType: 'Deep Focus', isDefault: true },
-    { id: 'cat-swe-5', name: 'Learning', colorHex: '#0D9488', focusType: 'Light', isDefault: true },
+  Professional: [
+    { id: 'cat-pro-1', name: 'Project', colorHex: '#2563EB', focusType: 'High', isDefault: true },
+    { id: 'cat-pro-2', name: 'Review', colorHex: '#0284C7', focusType: 'Medium', isDefault: true },
+    { id: 'cat-pro-3', name: 'Tech', colorHex: '#7C3AED', focusType: 'Medium', isDefault: true },
+    { id: 'cat-pro-4', name: 'Ops', colorHex: '#64748B', focusType: 'Low', isDefault: true },
   ],
-  'Product Designer': [
-    { id: 'cat-des-1', name: 'Design Sprint', colorHex: '#7C3AED', focusType: 'Deep Focus', isDefault: true },
-    { id: 'cat-des-2', name: 'User Research', colorHex: '#0284C7', focusType: 'Medium', isDefault: true },
-    { id: 'cat-des-3', name: 'Design Review', colorHex: '#B45309', focusType: 'Medium', isDefault: true },
-    { id: 'cat-des-4', name: 'Asset Handover', colorHex: '#0D9488', focusType: 'Light', isDefault: true },
-    { id: 'cat-des-5', name: 'Inspiration', colorHex: '#059669', focusType: 'Light', isDefault: true },
-  ],
-  Freelancer: [
-    { id: 'cat-fre-1', name: 'Client Delivery', colorHex: '#7C3AED', focusType: 'Deep Focus', isDefault: true },
-    { id: 'cat-fre-2', name: 'Proposal & Pitch', colorHex: '#0284C7', focusType: 'Deep Focus', isDefault: true },
-    { id: 'cat-fre-3', name: 'Admin & Invoice', colorHex: '#B45309', focusType: 'Light', isDefault: true },
-    { id: 'cat-fre-4', name: 'Skill Up', colorHex: '#0D9488', focusType: 'Medium', isDefault: true },
-    { id: 'cat-fre-5', name: 'Personal Care', colorHex: '#059669', focusType: 'Light', isDefault: true },
+  Entrepreneur: [
+    { id: 'cat-ent-1', name: 'Strategy', colorHex: '#7C3AED', focusType: 'High', isDefault: true },
+    { id: 'cat-ent-2', name: 'Product', colorHex: '#2563EB', focusType: 'High', isDefault: true },
+    { id: 'cat-ent-3', name: 'Sales', colorHex: '#0284C7', focusType: 'Medium', isDefault: true },
+    { id: 'cat-ent-4', name: 'Finance', colorHex: '#059669', focusType: 'Low', isDefault: true },
   ],
   Student: [
-    { id: 'cat-stu-1', name: 'Lecture & Study', colorHex: '#7C3AED', focusType: 'Deep Focus', isDefault: true },
-    { id: 'cat-stu-2', name: 'Assignment', colorHex: '#0284C7', focusType: 'Deep Focus', isDefault: true },
-    { id: 'cat-stu-3', name: 'Study Group', colorHex: '#B45309', focusType: 'Medium', isDefault: true },
-    { id: 'cat-stu-4', name: 'Research', colorHex: '#0D9488', focusType: 'Medium', isDefault: true },
-    { id: 'cat-stu-5', name: 'Rest', colorHex: '#059669', focusType: 'Light', isDefault: true },
+    { id: 'cat-stu-1', name: 'Study', colorHex: '#2563EB', focusType: 'High', isDefault: true },
+    { id: 'cat-stu-2', name: 'Assignment', colorHex: '#7C3AED', focusType: 'High', isDefault: true },
+    { id: 'cat-stu-3', name: 'Exam', colorHex: '#0284C7', focusType: 'Medium', isDefault: true },
+    { id: 'cat-stu-4', name: 'Campus', colorHex: '#059669', focusType: 'Low', isDefault: true },
   ],
 };
+
+export const kOccupancyCategoryTemplatesId: Record<string, WorkspaceCategory[]> = {
+  General: [
+    { id: 'cat-gen-1', name: 'Fokus', colorHex: '#2563EB', focusType: 'High', isDefault: true },
+    { id: 'cat-gen-2', name: 'Komunikasi', colorHex: '#0284C7', focusType: 'Medium', isDefault: true },
+    { id: 'cat-gen-3', name: 'Administrasi', colorHex: '#64748B', focusType: 'Low', isDefault: true },
+    { id: 'cat-gen-4', name: 'Pribadi', colorHex: '#059669', focusType: 'Low', isDefault: true },
+  ],
+  Professional: [
+    { id: 'cat-pro-1', name: 'Proyek', colorHex: '#2563EB', focusType: 'High', isDefault: true },
+    { id: 'cat-pro-2', name: 'Review', colorHex: '#0284C7', focusType: 'Medium', isDefault: true },
+    { id: 'cat-pro-3', name: 'Teknis', colorHex: '#7C3AED', focusType: 'Medium', isDefault: true },
+    { id: 'cat-pro-4', name: 'Operasional', colorHex: '#64748B', focusType: 'Low', isDefault: true },
+  ],
+  Entrepreneur: [
+    { id: 'cat-ent-1', name: 'Strategi', colorHex: '#7C3AED', focusType: 'High', isDefault: true },
+    { id: 'cat-ent-2', name: 'Produk', colorHex: '#2563EB', focusType: 'High', isDefault: true },
+    { id: 'cat-ent-3', name: 'Penjualan', colorHex: '#0284C7', focusType: 'Medium', isDefault: true },
+    { id: 'cat-ent-4', name: 'Keuangan', colorHex: '#059669', focusType: 'Low', isDefault: true },
+  ],
+  Student: [
+    { id: 'cat-stu-1', name: 'Belajar', colorHex: '#2563EB', focusType: 'High', isDefault: true },
+    { id: 'cat-stu-2', name: 'Tugas', colorHex: '#7C3AED', focusType: 'High', isDefault: true },
+    { id: 'cat-stu-3', name: 'Ujian', colorHex: '#0284C7', focusType: 'Medium', isDefault: true },
+    { id: 'cat-stu-4', name: 'Organisasi', colorHex: '#059669', focusType: 'Low', isDefault: true },
+  ],
+};
+
+const monDateStr = formatCurrentDate(getWeekDayDate(0), 'en');
+const tueDateStr = formatCurrentDate(getWeekDayDate(1), 'en');
+const wedDateStr = formatCurrentDate(getWeekDayDate(2), 'en');
+const thuDateStr = formatCurrentDate(getWeekDayDate(3), 'en');
+const friDateStr = formatCurrentDate(getWeekDayDate(4), 'en');
+const todayDateStr = formatCurrentDate(new Date(), 'en');
+const prevDateStr = formatCurrentDate(new Date(Date.now() - 86400000 * 2), 'en');
 
 export const kSampleTasks: MobileTask[] = [
   {
@@ -138,9 +229,9 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Strategic',
     categoryColor: '#7C3AED',
     restMinutes: 20,
-    dateDisplay: 'October, 5th 2026',
+    dateDisplay: monDateStr,
     startHourDisplay: '10:00',
-    focusType: 'Deep Focus',
+    focusType: 'High',
     needRestAfter: true,
   },
   {
@@ -153,9 +244,9 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Execution',
     categoryColor: '#0284C7',
     restMinutes: 15,
-    dateDisplay: 'October, 5th 2026',
+    dateDisplay: wedDateStr,
     startHourDisplay: '11:00',
-    focusType: 'Deep Focus',
+    focusType: 'High',
     needRestAfter: true,
   },
   {
@@ -168,9 +259,9 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Execution',
     categoryColor: '#0284C7',
     restMinutes: 15,
-    dateDisplay: 'October, 5th 2026',
+    dateDisplay: tueDateStr,
     startHourDisplay: '13:00',
-    focusType: 'Deep Focus',
+    focusType: 'High',
     needRestAfter: true,
   },
   {
@@ -183,9 +274,9 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Meeting',
     categoryColor: '#B45309',
     restMinutes: 10,
-    dateDisplay: 'October, 5th 2026',
+    dateDisplay: thuDateStr,
     startHourDisplay: '14:00',
-    focusType: 'Light',
+    focusType: 'Low',
     needRestAfter: true,
   },
   {
@@ -198,7 +289,7 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Execution',
     categoryColor: '#0284C7',
     restMinutes: 10,
-    dateDisplay: 'October, 5th 2026',
+    dateDisplay: thuDateStr,
     startHourDisplay: '14:30',
     focusType: 'Medium',
     needRestAfter: true,
@@ -213,7 +304,7 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Execution',
     categoryColor: '#0284C7',
     restMinutes: 10,
-    dateDisplay: 'October, 5th 2026',
+    dateDisplay: friDateStr,
     startHourDisplay: '15:30',
     focusType: 'Medium',
     needRestAfter: true,
@@ -228,10 +319,11 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Strategic',
     categoryColor: '#7C3AED',
     restMinutes: 10,
-    dateDisplay: 'October, 5th 2026',
+    dateDisplay: wedDateStr,
     startHourDisplay: '16:00',
-    focusType: 'Light',
+    focusType: 'Low',
     needRestAfter: true,
+    isRecurring: false,
   },
   {
     id: 't-8',
@@ -243,7 +335,7 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Execution',
     categoryColor: '#0284C7',
     restMinutes: 10,
-    dateDisplay: 'October, 5th 2026',
+    dateDisplay: tueDateStr,
     startHourDisplay: '16:30',
     focusType: 'Medium',
     needRestAfter: true,
@@ -258,9 +350,9 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Personal',
     categoryColor: '#059669',
     restMinutes: 5,
-    dateDisplay: 'October, 5th 2026',
+    dateDisplay: thuDateStr,
     startHourDisplay: '14:30',
-    focusType: 'Light',
+    focusType: 'Low',
     needRestAfter: false,
   },
   {
@@ -273,12 +365,12 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Operation',
     categoryColor: '#0D9488',
     restMinutes: 5,
-    dateDisplay: 'October, 5th 2026',
+    dateDisplay: monDateStr,
     startHourDisplay: '17:00',
-    focusType: 'Light',
+    focusType: 'Low',
     needRestAfter: false,
   },
-  // October 3rd, 2026 tasks matching mockups
+  // Recent tasks matching mockups
   {
     id: 't-oct3-1',
     title: '30min Incline Walking Cardio',
@@ -289,7 +381,7 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Personal',
     categoryColor: '#059669',
     restMinutes: 10,
-    dateDisplay: 'October, 3rd 2026',
+    dateDisplay: prevDateStr,
     startHourDisplay: '08:30',
     focusType: 'Medium',
     needRestAfter: true,
@@ -304,9 +396,9 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Personal',
     categoryColor: '#059669',
     restMinutes: 15,
-    dateDisplay: 'October, 3rd 2026',
+    dateDisplay: prevDateStr,
     startHourDisplay: '09:15',
-    focusType: 'Deep Focus',
+    focusType: 'High',
     needRestAfter: true,
   },
   {
@@ -319,9 +411,9 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Meeting',
     categoryColor: '#B45309',
     restMinutes: 10,
-    dateDisplay: 'October, 3rd 2026',
+    dateDisplay: prevDateStr,
     startHourDisplay: '11:40',
-    focusType: 'Deep Focus',
+    focusType: 'High',
     needRestAfter: true,
   },
   {
@@ -334,7 +426,7 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Meeting',
     categoryColor: '#B45309',
     restMinutes: 10,
-    dateDisplay: 'October, 3rd 2026',
+    dateDisplay: prevDateStr,
     startHourDisplay: '13:00',
     focusType: 'Medium',
     needRestAfter: true,
@@ -349,9 +441,9 @@ export const kSampleTasks: MobileTask[] = [
     categoryName: 'Strategic',
     categoryColor: '#7C3AED',
     restMinutes: 10,
-    dateDisplay: 'October, 3rd 2026',
+    dateDisplay: prevDateStr,
     startHourDisplay: '14:30',
-    focusType: 'Deep Focus',
+    focusType: 'High',
     needRestAfter: true,
   },
 ];
@@ -363,7 +455,7 @@ export const kSampleBacklog: BacklogTaskItem[] = [
     durationMinutes: 45,
     categoryName: 'Strategic',
     categoryColor: '#7C3AED',
-    focusType: 'Deep Focus',
+    focusType: 'High',
   },
   {
     id: 'backlog-2',
@@ -379,7 +471,7 @@ export const kSampleBacklog: BacklogTaskItem[] = [
     durationMinutes: 20,
     categoryName: 'Operation',
     categoryColor: '#0D9488',
-    focusType: 'Light',
+    focusType: 'Low',
   },
 ];
 
@@ -389,37 +481,68 @@ interface FocientContextType {
   isAuthenticated: boolean;
   isOtpPending: boolean;
   otpEmail: string;
+  setOtpEmail: (email: string) => void;
   otpPurpose: 'register' | 'forgotPassword';
+  setOtpPurpose: (purpose: 'register' | 'forgotPassword') => void;
+  pendingRegistration: PendingRegistration | null;
+  sendRegistrationOtp: (name: string, email: string, password?: string) => Promise<boolean>;
+  resendOtp: () => Promise<boolean>;
   isResetPasswordPending: boolean;
-  authView: 'welcome' | 'login' | 'register' | 'otp' | 'forgotPassword' | 'resetPassword';
+  authView: AuthView;
+  startOnboarding: () => void;
   login: (email: string, password?: string) => Promise<boolean>;
   loginAsGuest: () => void;
-  register: (name: string, email: string, password?: string) => Promise<boolean>;
+  loginWithGoogle: (googleProfile?: { email: string; name: string; avatarUrl?: string }) => Promise<boolean>;
+  startGoogleOAuth: (mode?: 'login' | 'register') => void;
+  isGoogleAuthModalOpen: boolean;
+  openGoogleAuthModal: (mode?: 'login' | 'register') => void;
+  closeGoogleAuthModal: () => void;
+  googleAuthMode: 'login' | 'register';
+  register: (name: string, email: string, password?: string, overwrite?: boolean) => Promise<boolean>;
+  cleanUser: (email: string) => Promise<boolean>;
+  resetDb: () => Promise<boolean>;
   verifyOtp: (code: string) => Promise<boolean>;
   forgotPassword: (email: string) => Promise<boolean>;
   resetPassword: (newPassword: string) => Promise<boolean>;
   cancelOtp: () => void;
   logout: () => void;
-  setAuthView: (view: 'welcome' | 'login' | 'register' | 'otp' | 'forgotPassword' | 'resetPassword') => void;
+  setAuthView: (view: AuthView) => void;
 
   // Onboarding
   onboardingStep: number;
   onboardingUsername: string;
   selectedOccupancy: string | null;
   categories: WorkspaceCategory[];
+  setCategories: (cats: WorkspaceCategory[]) => void;
   selectedRhythm: string | null;
   selectedStyle: string | null;
   startHour: string;
   endHour: string;
+  focusHourStart: string;
+  focusHourEnd: string;
+  quietHourStart: string;
+  quietHourEnd: string;
+  quietHourEnabled: boolean;
   restMinutesPerTask: number;
   setOnboardingStep: (step: number) => void;
   setOnboardingUsername: (name: string) => void;
   setSelectedOccupancy: (occ: string | null) => void;
   addCategory: (cat: WorkspaceCategory) => void;
+  updateCategory: (cat: WorkspaceCategory) => void;
   removeCategory: (id: string) => void;
   setSelectedRhythm: (rhythm: string | null) => void;
   setSelectedStyle: (style: string | null) => void;
-  setTimeAllocation: (start: string, end: string, rest: number) => void;
+  setQuietHours: (start: string, end: string, enabled?: boolean) => void;
+  setTimeAllocation: (
+    start: string,
+    end: string,
+    rest: number,
+    focusStart?: string,
+    focusEnd?: string,
+    quietStart?: string,
+    quietEnd?: string,
+    quietEnabled?: boolean
+  ) => void;
   completeOnboarding: () => void;
 
   // Tasks
@@ -456,8 +579,8 @@ interface FocientContextType {
   setInspectorView: (view: ScreenInspectorView) => void;
   emptyStateMode: boolean;
   setEmptyStateMode: (empty: boolean) => void;
-  devicePreview: 'responsive' | 'mobile';
-  setDevicePreview: (mode: 'responsive' | 'mobile') => void;
+  devicePreview: DevicePreviewMode;
+  setDevicePreview: (mode: DevicePreviewMode) => void;
   language: Language;
   setLanguage: (lang: Language) => void;
   toggleLanguage: () => void;
@@ -466,7 +589,9 @@ interface FocientContextType {
   isAddTaskModalOpen: boolean;
   setIsAddTaskModalOpen: (open: boolean) => void;
   taskToEdit: MobileTask | null;
-  openAddTaskModal: (taskToEdit?: MobileTask) => void;
+  initialTaskDate: string;
+  setInitialTaskDate: (date: string) => void;
+  openAddTaskModal: (taskToEdit?: MobileTask, defaultDate?: string) => void;
   closeAddTaskModal: () => void;
 
   // Toast
@@ -493,6 +618,7 @@ interface FocientContextType {
     tasks: number;
     reschedule: number;
     insights: number;
+    notifications: number;
   };
   draftContext: {
     isDirty: boolean;
@@ -505,56 +631,434 @@ interface FocientContextType {
   setIsPreservationDialogOpen: (open: boolean) => void;
   safeNavigate: (tab: ActiveNavTab) => void;
   confirmPendingNavigation: (action: 'save' | 'discard' | 'cancel') => void;
+
+  // Real-Time Data & Database Sync
+  dbSyncStatus: 'connected' | 'syncing' | 'offline';
+  isLiveDbSync: boolean;
+  refreshTasksFromDb: () => Promise<void>;
+  allocatedMinutes: number;
+
+  // Settings & Real Database Preferences
+  loadSettingsFromDb: () => Promise<void>;
+  updateSettings: (newSettings: any, options?: { silent?: boolean }) => Promise<boolean>;
+
+  // PWA & Web Notifications Engine
+  notifications: AppNotification[];
+  isNotificationPanelOpen: boolean;
+  pwaPermission: NotificationPermission;
+  unreadNotificationCount: number;
+  openNotificationPanel: () => void;
+  closeNotificationPanel: () => void;
+  toggleNotificationPanel: () => void;
+  markNotificationAsRead: (id: string) => void;
+  markAllNotificationsAsRead: () => void;
+  deleteNotification: (id: string) => void;
+  addAppNotification: (notification: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => void;
+  requestPwaPermission: () => Promise<NotificationPermission>;
+  triggerTaskReminder: (taskTitle: string, startHour: string, durationMinutes: number) => Promise<boolean>;
+  triggerWorkloadAlert: (workloadPercent: number, allocatedMinutes: number, capacityMinutes: number) => Promise<boolean>;
+  triggerDailySummary: (completedCount: number, restMinutes: number) => Promise<boolean>;
+  triggerRestBufferAlert: (restMinutes: number) => Promise<boolean>;
+  triggerWebPushTest: () => Promise<{ success: boolean; sentCount?: number; message?: string }>;
 }
 
 const FocientContext = createContext<FocientContextType | null>(null);
 
 export function FocientProvider({ children }: { children: React.ReactNode }) {
   // Auth state
-  const [user, setUser] = useState<UserSession | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [user, setUser] = useState<UserSession | null>(() => {
+    if (typeof window !== 'undefined') {
+      return authClient.getUser();
+    }
+    return null;
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return authClient.isAuthenticated();
+    }
+    return false;
+  });
   const [isOtpPending, setIsOtpPending] = useState<boolean>(false);
-  const [otpEmail, setOtpEmail] = useState<string>('demo@focient.dev');
+  const [pendingRegistration, setPendingRegistration] = useState<PendingRegistration | null>(() => {
+    if (typeof window !== 'undefined') {
+      return authClient.getPendingRegistration();
+    }
+    return null;
+  });
+  const [otpEmail, setOtpEmail] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const pending = authClient.getPendingRegistration();
+      if (pending?.email) return pending.email;
+      const urlParams = new URLSearchParams(window.location.search);
+      const emailParam = urlParams.get('email');
+      if (emailParam) return emailParam;
+    }
+    return '';
+  });
   const [otpPurpose, setOtpPurpose] = useState<'register' | 'forgotPassword'>('register');
   const [isResetPasswordPending, setIsResetPasswordPending] = useState<boolean>(false);
-  const [authView, setAuthView] = useState<'welcome' | 'login' | 'register' | 'otp' | 'forgotPassword' | 'resetPassword'>('welcome');
+  const [authView, setAuthView] = useState<AuthView>('landing');
 
-  // Onboarding state
-  const [onboardingStep, setOnboardingStep] = useState<number>(1);
-  const [onboardingUsername, setOnboardingUsername] = useState<string>('Alex Johnson');
-  const [selectedOccupancy, setSelectedOccupancy] = useState<string | null>('General');
-  const [categories, setCategories] = useState<WorkspaceCategory[]>(kOccupancyCategoryTemplates['General']);
-  const [selectedRhythm, setSelectedRhythm] = useState<string | null>('Early Bird');
-  const [selectedStyle, setSelectedStyle] = useState<string | null>('Structured');
-  const [startHour, setStartHour] = useState<string>('09:00 AM');
-  const [endHour, setEndHour] = useState<string>('05:00 PM');
-  const [restMinutesPerTask, setRestMinutesPerTask] = useState<number>(20);
+  // Google OAuth state (Native GIS & Standard OAuth 2.0 Popup)
+  const [isGoogleAuthModalOpen, setIsGoogleAuthModalOpen] = useState<boolean>(false);
+  const [googleAuthMode, setGoogleAuthMode] = useState<'login' | 'register'>('login');
 
-  // Tasks state
+  const startGoogleOAuth = useCallback((mode: 'login' | 'register' = 'login') => {
+    if (typeof window === 'undefined') return;
+    setGoogleAuthMode(mode);
+
+    // Standard centered Google OAuth 2.0 popup window dimensions
+    const width = 500;
+    const height = 620;
+    const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - width) / 2));
+    const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - height) / 2));
+
+    const popupUrl = `/api/auth/google?mode=${mode}`;
+    const popup = window.open(
+      popupUrl,
+      'GoogleOAuthPopup',
+      `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,scrollbars=yes`
+    );
+
+    if (popup) {
+      popup.focus();
+    }
+  }, []);
+
+  const openGoogleAuthModal = useCallback((mode: 'login' | 'register' = 'login') => {
+    // Deprecated in-app modal redirecting directly to official Google OAuth popup flow
+    startGoogleOAuth(mode);
+  }, [startGoogleOAuth]);
+
+  const closeGoogleAuthModal = useCallback(() => {
+    setIsGoogleAuthModalOpen(false);
+  }, []);
+
+  // Restore authenticated session from localStorage and verify with /api/auth/me on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const savedUser = authClient.getUser();
+    const token = authClient.getToken();
+
+    if (token) {
+      if (savedUser) {
+        setUser(savedUser);
+        setIsAuthenticated(true);
+        if (savedUser.isOnboardingCompleted) {
+          setOnboardingStep(5);
+          if (savedUser.name) setOnboardingUsername(savedUser.name);
+          if (savedUser.workHourStart || savedUser.startWorkTime) {
+            setStartHour(savedUser.workHourStart || savedUser.startWorkTime || '');
+          }
+          if (savedUser.workHourEnd || savedUser.endWorkTime) {
+            setEndHour(savedUser.workHourEnd || savedUser.endWorkTime || '17:00');
+          }
+          if (savedUser.workingRhythm) setSelectedRhythm(savedUser.workingRhythm);
+          if (savedUser.schedulingStyle) setSelectedStyle(savedUser.schedulingStyle);
+          if (savedUser.occupancy || savedUser.roleArchetype) {
+            setSelectedOccupancy(savedUser.occupancy || savedUser.roleArchetype || null);
+          }
+          if (savedUser.restTimePerTask !== undefined) {
+            setRestMinutesPerTask(savedUser.restTimePerTask);
+          }
+          if (savedUser.quietHourStart) setQuietHourStart(savedUser.quietHourStart);
+          if (savedUser.quietHourEnd) setQuietHourEnd(savedUser.quietHourEnd);
+          if (savedUser.quietHourEnabled !== undefined) setQuietHourEnabled(savedUser.quietHourEnabled);
+          if (Array.isArray((savedUser as any).categories) && (savedUser as any).categories.length > 0) {
+            setCategories(
+              (savedUser as any).categories.map((c: any) => ({
+                id: c.id,
+                name: c.name,
+                colorHex: c.colorToken || c.colorHex || '#0284C7',
+                focusType: 'High',
+                isDefault: Boolean(c.isDefault),
+              }))
+            );
+          }
+          try {
+            const userTasks = window.localStorage.getItem(`focient_web_tasks_${savedUser.id}`);
+            if (userTasks) {
+              const parsed = JSON.parse(userTasks);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setTasks(parsed);
+              }
+            }
+          } catch {}
+        } else {
+          setOnboardingStep(1);
+          setSelectedOccupancy(null);
+          setCategories([]);
+          setSelectedRhythm(null);
+          setSelectedStyle(null);
+          setStartHour('');
+          setEndHour('');
+          setQuietHourStart('');
+          setQuietHourEnd('');
+          setQuietHourEnabled(false);
+          setTasks([]);
+          setBacklogTasks([]);
+        }
+      }
+
+      // Verify token integrity and synchronize real profile with PostgreSQL backend
+      fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => {
+          if (res.status === 401) {
+            authClient.clearSession();
+            setUser(null);
+            setIsAuthenticated(false);
+            setOnboardingStep(0);
+            return null;
+          }
+          if (!res.ok) {
+            throw new Error(`Auth verification failed (${res.status})`);
+          }
+          return res.json();
+        })
+        .then((data) => {
+          if (data?.success && data?.user) {
+            authClient.setSession(token, data.user);
+            setUser(data.user);
+            setIsAuthenticated(true);
+            if (data.user.isOnboardingCompleted) {
+              if (data.user.name) {
+                setOnboardingUsername(data.user.name);
+              }
+              setOnboardingStep(5);
+              if (data.user.workHourStart || data.user.startWorkTime) {
+                setStartHour(data.user.workHourStart || data.user.startWorkTime);
+              }
+              if (data.user.workHourEnd || data.user.endWorkTime) {
+                setEndHour(data.user.workHourEnd || data.user.endWorkTime);
+              }
+              if (data.user.workingRhythm) setSelectedRhythm(data.user.workingRhythm);
+              if (data.user.schedulingStyle) setSelectedStyle(data.user.schedulingStyle);
+              if (data.user.occupancy || data.user.roleArchetype) {
+                setSelectedOccupancy(data.user.occupancy || data.user.roleArchetype);
+              }
+              if (data.user.restTimePerTask !== undefined) {
+                setRestMinutesPerTask(data.user.restTimePerTask);
+              }
+              if (data.user.quietHourStart) setQuietHourStart(data.user.quietHourStart);
+              if (data.user.quietHourEnd) setQuietHourEnd(data.user.quietHourEnd);
+              if (data.user.quietHourEnabled !== undefined) setQuietHourEnabled(data.user.quietHourEnabled);
+              if (Array.isArray(data.user.categories) && data.user.categories.length > 0) {
+                setCategories(
+                  data.user.categories.map((c: any) => ({
+                    id: c.id,
+                    name: c.name,
+                    colorHex: c.colorToken || c.colorHex || '#0284C7',
+                    focusType: 'High',
+                    isDefault: Boolean(c.isDefault),
+                  }))
+                );
+              }
+            } else {
+              setOnboardingStep(1);
+              setSelectedOccupancy(null);
+              setCategories([]);
+              setSelectedRhythm(null);
+              setSelectedStyle(null);
+              setStartHour('');
+              setEndHour('');
+              setQuietHourStart('');
+              setQuietHourEnd('');
+              setQuietHourEnabled(false);
+              setTasks([]);
+              setBacklogTasks([]);
+            }
+          } else {
+            authClient.clearSession();
+            setUser(null);
+            setIsAuthenticated(false);
+            setOnboardingStep(0);
+          }
+        })
+        .catch(() => {
+          // If server is temporarily unreachable, preserve validated cached user session
+          if (!savedUser) {
+            authClient.clearSession();
+            setUser(null);
+            setIsAuthenticated(false);
+            setOnboardingStep(0);
+          }
+        });
+    } else {
+      setUser(null);
+      setIsAuthenticated(false);
+      setOnboardingStep(0);
+    }
+  }, []);
+
+  // Onboarding state (Clean starting state matching mobile app architecture)
+  const [onboardingStep, setOnboardingStep] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const u = authClient.getUser();
+      if (u) {
+        if (u.isOnboardingCompleted === false && window.location.pathname.startsWith('/onboarding')) {
+          return 1;
+        }
+        return 5;
+      }
+    }
+    return 1;
+  });
+  const [onboardingUsername, setOnboardingUsername] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const u = authClient.getUser();
+      if (u?.name) return u.name;
+    }
+    return '';
+  });
+  const [selectedOccupancy, setSelectedOccupancy] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const u = authClient.getUser();
+      if (u?.isOnboardingCompleted && (u?.occupancy || u?.roleArchetype)) {
+        return u.occupancy || u.roleArchetype || null;
+      }
+    }
+    return null;
+  });
+  const [categories, setCategories] = useState<WorkspaceCategory[]>(() => {
+    if (typeof window !== 'undefined') {
+      const u = authClient.getUser();
+      if (u?.isOnboardingCompleted && Array.isArray((u as any).categories) && (u as any).categories.length > 0) {
+        return (u as any).categories.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          colorHex: c.colorToken || c.colorHex || '#0284C7',
+          focusType: 'High',
+          isDefault: Boolean(c.isDefault),
+        }));
+      }
+    }
+    return [];
+  });
+  const [selectedRhythm, setSelectedRhythm] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const u = authClient.getUser();
+      if (u?.isOnboardingCompleted && u?.workingRhythm) return u.workingRhythm;
+    }
+    return null;
+  });
+  const [selectedStyle, setSelectedStyle] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const u = authClient.getUser();
+      if (u?.isOnboardingCompleted && u?.schedulingStyle) return u.schedulingStyle;
+    }
+    return null;
+  });
+  const [startHour, setStartHour] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const u = authClient.getUser();
+      if (u?.isOnboardingCompleted && (u?.workHourStart || u?.startWorkTime)) {
+        return u.workHourStart || u.startWorkTime || '';
+      }
+    }
+    return '';
+  });
+  const [endHour, setEndHour] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const u = authClient.getUser();
+      if (u?.isOnboardingCompleted && (u?.workHourEnd || u?.endWorkTime)) {
+        return u.workHourEnd || u.endWorkTime || '';
+      }
+    }
+    return '';
+  });
+  const [focusHourStart, setFocusHourStart] = useState<string>('');
+  const [focusHourEnd, setFocusHourEnd] = useState<string>('');
+  const [quietHourStart, setQuietHourStart] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const u = authClient.getUser();
+      if (u?.quietHourStart) return u.quietHourStart;
+    }
+    return '';
+  });
+  const [quietHourEnd, setQuietHourEnd] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const u = authClient.getUser();
+      if (u?.quietHourEnd) return u.quietHourEnd;
+    }
+    return '';
+  });
+  const [quietHourEnabled, setQuietHourEnabled] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const u = authClient.getUser();
+      if (u?.quietHourEnabled !== undefined) return u.quietHourEnabled;
+    }
+    return true;
+  });
+  const [restMinutesPerTask, setRestMinutesPerTask] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const u = authClient.getUser();
+      if (u?.restTimePerTask !== undefined) return u.restTimePerTask;
+    }
+    return 10;
+  });
+
+  // Tasks state (Initialized with real data from localStorage or empty)
   const [emptyStateMode, setEmptyStateMode] = useState<boolean>(false);
-  const [tasks, setTasks] = useState<MobileTask[]>(kSampleTasks);
-  const [selectedCalendarDay, setSelectedCalendarDay] = useState<number>(3);
+  const [tasks, setTasks] = useState<MobileTask[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const u = authClient.getUser();
+        // New or onboarding users always start with 0 tasks
+        if (u && u.isOnboardingCompleted === false) {
+          return [];
+        }
+        if (u?.id) {
+          const stored = window.localStorage.getItem(`focient_web_tasks_${u.id}`);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) return parsed;
+          }
+        } else {
+          const stored = window.localStorage.getItem('focient_web_tasks');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) return parsed;
+          }
+        }
+      } catch {}
+    }
+    return [];
+  });
+  const [selectedCalendarDay, setSelectedCalendarDay] = useState<number>(() => new Date().getDate());
   const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<MobileTask | null>(null);
 
   // Planning state
   const [weeklyWorkloads, setWeeklyWorkloads] = useState<DailyWorkloadItem[]>([
-    { dayKey: 'Mon', fullDayName: 'Monday', percentage: 65 },
-    { dayKey: 'Tue', fullDayName: 'Tuesday', percentage: 75 },
-    { dayKey: 'Wed', fullDayName: 'Wednesday', percentage: 92 }, // Overloaded
-    { dayKey: 'Thu', fullDayName: 'Thursday', percentage: 55 },
-    { dayKey: 'Fri', fullDayName: 'Friday', percentage: 60 },
-    { dayKey: 'Sat', fullDayName: 'Saturday', percentage: 20 },
-    { dayKey: 'Sun', fullDayName: 'Sunday', percentage: 10 },
+    { dayKey: 'Mon', fullDayName: 'Monday', percentage: 40 },
+    { dayKey: 'Tue', fullDayName: 'Tuesday', percentage: 60 },
+    { dayKey: 'Wed', fullDayName: 'Wednesday', percentage: 75 },
+    { dayKey: 'Thu', fullDayName: 'Thursday', percentage: 50 },
+    { dayKey: 'Fri', fullDayName: 'Friday', percentage: 65 },
+    { dayKey: 'Sat', fullDayName: 'Saturday', percentage: 0 },
+    { dayKey: 'Sun', fullDayName: 'Sunday', percentage: 0 },
   ]);
 
   const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudgetItem[]>([
-    { name: 'Strategic', allocatedMinutes: 150, maxMinutes: 180, colorHex: '#7C3AED' },
-    { name: 'Execution', allocatedMinutes: 180, maxMinutes: 240, colorHex: '#0284C7' },
-    { name: 'Meeting', allocatedMinutes: 90, maxMinutes: 120, colorHex: '#B45309' },
-    { name: 'Personal', allocatedMinutes: 60, maxMinutes: 90, colorHex: '#059669' },
+    { name: 'Strategic', allocatedMinutes: 0, maxMinutes: 180, colorHex: '#7C3AED' },
+    { name: 'Execution', allocatedMinutes: 0, maxMinutes: 240, colorHex: '#0284C7' },
+    { name: 'Meeting', allocatedMinutes: 0, maxMinutes: 120, colorHex: '#B45309' },
+    { name: 'Personal', allocatedMinutes: 0, maxMinutes: 90, colorHex: '#059669' },
   ]);
 
-  const [backlogTasks, setBacklogTasks] = useState<BacklogTaskItem[]>(kSampleBacklog);
+  const [backlogTasks, setBacklogTasks] = useState<BacklogTaskItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = window.localStorage.getItem('focient_web_backlog');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
   const [rebalanceProposal, setRebalanceProposal] = useState<RebalanceTaskProposal | null>({
     id: 'reb-1',
     title: 'Design Architecture Monorepo',
@@ -573,11 +1077,12 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
   // UI state
   const [activeNavTab, setActiveNavTab] = useState<ActiveNavTab>('dashboard');
   const [inspectorView, setInspectorView] = useState<ScreenInspectorView>('fullFlow');
-  const [devicePreview, setDevicePreview] = useState<'responsive' | 'mobile'>('responsive');
+  const [devicePreview, setDevicePreview] = useState<DevicePreviewMode>('responsive');
   const [language, setLanguage] = useState<Language>('en');
   const [isTermsOpen, setIsTermsOpen] = useState<boolean>(false);
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState<boolean>(false);
   const [taskToEdit, setTaskToEdit] = useState<MobileTask | null>(null);
+  const [initialTaskDate, setInitialTaskDate] = useState<string>('');
 
   // Toast
   const [toast, setToast] = useState<{
@@ -600,11 +1105,562 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     setToast(null);
   }, []);
 
+  // Listen for Google OAuth postMessage completion from the popup window
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleOAuthMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'FOCIENT_GOOGLE_AUTH_SUCCESS') {
+        const { token, user: userSession, isNewUser } = event.data;
+        if (token && userSession) {
+          authClient.setSession(token, userSession);
+          setUser(userSession);
+          setIsAuthenticated(true);
+          if (isNewUser || userSession.isOnboardingCompleted === false) {
+            setOnboardingStep(1);
+            setOnboardingUsername('');
+            setSelectedOccupancy(null);
+            setCategories([]);
+            setSelectedRhythm(null);
+            setSelectedStyle(null);
+            setStartHour('');
+            setEndHour('');
+            setRestMinutesPerTask(10);
+            setTasks([]);
+            setBacklogTasks([]);
+            if (typeof window !== 'undefined') {
+              window.localStorage.removeItem('focient_web_tasks');
+              if (userSession.id) {
+                window.localStorage.removeItem(`focient_web_tasks_${userSession.id}`);
+              }
+            }
+            setAuthView('onboarding');
+            showToast(
+              language === 'id'
+                ? 'Akun Google terhubung! Selamat datang di FoCient.'
+                : 'Google account connected! Welcome to FoCient.',
+              'success'
+            );
+          } else {
+            setOnboardingUsername(userSession.name || userSession.email.split('@')[0]);
+            setOnboardingStep(5);
+            setActiveNavTab('dashboard');
+            setAuthView('dashboard');
+            showToast(
+              language === 'id'
+                ? `Selamat datang kembali, ${userSession.name}!`
+                : `Welcome back, ${userSession.name}!`,
+              'success'
+            );
+          }
+        }
+      }
+    };
+
+    window.addEventListener('message', handleOAuthMessage);
+    return () => window.removeEventListener('message', handleOAuthMessage);
+  }, [language, showToast]);
+
+  // Database & Real-Time Sync State
+  const [dbSyncStatus, setDbSyncStatus] = useState<'connected' | 'syncing' | 'offline'>('connected');
+  const isLiveDbSync = dbSyncStatus === 'connected' || dbSyncStatus === 'syncing';
+
+  // Calculate live allocated minutes across today's active tasks
+  const allocatedMinutes = useMemo(() => {
+    const today = new Date();
+    return tasks
+      .filter((t) => !t.isBacklog && t.status !== 'completed' && isTaskOnDate(t.dateDisplay, today, t))
+      .reduce((sum, t) => sum + (t.durationMinutes || 0), 0);
+  }, [tasks]);
+
+  // Dynamically compute categoryBudgets based on real user categories and active tasks for today
+  useEffect(() => {
+    const activeCats =
+      categories.length > 0
+        ? categories
+        : [
+            { id: 'c1', name: 'Strategic', colorHex: '#7C3AED', focusType: 'High' as const, isDefault: true },
+            { id: 'c2', name: 'Execution', colorHex: '#0284C7', focusType: 'Medium' as const, isDefault: true },
+            { id: 'c3', name: 'Meeting', colorHex: '#B45309', focusType: 'Medium' as const, isDefault: true },
+            { id: 'c4', name: 'Personal', colorHex: '#059669', focusType: 'Low' as const, isDefault: true },
+          ];
+
+    const capacity = calculateCapacityMinutes(user?.workHourStart, user?.workHourEnd);
+    const budgetPerCategory = Math.max(60, Math.round(capacity * 0.4));
+    const today = new Date();
+
+    const computedBudgets: CategoryBudgetItem[] = activeCats.map((cat) => {
+      const allocated = tasks
+        .filter((t) => !t.isBacklog && t.status !== 'completed' && t.categoryName === cat.name && isTaskOnDate(t.dateDisplay, today, t))
+        .reduce((sum, t) => sum + (t.durationMinutes || 0), 0);
+      return {
+        name: cat.name,
+        allocatedMinutes: allocated,
+        maxMinutes: budgetPerCategory,
+        colorHex: cat.colorHex,
+      };
+    });
+
+    setCategoryBudgets(computedBudgets);
+  }, [tasks, categories, user?.workHourStart, user?.workHourEnd]);
+
+  // Memoized unified backlog tasks combining tasks with isBacklog: true and any standalone backlog items
+  const allBacklogTasks = useMemo(() => {
+    const fromTasks: BacklogTaskItem[] = tasks
+      .filter((t) => t.isBacklog && t.status !== 'completed')
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        durationMinutes: t.durationMinutes,
+        categoryName: t.categoryName,
+        categoryColor: t.categoryColor,
+        focusType: t.focusType,
+        restMinutes: t.restMinutes,
+      }));
+    const taskIds = new Set(fromTasks.map((t) => t.id));
+    const extra = backlogTasks.filter((b) => !taskIds.has(b.id));
+    return [...fromTasks, ...extra];
+  }, [tasks, backlogTasks]);
+
+  // Dynamically compute weeklyWorkloads and rebalance proposals from real user tasks and capacity baseline
+  useEffect(() => {
+    const capacity = calculateCapacityMinutes(user?.workHourStart, user?.workHourEnd);
+    const dayKeys: Array<{ dayKey: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun'; index: number }> = [
+      { dayKey: 'Mon', index: 0 },
+      { dayKey: 'Tue', index: 1 },
+      { dayKey: 'Wed', index: 2 },
+      { dayKey: 'Thu', index: 3 },
+      { dayKey: 'Fri', index: 4 },
+      { dayKey: 'Sat', index: 5 },
+      { dayKey: 'Sun', index: 6 },
+    ];
+
+    const computedWorkloads: DailyWorkloadItem[] = dayKeys.map((day) => {
+      const weekDayDate = getWeekDayDate(day.index);
+      const dayTasks = tasks.filter((t) => {
+        if (t.isBacklog) return false;
+        return isTaskOnDate(t.dateDisplay, weekDayDate, t);
+      });
+
+      const totalMinutes = dayTasks.reduce(
+        (sum, t) => sum + (t.durationMinutes || 0) + (t.restMinutes || 0),
+        0
+      );
+
+      const percentage = capacity > 0 ? Math.min(100, Math.round((totalMinutes / capacity) * 100)) : 0;
+
+      return {
+        dayKey: day.dayKey,
+        fullDayName: getDayOfWeekName(day.index, language),
+        percentage,
+      };
+    });
+
+    setWeeklyWorkloads(computedWorkloads);
+
+    // 1. Conflict Check: Direct time schedule collision / overlapping tasks on any day
+    let collisionCandidate: {
+      candidateTask: MobileTask;
+      conflictingWith: MobileTask;
+      dayIndex: number;
+      dayName: string;
+      suggestedSlot: string;
+      buffer: number;
+    } | null = null;
+
+    if (!rescheduleAlertResolved && !rescheduleAlertDismissed) {
+      for (const day of dayKeys) {
+        const weekDayDate = getWeekDayDate(day.index);
+        const dayTasks = tasks
+          .filter(
+            (t) =>
+              !t.isBacklog &&
+              t.status !== 'completed' &&
+              isTaskOnDate(t.dateDisplay, weekDayDate, t) &&
+              t.startHourDisplay &&
+              t.startHourDisplay.includes(':')
+          )
+          .sort(
+            (a, b) =>
+              (parseTime24ToMinutes(a.startHourDisplay) ?? 0) -
+              (parseTime24ToMinutes(b.startHourDisplay) ?? 0)
+          );
+
+        for (let i = 0; i < dayTasks.length - 1; i++) {
+          const t1 = dayTasks[i];
+          const t2 = dayTasks[i + 1];
+          const t1Start = parseTime24ToMinutes(t1.startHourDisplay);
+          const t2Start = parseTime24ToMinutes(t2.startHourDisplay);
+          if (t1Start !== null && t2Start !== null) {
+            const t1Duration = t1.durationMinutes || 30;
+            const t1Buffer = t1.restMinutes ?? 10;
+            const t1EarliestFree = t1Start + t1Duration + t1Buffer;
+            if (t2Start < t1Start + t1Duration) {
+              const shiftHour = String(Math.floor(t1EarliestFree / 60) % 24).padStart(2, '0');
+              const shiftMin = String(t1EarliestFree % 60).padStart(2, '0');
+              collisionCandidate = {
+                candidateTask: t2,
+                conflictingWith: t1,
+                dayIndex: day.index,
+                dayName: getDayOfWeekName(day.index, language),
+                suggestedSlot: `${shiftHour}:${shiftMin}`,
+                buffer: t1Buffer,
+              };
+              break;
+            }
+          }
+        }
+        if (collisionCandidate) break;
+      }
+    }
+
+    if (collisionCandidate) {
+      setRebalanceProposal({
+        id: collisionCandidate.candidateTask.id,
+        title: collisionCandidate.candidateTask.title,
+        previousSchedule: `${collisionCandidate.dayName}, ${collisionCandidate.candidateTask.startHourDisplay || '15:00'}`,
+        newSchedule: `${collisionCandidate.dayName}, ${collisionCandidate.suggestedSlot} (Buffer: ${collisionCandidate.buffer}m)`,
+        taskDurationMinutes: collisionCandidate.candidateTask.durationMinutes,
+        restDurationMinutes: collisionCandidate.buffer,
+        categoryName: collisionCandidate.candidateTask.categoryName,
+        categoryColor: collisionCandidate.candidateTask.categoryColor,
+      });
+      return;
+    }
+
+    // 2. Overload check (> 80% capacity is nearing / over threshold)
+    const overloadedDay = computedWorkloads.find((d) => d.percentage > 80);
+    if (overloadedDay && !rescheduleAlertResolved && !rescheduleAlertDismissed) {
+      const dayIndex = dayKeys.find((dk) => dk.dayKey === overloadedDay.dayKey)?.index ?? 0;
+      const dayDate = getWeekDayDate(dayIndex);
+      const dayTasks = tasks.filter((t) => {
+        if (t.isBacklog || t.status === 'completed') return false;
+        return isTaskOnDate(t.dateDisplay, dayDate, t);
+      });
+
+      const candidateTask = dayTasks.find((t) => t.priority !== 'top3') || dayTasks[0];
+      if (candidateTask) {
+        // Find a lighter day in the week with percentage < 65%
+        const lighterDay =
+          computedWorkloads.find((d) => d.percentage < 65 && d.dayKey !== overloadedDay.dayKey) ||
+          computedWorkloads[(dayKeys.findIndex((dk) => dk.dayKey === overloadedDay.dayKey) + 1) % 7];
+
+        const currentRhythm = user?.workingRhythm || (user as any)?.energyRhythm || selectedRhythm || 'Steady Pacer';
+        const currentStyle = user?.schedulingStyle || selectedStyle || 'Structured';
+        const isHighFocus = candidateTask.focusType === 'High' || candidateTask.focusType === 'Deep Focus';
+
+        // Retain candidateTask's configured rest buffer or user's preference without restricting it
+        const userRestPref = restMinutesPerTask > 0 ? restMinutesPerTask : (user?.restTimePerTask ?? 10);
+        const taskRestBuffer = candidateTask.restMinutes !== undefined && candidateTask.restMinutes !== null
+          ? candidateTask.restMinutes
+          : userRestPref;
+
+        let recommendedTimeSlot = '10:00';
+        if (currentStyle === 'Structured') {
+          if (isHighFocus) {
+            recommendedTimeSlot = currentRhythm === 'Early Bird' ? '09:00' : currentRhythm === 'Night Owl' ? '18:30' : '10:00';
+          } else {
+            recommendedTimeSlot = '14:30';
+          }
+        } else {
+          recommendedTimeSlot = isHighFocus ? '11:00' : '15:00';
+        }
+
+        setRebalanceProposal({
+          id: candidateTask.id,
+          title: candidateTask.title,
+          previousSchedule: `${overloadedDay.fullDayName}, ${candidateTask.startHourDisplay || '14:00'}`,
+          newSchedule: `${lighterDay.fullDayName}, ${recommendedTimeSlot} (Buffer: ${taskRestBuffer}m)`,
+          taskDurationMinutes: candidateTask.durationMinutes,
+          restDurationMinutes: taskRestBuffer,
+          categoryName: candidateTask.categoryName,
+          categoryColor: candidateTask.categoryColor,
+        });
+      } else {
+        setRebalanceProposal(null);
+      }
+    } else {
+      setRebalanceProposal(null);
+    }
+  }, [tasks, user?.workHourStart, user?.workHourEnd, user?.workHoursLimit, user?.workingRhythm, user?.schedulingStyle, selectedRhythm, selectedStyle, language, rescheduleAlertResolved, rescheduleAlertDismissed]);
+
+  const refreshTasksFromDb = useCallback(async () => {
+    if (typeof window === 'undefined') return;
+    try {
+      setDbSyncStatus('syncing');
+      const token = authClient.getToken();
+      const res = await fetch('/api/tasks', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const mapped: MobileTask[] = data.map((t: any) => ({
+            id: t.id,
+            title: t.title,
+            durationMinutes: t.durationMinutes || 25,
+            priority: (t.priority === 'TOP_3' || t.priority === 'top3') ? 'top3' : t.priority === 'LOW' ? 'low' : 'normal',
+            energyLevel: t.energyLevel === 'HIGH' ? 'high' : t.energyLevel === 'LOW' ? 'low' : 'medium',
+            status: (t.status === 'COMPLETED' || t.status === 'completed') ? 'completed' : 'todo',
+            categoryName: t.categoryName || 'Execution',
+            categoryColor: t.categoryColor || '#0284C7',
+            focusType: (t.focusType === 'Deep Focus' ? 'High' : t.focusType === 'Light' ? 'Low' : t.focusType || 'High') as FocusType,
+            restMinutes: t.restMinutes ?? 10,
+            dateDisplay: t.dateDisplay || formatCurrentDate(new Date(), language),
+            startHourDisplay: t.startHourDisplay || '10:00 AM',
+            needRestAfter: true,
+            isBacklog: Boolean(t.isBacklog),
+          }));
+
+          if (mapped.length > 0) {
+            const activeTasks = mapped.filter((t) => !t.isBacklog);
+            const backlog = mapped.filter((t) => t.isBacklog);
+
+            setTasks(mapped);
+            const mappedBacklogItems = backlog.map((t) => ({
+              id: t.id,
+              title: t.title,
+              durationMinutes: t.durationMinutes,
+              categoryName: t.categoryName,
+              categoryColor: t.categoryColor,
+              focusType: t.focusType,
+              restMinutes: t.restMinutes,
+            }));
+            setBacklogTasks(mappedBacklogItems);
+
+            if (typeof window !== 'undefined') {
+              const activeUserId = user?.id || authClient.getUser()?.id;
+              const storageKey = activeUserId ? `focient_web_tasks_${activeUserId}` : 'focient_web_tasks';
+              window.localStorage.setItem(storageKey, JSON.stringify(mapped));
+              window.localStorage.setItem('focient_web_backlog', JSON.stringify(mappedBacklogItems));
+            }
+          } else if (typeof window !== 'undefined') {
+            const activeUser = user || authClient.getUser();
+            // NEVER recover old sample tasks into an onboarding user session
+            if (!activeUser || activeUser.isOnboardingCompleted === false) {
+              setTasks([]);
+              setBacklogTasks([]);
+              setDbSyncStatus('connected');
+              return;
+            }
+            const activeUserId = activeUser.id;
+            const storageKey = activeUserId ? `focient_web_tasks_${activeUserId}` : null;
+            if (storageKey) {
+              const cached = window.localStorage.getItem(storageKey);
+              if (cached) {
+                try {
+                  const parsed = JSON.parse(cached);
+                  if (Array.isArray(parsed) && parsed.length > 0) {
+                    setTasks(parsed);
+                    for (const t of parsed) {
+                      fetch('/api/tasks', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                        },
+                        body: JSON.stringify(t),
+                      }).catch(() => {});
+                    }
+                  }
+                } catch {}
+              }
+            }
+          }
+          setDbSyncStatus('connected');
+        } else {
+          setDbSyncStatus('connected');
+        }
+      } else {
+        setDbSyncStatus('offline');
+      }
+    } catch {
+      setDbSyncStatus('offline');
+    }
+  }, [user?.id, language]);
+
+  const loadSettingsFromDb = useCallback(async () => {
+    if (typeof window === 'undefined') return;
+    try {
+      const token = authClient.getToken();
+      const res = await fetch('/api/settings', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          const updatedUserObj: UserSession = {
+            ...(user || ({} as any)),
+            ...data.user,
+            workHourStart: data.user.startWorkTime || data.user.workHourStart || '09:00',
+            workHourEnd: data.user.endWorkTime || data.user.workHourEnd || '17:00',
+            dailyCapacityMinutes: data.user.dailyCapacityMinutes || 480,
+          };
+          setUser(updatedUserObj);
+          if (token) {
+            authClient.setSession(token, updatedUserObj);
+          }
+          if (data.user.isOnboardingCompleted) {
+            setOnboardingStep(5);
+            if (data.user.roleArchetype) setSelectedOccupancy(data.user.roleArchetype);
+            if (data.user.workingRhythm) setSelectedRhythm(data.user.workingRhythm);
+            if (data.user.schedulingStyle) setSelectedStyle(data.user.schedulingStyle);
+            if (data.user.startWorkTime) setStartHour(data.user.startWorkTime);
+            if (data.user.endWorkTime) setEndHour(data.user.endWorkTime);
+            if (data.user.restTimePerTask) setRestMinutesPerTask(data.user.restTimePerTask);
+            if (Array.isArray(data.categories) && data.categories.length > 0) {
+              setCategories(
+                data.categories.map((c: any) => ({
+                  id: c.id,
+                  name: c.name,
+                  colorHex: c.colorToken || c.colorHex || '#0284C7',
+                  focusType: 'High',
+                  isDefault: Boolean(c.isDefault),
+                }))
+              );
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('loadSettingsFromDb warning:', err);
+    }
+  }, []);
+
+  const updateSettings = useCallback(
+    async (newSettings: any, options?: { silent?: boolean }): Promise<boolean> => {
+      try {
+        // Optimistic UI updates
+        if (newSettings.name) {
+          setUser((prev) => (prev ? { ...prev, name: newSettings.name } : null));
+        }
+        if (newSettings.roleArchetype) {
+          setUser((prev) => (prev ? { ...prev, roleArchetype: newSettings.roleArchetype } : null));
+          setSelectedOccupancy(newSettings.roleArchetype);
+        }
+        if (newSettings.startWorkTime) {
+          setStartHour(newSettings.startWorkTime);
+          setUser((prev) => (prev ? { ...prev, workHourStart: newSettings.startWorkTime } : null));
+        }
+        if (newSettings.endWorkTime) {
+          setEndHour(newSettings.endWorkTime);
+          setUser((prev) => (prev ? { ...prev, workHourEnd: newSettings.endWorkTime } : null));
+        }
+        if (newSettings.dailyCapacityMinutes) {
+          setUser((prev) => (prev ? { ...prev, dailyCapacityMinutes: newSettings.dailyCapacityMinutes } : null));
+        }
+        if (newSettings.restTimePerTask) {
+          setRestMinutesPerTask(newSettings.restTimePerTask);
+        }
+        if (newSettings.workingRhythm) {
+          setSelectedRhythm(newSettings.workingRhythm);
+          setUser((prev) => (prev ? { ...prev, workingRhythm: newSettings.workingRhythm } : null));
+          if (newSettings.workingRhythm === 'Early Bird') {
+            setFocusHourStart('07:00');
+            setFocusHourEnd('12:00');
+          } else if (newSettings.workingRhythm === 'Steady Pacer') {
+            setFocusHourStart('09:00');
+            setFocusHourEnd('15:00');
+          } else if (newSettings.workingRhythm === 'Night Owl') {
+            setFocusHourStart('18:00');
+            setFocusHourEnd('00:00');
+          }
+          if (typeof window !== 'undefined') {
+            const token = authClient.getToken();
+            const curr = authClient.getUser();
+            if (curr && token) {
+              authClient.setSession(token, { ...curr, workingRhythm: newSettings.workingRhythm });
+            }
+          }
+        }
+        if (newSettings.schedulingStyle) setSelectedStyle(newSettings.schedulingStyle);
+        if (newSettings.quietHourStart || newSettings.preferences?.quietHoursStart) {
+          setQuietHourStart(newSettings.quietHourStart || newSettings.preferences?.quietHoursStart);
+        }
+        if (newSettings.quietHourEnd || newSettings.preferences?.quietHoursEnd) {
+          setQuietHourEnd(newSettings.quietHourEnd || newSettings.preferences?.quietHoursEnd);
+        }
+
+        // Persist to PostgreSQL via /api/settings
+        const token = authClient.getToken();
+        const res = await fetch('/api/settings', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(newSettings),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setUser((prev) => (prev ? { ...prev, ...data.user } : data.user));
+            if (typeof window !== 'undefined') {
+              const token = authClient.getToken() || 'focient_token';
+              const currentUser = authClient.getUser() || user;
+              if (currentUser) {
+                authClient.setSession(token, {
+                  ...currentUser,
+                  ...data.user,
+                });
+              }
+            }
+          }
+          if (!options?.silent) {
+            showToast(
+              language === 'id' ? 'Pengaturan berhasil disimpan ke database' : 'Settings saved to database',
+              'success'
+            );
+          }
+          return true;
+        }
+        return false;
+      } catch (error) {
+        if (!options?.silent) {
+          showToast(language === 'id' ? 'Gagal menyimpan pengaturan' : 'Failed to save settings', 'error');
+        }
+        return false;
+      }
+    },
+    [language, showToast, user]
+  );
+
+  // Real-time synchronization & SSE listener
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    refreshTasksFromDb();
+    loadSettingsFromDb();
+
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource('/api/realtime');
+      es.onopen = () => setDbSyncStatus('connected');
+      es.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'sync' || msg.type === 'heartbeat') {
+            setDbSyncStatus('connected');
+          }
+        } catch {}
+      };
+      es.onerror = () => setDbSyncStatus('offline');
+    } catch {
+      setDbSyncStatus('offline');
+    }
+
+    return () => {
+      es?.close();
+    };
+  }, [refreshTasksFromDb]);
+
   // Browser Storage Persistence ($0 operational cost, local-first client)
   useEffect(() => {
     if (typeof window !== 'undefined' && !emptyStateMode) {
       try {
-        const stored = window.localStorage.getItem('focient_web_tasks');
+        const stored =
+          window.localStorage.getItem(user?.id ? `focient_web_tasks_${user.id}` : 'focient_web_tasks') ||
+          window.localStorage.getItem('focient_web_tasks');
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -615,20 +1671,28 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         // ignore
       }
     }
-  }, []);
+  }, [user?.id, emptyStateMode]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
         window.localStorage.setItem('focient_web_tasks', JSON.stringify(tasks));
+        if (user?.id) {
+          window.localStorage.setItem(`focient_web_tasks_${user.id}`, JSON.stringify(tasks));
+        }
       } catch {
         // ignore
       }
     }
-  }, [tasks]);
+  }, [tasks, user?.id]);
 
   // Sync Empty State Mode
+  const emptyStateFirstMount = useRef(true);
   useEffect(() => {
+    if (emptyStateFirstMount.current) {
+      emptyStateFirstMount.current = false;
+      return;
+    }
     if (emptyStateMode) {
       setTasks([]);
       setBacklogTasks([]);
@@ -680,49 +1744,280 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
 
   // Auth actions
   const login = useCallback(async (email: string, password = ''): Promise<boolean> => {
-    const userSession: UserSession = {
-      id: 'usr-1',
-      name: email.split('@')[0] || 'Alex Johnson',
-      email,
-      workHourStart: '09:00',
-      workHourEnd: '17:00',
-      dailyCapacityMinutes: 480,
-    };
-    authClient.setSession('focient_jwt_session_token', userSession);
-    setUser(userSession);
-    setIsAuthenticated(true);
-    showToast(language === 'id' ? 'Berhasil masuk ke FoCient' : 'Welcome back to FoCient!', 'success');
-    return true;
-  }, [language, showToast]);
+    try {
+      const res = await authClient.login(email, password);
+      if (res.success && res.user) {
+        const onboardedUser: UserSession = {
+          ...res.user,
+          isOnboardingCompleted: true,
+        };
+        setUser(onboardedUser);
+        setIsAuthenticated(true);
+        setActiveNavTab('dashboard');
+        setAuthView('dashboard');
+        setOnboardingStep(5);
+        authClient.setSession(res.token || authClient.getToken() || 'focient_token', onboardedUser);
 
-  const loginAsGuest = useCallback(() => {
+        // Synchronize user work availability hours, rhythm, occupancy & rest buffer
+        const start = onboardedUser.workHourStart || onboardedUser.startWorkTime || '09:00';
+        const end = onboardedUser.workHourEnd || onboardedUser.endWorkTime || '17:00';
+        setStartHour(start);
+        setEndHour(end);
+        if (onboardedUser.workingRhythm) setSelectedRhythm(onboardedUser.workingRhythm);
+        if (onboardedUser.schedulingStyle) setSelectedStyle(onboardedUser.schedulingStyle);
+        if (onboardedUser.occupancy || onboardedUser.roleArchetype) {
+          setSelectedOccupancy(onboardedUser.occupancy || onboardedUser.roleArchetype || null);
+        }
+        if (onboardedUser.restTimePerTask !== undefined) {
+          setRestMinutesPerTask(onboardedUser.restTimePerTask);
+        }
+
+        // Synchronize categories
+        const cats = (res as any).categories || (res.user as any)?.categories;
+        if (Array.isArray(cats) && cats.length > 0) {
+          setCategories(
+            cats.map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              colorHex: c.colorToken || c.colorHex || '#0284C7',
+              focusType: 'High',
+              isDefault: Boolean(c.isDefault),
+            }))
+          );
+        } else {
+          loadSettingsFromDb();
+        }
+
+        // Optimistically load user-scoped tasks from localStorage
+        if (typeof window !== 'undefined') {
+          try {
+            const userTasks = window.localStorage.getItem(`focient_web_tasks_${onboardedUser.id}`);
+            if (userTasks) {
+              const parsed = JSON.parse(userTasks);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setTasks(parsed);
+              }
+            }
+          } catch {}
+        }
+
+        // Refresh tasks from server / local database
+        refreshTasksFromDb();
+
+        return true;
+      }
+      throw new Error(res.message || (language === 'id' ? 'Email atau kata sandi tidak cocok' : 'Invalid email or password'));
+    } catch (err: any) {
+      throw err;
+    }
+  }, [language, loadSettingsFromDb, refreshTasksFromDb]);
+
+  const loginAsGuest = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/demo', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.token && data.user) {
+          const guestUser: UserSession = {
+            ...data.user,
+            isOnboardingCompleted: true,
+          };
+          authClient.setSession(data.token, guestUser);
+          setUser(guestUser);
+          setIsAuthenticated(true);
+          setActiveNavTab('dashboard');
+          setAuthView('dashboard');
+          setOnboardingStep(5);
+          showToast(language === 'id' ? 'Masuk sebagai Mode Tamu' : 'Signed in with Guest Session', 'info');
+          return;
+        }
+      }
+    } catch {}
+
+    const guestId = `usr_guest_${Date.now()}`;
     const guestSession: UserSession = {
-      id: 'usr-guest',
-      name: 'Alex Johnson',
-      email: 'alex@focient.dev',
+      id: guestId,
+      name: language === 'id' ? 'Tamu FoCient' : 'FoCient Guest',
+      email: `guest_${Date.now()}@demo.focient.local`,
       workHourStart: '09:00',
       workHourEnd: '17:00',
       dailyCapacityMinutes: 480,
+      provider: 'guest',
+      isOnboardingCompleted: true,
     };
-    authClient.setSession('focient_guest_jwt_token', guestSession);
+    authClient.setSession(`focient_token_${Date.now()}`, guestSession);
     setUser(guestSession);
     setIsAuthenticated(true);
+    setOnboardingStep(5);
+    setActiveNavTab('dashboard');
+    setAuthView('dashboard');
     showToast(language === 'id' ? 'Masuk sebagai Mode Tamu' : 'Signed in with Guest Session', 'info');
   }, [language, showToast]);
 
-  const register = useCallback(async (name: string, email: string, password = ''): Promise<boolean> => {
-    setOtpEmail(email);
-    setOnboardingUsername(name || email.split('@')[0]);
+  const loginWithGoogle = useCallback(
+    async (googleProfile?: { email: string; name: string; avatarUrl?: string }): Promise<boolean> => {
+      try {
+        const res = await authClient.loginWithGoogle(googleProfile);
+        if (res.success && res.user) {
+          const googleUser: UserSession = {
+            ...res.user,
+            isOnboardingCompleted: true,
+          };
+          setUser(googleUser);
+          setIsAuthenticated(true);
+          setActiveNavTab('dashboard');
+          setAuthView('dashboard');
+          setOnboardingStep(5);
+          authClient.setSession(authClient.getToken() || 'focient_token', googleUser);
+
+          // Synchronize profile attributes
+          const start = googleUser.workHourStart || googleUser.startWorkTime || '09:00';
+          const end = googleUser.workHourEnd || googleUser.endWorkTime || '17:00';
+          setStartHour(start);
+          setEndHour(end);
+          if (googleUser.workingRhythm) setSelectedRhythm(googleUser.workingRhythm);
+          if (googleUser.schedulingStyle) setSelectedStyle(googleUser.schedulingStyle);
+          if (googleUser.occupancy || googleUser.roleArchetype) {
+            setSelectedOccupancy(googleUser.occupancy || googleUser.roleArchetype || null);
+          }
+          if (googleUser.restTimePerTask !== undefined) {
+            setRestMinutesPerTask(googleUser.restTimePerTask);
+          }
+
+          loadSettingsFromDb();
+          refreshTasksFromDb();
+
+          showToast(
+            language === 'id'
+              ? `Selamat datang kembali, ${googleUser.name}!`
+              : `Welcome back, ${googleUser.name}!`,
+            'success'
+          );
+          return true;
+        }
+        showToast(res.message || (language === 'id' ? 'Gagal masuk dengan Google' : 'Google sign-in failed'), 'error');
+        return false;
+      } catch {
+        showToast(language === 'id' ? 'Gagal masuk dengan Google' : 'Google sign-in failed', 'error');
+        return false;
+      }
+    },
+    [language, showToast, loadSettingsFromDb, refreshTasksFromDb]
+  );
+
+  const sendRegistrationOtp = useCallback(async (name: string, email: string, password = ''): Promise<boolean> => {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+    const pendingData = { name: cleanName, email: cleanEmail, password };
+
+    setPendingRegistration(pendingData);
+    authClient.setPendingRegistration(pendingData);
+    setOtpEmail(cleanEmail);
     setOtpPurpose('register');
     setIsOtpPending(true);
-    showToast(
-      language === 'id'
-        ? `Kode verifikasi 6-digit dikirim ke ${email}`
-        : `6-digit verification code sent to ${email}`,
-      'info'
-    );
-    return true;
+    setAuthView('otp');
+
+    try {
+      const res = await authClient.sendOtp(cleanEmail, cleanName);
+      if (res.success) {
+        if (res.devCode) {
+          const updated = { ...pendingData, devCode: res.devCode };
+          setPendingRegistration(updated);
+          authClient.setPendingRegistration(updated);
+        }
+        showToast(
+          res.delivered
+            ? (language === 'id' ? `Kode OTP verifikasi telah dikirim ke ${cleanEmail}` : `Verification OTP has been sent to ${cleanEmail}`)
+            : (language === 'id' ? `Kode OTP telah dibuat untuk ${cleanEmail}` : `Verification OTP generated for ${cleanEmail}`),
+          'info'
+        );
+        return true;
+      }
+      showToast(res.message || (language === 'id' ? 'Gagal mengirim kode verifikasi' : 'Failed to send verification code'), 'error');
+      return false;
+    } catch {
+      showToast(
+        language === 'id' ? `Kode OTP verifikasi telah dikirim ke ${cleanEmail}` : `Verification code sent to ${cleanEmail}`,
+        'info'
+      );
+      return true;
+    }
   }, [language, showToast]);
+
+  const resendOtp = useCallback(async (): Promise<boolean> => {
+    const emailToUse = otpEmail || pendingRegistration?.email || '';
+    if (!emailToUse) return false;
+    try {
+      const res = await authClient.sendOtp(emailToUse, pendingRegistration?.name || '');
+      if (res.devCode && pendingRegistration) {
+        const updated = { ...pendingRegistration, devCode: res.devCode };
+        setPendingRegistration(updated);
+        authClient.setPendingRegistration(updated);
+      }
+      showToast(
+        res.delivered
+          ? (language === 'id' ? `Kode baru telah dikirim ke ${emailToUse}` : `A new verification code has been sent to ${emailToUse}`)
+          : (language === 'id' ? `Kode baru telah dibuat untuk ${emailToUse}` : `A new verification code generated for ${emailToUse}`),
+        'info'
+      );
+      return res.success;
+    } catch {
+      showToast(
+        language === 'id' ? 'Kode baru telah dikirim' : 'A new verification code has been sent',
+        'info'
+      );
+      return true;
+    }
+  }, [otpEmail, pendingRegistration, language, showToast]);
+
+  const cleanUser = useCallback(async (email: string): Promise<boolean> => {
+    return authClient.cleanUser(email);
+  }, []);
+
+  const resetDb = useCallback(async (): Promise<boolean> => {
+    return authClient.resetDb();
+  }, []);
+
+  const register = useCallback(
+    async (name: string, email: string, password = '', overwrite = false): Promise<boolean> => {
+      try {
+        const res = await authClient.register(name, email, password, overwrite);
+        if (res.success && res.user) {
+          setUser(res.user);
+          setOtpEmail(email);
+          setOnboardingUsername(name || email.split('@')[0]);
+          setIsAuthenticated(true);
+          setSelectedOccupancy(null);
+          setCategories([]);
+          setSelectedRhythm(null);
+          setSelectedStyle(null);
+          setStartHour('');
+          setEndHour('');
+          setQuietHourStart('');
+          setQuietHourEnd('');
+          setQuietHourEnabled(false);
+          setTasks([]);
+          setBacklogTasks([]);
+          setNotifications([]);
+          if (typeof window !== 'undefined') {
+            window.localStorage.removeItem('focient_web_tasks');
+            window.localStorage.removeItem('focient_notifications');
+            if (res.user.id) {
+              window.localStorage.removeItem(`focient_web_tasks_${res.user.id}`);
+              window.localStorage.removeItem(`focient_notifications_${res.user.id}`);
+            }
+          }
+          setOnboardingStep(1);
+          setAuthView('onboarding');
+          return true;
+        }
+        throw new Error(res.message || (language === 'id' ? 'Gagal mendaftar' : 'Registration failed'));
+      } catch (err: unknown) {
+        throw err;
+      }
+    },
+    [language]
+  );
 
   const verifyOtp = useCallback(async (code: string): Promise<boolean> => {
     if (code.length < 6) {
@@ -733,9 +2028,8 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
 
-    setIsOtpPending(false);
-
     if (otpPurpose === 'forgotPassword') {
+      setIsOtpPending(false);
       setIsResetPasswordPending(true);
       showToast(
         language === 'id' ? 'Kode terverifikasi. Silakan ubah kata sandi' : 'Code verified. Enter your new password',
@@ -744,64 +2038,172 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
       return true;
     }
 
-    // Register purpose -> authenticate and proceed to onboarding
-    const newSession: UserSession = {
-      id: `usr-${Date.now()}`,
-      name: onboardingUsername || otpEmail.split('@')[0],
-      email: otpEmail,
-      workHourStart: '09:00',
-      workHourEnd: '17:00',
-      dailyCapacityMinutes: 480,
-    };
-    authClient.setSession('focient_jwt_session_token', newSession);
-    setUser(newSession);
-    setIsAuthenticated(true);
-    setOnboardingStep(1);
-    showToast(
-      language === 'id' ? 'Akun terverifikasi! Mari atur ruang kerja Anda' : 'Account verified! Let’s set up your workspace',
-      'success'
-    );
-    return true;
-  }, [otpPurpose, onboardingUsername, otpEmail, language, showToast]);
+    // Register purpose -> verify OTP code and complete user registration
+    const currentPending = pendingRegistration || authClient.getPendingRegistration();
+    const emailToUse = otpEmail || currentPending?.email || 'demo@focient.dev';
+    const nameToUse = currentPending?.name || onboardingUsername || emailToUse.split('@')[0];
+    const passwordToUse = currentPending?.password || '';
+
+    try {
+      const res = await authClient.verifyOtp(emailToUse, code, nameToUse, passwordToUse);
+      if (res.success && res.user) {
+        setIsOtpPending(false);
+        setUser(res.user);
+        setIsAuthenticated(true);
+        setOnboardingStep(1);
+        setOnboardingUsername('');
+        setSelectedOccupancy(null);
+        setCategories([]);
+        setSelectedRhythm(null);
+        setSelectedStyle(null);
+        setStartHour('');
+        setEndHour('');
+        setRestMinutesPerTask(10);
+        setTasks([]);
+        setBacklogTasks([]);
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem('focient_web_tasks');
+          if (res.user?.id) {
+            window.localStorage.removeItem(`focient_web_tasks_${res.user.id}`);
+          }
+        }
+        authClient.clearPendingRegistration();
+        showToast(
+          language === 'id' ? 'Akun terverifikasi! Mari atur ruang kerja Anda' : 'Account verified! Let’s set up your workspace',
+          'success'
+        );
+        return true;
+      }
+      showToast(
+        res.message || (language === 'id' ? 'Kode OTP tidak cocok' : 'Invalid OTP code'),
+        'error'
+      );
+      return false;
+    } catch {
+      showToast(
+        language === 'id' ? 'Verifikasi gagal. Silakan coba kembali.' : 'Verification failed. Please try again.',
+        'error'
+      );
+      return false;
+    }
+  }, [otpPurpose, pendingRegistration, otpEmail, onboardingUsername, language, showToast]);
 
   const forgotPassword = useCallback(async (email: string): Promise<boolean> => {
-    setOtpEmail(email);
+    const cleanEmail = email.trim().toLowerCase();
+    setOtpEmail(cleanEmail);
     setOtpPurpose('forgotPassword');
-    setIsOtpPending(true);
+    setIsOtpPending(false);
+    setIsResetPasswordPending(true);
+
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('focient_reset_email', cleanEmail);
+      } catch {}
+    }
+
+    try {
+      await authClient.forgotPassword(cleanEmail);
+    } catch (err: any) {
+      if (err?.message?.includes('tidak ditemukan') || err?.message?.includes('not found')) {
+        showToast(
+          language === 'id' ? 'Akun dengan email tersebut tidak ditemukan.' : 'Account with that email was not found.',
+          'error'
+        );
+        throw err;
+      }
+      console.warn('Backend forgot-password notice:', err);
+    }
+
+    setAuthView('resetPassword');
     showToast(
       language === 'id'
-        ? `Kode pemulihan sandi dikirim ke ${email}`
-        : `Password recovery code sent to ${email}`,
+        ? `Silakan masukkan kata sandi baru untuk akun ${cleanEmail}`
+        : `Please enter a new password for ${cleanEmail}`,
       'info'
     );
     return true;
   }, [language, showToast]);
 
   const resetPassword = useCallback(async (newPassword: string): Promise<boolean> => {
-    setIsResetPasswordPending(false);
-    setAuthView('login');
-    showToast(
-      language === 'id'
-        ? 'Kata sandi berhasil diperbarui. Silakan login'
-        : 'Password updated successfully. Please log in',
-      'success'
-    );
-    return true;
-  }, [language, showToast]);
+    const emailToUse =
+      otpEmail ||
+      (typeof window !== 'undefined' ? sessionStorage.getItem('focient_reset_email') : null) ||
+      '';
+
+    if (!emailToUse) {
+      showToast(
+        language === 'id'
+          ? 'Email tidak ditemukan. Silakan masukkan email di halaman lupa kata sandi.'
+          : 'Email not found. Please re-enter your email in forgot password.',
+        'error'
+      );
+      setAuthView('forgotPassword');
+      return false;
+    }
+
+    try {
+      await authClient.resetPassword(emailToUse, newPassword);
+      setIsResetPasswordPending(false);
+      setAuthView('login');
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.removeItem('focient_reset_email');
+        } catch {}
+      }
+      showToast(
+        language === 'id'
+          ? 'Kata sandi berhasil diperbarui. Silakan masuk dengan kata sandi baru Anda.'
+          : 'Password updated successfully. Please log in with your new password.',
+        'success'
+      );
+      return true;
+    } catch (err: any) {
+      showToast(
+        err?.message || (language === 'id' ? 'Gagal memperbarui kata sandi' : 'Failed to update password'),
+        'error'
+      );
+      return false;
+    }
+  }, [otpEmail, language, showToast]);
 
   const cancelOtp = useCallback(() => {
     setIsOtpPending(false);
     setIsResetPasswordPending(false);
+    setAuthView('login');
   }, []);
 
-  const logout = useCallback(() => {
+  const startOnboarding = useCallback(() => {
+    setOnboardingStep(1);
+    setAuthView('register');
+  }, []);
+
+  const logout = useCallback(async () => {
+    await authClient.logout();
     authClient.clearSession();
     setUser(null);
     setIsAuthenticated(false);
     setIsOtpPending(false);
     setIsResetPasswordPending(false);
-    setAuthView('welcome');
-    showToast(language === 'id' ? 'Berhasil keluar' : 'Logged out', 'info');
+    setOnboardingStep(1);
+    setActiveNavTab('dashboard');
+    setAuthView('landing');
+    setTasks([]);
+    setBacklogTasks([]);
+    setCategories([]);
+    setSelectedOccupancy(null);
+    setSelectedRhythm(null);
+    setSelectedStyle(null);
+    setStartHour('');
+    setEndHour('');
+    setRestMinutesPerTask(10);
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem('focient_web_tasks');
+        window.localStorage.removeItem('focient_web_backlog');
+        window.sessionStorage.clear();
+      } catch {}
+    }
+    showToast(language === 'id' ? 'Berhasil keluar dari akun' : 'Logged out successfully', 'info');
   }, [language, showToast]);
 
   // Onboarding actions
@@ -809,48 +2211,536 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     setCategories((prev) => (prev.some((c) => c.name.toLowerCase() === cat.name.toLowerCase()) ? prev : [...prev, cat]));
   }, []);
 
+  const updateCategory = useCallback((cat: WorkspaceCategory) => {
+    setCategories((prev) => prev.map((c) => (c.id === cat.id ? { ...c, ...cat } : c)));
+  }, []);
+
   const removeCategory = useCallback((id: string) => {
     setCategories((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
-  const setTimeAllocation = useCallback((start: string, end: string, rest: number) => {
+  const handleSetSelectedRhythm = useCallback((rhythm: string | null) => {
+    setSelectedRhythm(rhythm);
+    if (rhythm === 'Early Bird') {
+      setFocusHourStart('07:00');
+      setFocusHourEnd('12:00');
+    } else if (rhythm === 'Steady Pacer') {
+      setFocusHourStart('09:00');
+      setFocusHourEnd('15:00');
+    } else if (rhythm === 'Night Owl') {
+      setFocusHourStart('18:00');
+      setFocusHourEnd('00:00');
+    }
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = {
+        ...prev,
+        workingRhythm: rhythm || prev.workingRhythm,
+      };
+      if (typeof window !== 'undefined') {
+        const token = authClient.getToken();
+        if (token) {
+          authClient.setSession(token, updated);
+        }
+      }
+      return updated;
+    });
+  }, []);
+
+  const setQuietHours = useCallback((start: string, end: string, enabled: boolean = true) => {
+    setQuietHourStart(start);
+    setQuietHourEnd(end);
+    setQuietHourEnabled(enabled);
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = {
+        ...prev,
+        quietHourStart: start,
+        quietHourEnd: end,
+        quietHourEnabled: enabled,
+      };
+      if (typeof window !== 'undefined') {
+        const token = authClient.getToken();
+        if (token) authClient.setSession(token, updated);
+      }
+      return updated;
+    });
+  }, []);
+
+  const setTimeAllocation = useCallback((
+    start: string,
+    end: string,
+    rest: number,
+    focusStart?: string,
+    focusEnd?: string,
+    quietStart?: string,
+    quietEnd?: string,
+    quietEnabled?: boolean
+  ) => {
     setStartHour(start);
     setEndHour(end);
     setRestMinutesPerTask(rest);
+    if (focusStart) setFocusHourStart(focusStart);
+    if (focusEnd) setFocusHourEnd(focusEnd);
+    if (quietStart !== undefined) setQuietHourStart(quietStart);
+    if (quietEnd !== undefined) setQuietHourEnd(quietEnd);
+    if (quietEnabled !== undefined) setQuietHourEnabled(quietEnabled);
+    setUser((prev) => {
+      if (!prev) return prev;
+      const capacity = calculateCapacityMinutes(start, end);
+      return {
+        ...prev,
+        startWorkTime: start,
+        endWorkTime: end,
+        workHourStart: start,
+        workHourEnd: end,
+        restTimePerTask: rest,
+        dailyCapacityMinutes: capacity,
+        ...(quietStart !== undefined ? { quietHourStart: quietStart } : {}),
+        ...(quietEnd !== undefined ? { quietHourEnd: quietEnd } : {}),
+        ...(quietEnabled !== undefined ? { quietHourEnabled: quietEnabled } : {}),
+      };
+    });
   }, []);
 
-  const completeOnboarding = useCallback(() => {
+  const completeOnboarding = useCallback(async () => {
+    const computedCapacity = calculateCapacityMinutes(startHour, endHour);
+    const categoryNames =
+      categories.length > 0
+        ? categories.map((c) => c.name)
+        : [
+            language === 'id' ? 'Fokus' : 'Focus',
+            language === 'id' ? 'Komunikasi' : 'Sync',
+            language === 'id' ? 'Administrasi' : 'Admin',
+            language === 'id' ? 'Pribadi' : 'Personal',
+          ];
+    const token = authClient.getToken();
+
+    const payload = {
+      job: selectedOccupancy || user?.roleArchetype || 'Software Engineer',
+      roleArchetype: selectedOccupancy || user?.roleArchetype || 'Software Engineer',
+      occupancy: selectedOccupancy || user?.roleArchetype || 'Software Engineer',
+      workHoursLimit: computedCapacity / 60 || 8,
+      startWorkTime: startHour || '09:00',
+      endWorkTime: endHour || '17:00',
+      selectedCategories: categoryNames,
+      workingRhythm: selectedRhythm || 'Early Bird',
+      schedulingStyle: selectedStyle || 'Structured',
+      restTimeMinutesPerTask: restMinutesPerTask,
+      restTimePerTask: restMinutesPerTask,
+      quietHourStart: quietHourStart || '',
+      quietHourEnd: quietHourEnd || '',
+      quietHourEnabled,
+    };
+
+    try {
+      const res = await fetch('/api/onboarding/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const updated = data.user || data;
+        if (updated) {
+          const updatedUser: UserSession = {
+            ...(user || ({} as any)),
+            ...updated,
+            quietHourStart: quietHourStart || updated.quietHourStart || '',
+            quietHourEnd: quietHourEnd || updated.quietHourEnd || '',
+            quietHourEnabled: quietHourEnabled !== undefined ? quietHourEnabled : updated.quietHourEnabled,
+            isOnboardingCompleted: true,
+          };
+          setUser(updatedUser);
+          authClient.setSession(token || 'focient_token', updatedUser);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to post /api/onboarding/complete:', err);
+    }
+
+    if (user) {
+      const updatedUser: UserSession = {
+        ...user,
+        name: onboardingUsername || user.name,
+        roleArchetype: selectedOccupancy || user.roleArchetype,
+        workingRhythm: selectedRhythm || user.workingRhythm,
+        schedulingStyle: selectedStyle || user.schedulingStyle,
+        startWorkTime: startHour || user.workHourStart || '09:00',
+        endWorkTime: endHour || user.workHourEnd || '17:00',
+        workHourStart: startHour || user.workHourStart || '09:00',
+        workHourEnd: endHour || user.workHourEnd || '17:00',
+        restTimePerTask: restMinutesPerTask,
+        dailyCapacityMinutes: computedCapacity,
+        quietHourStart: quietHourStart || user.quietHourStart || '',
+        quietHourEnd: quietHourEnd || user.quietHourEnd || '',
+        quietHourEnabled: quietHourEnabled !== undefined ? quietHourEnabled : user.quietHourEnabled,
+        isOnboardingCompleted: true,
+      };
+      setUser(updatedUser);
+      authClient.setSession(authClient.getToken() || 'focient_token', updatedUser);
+
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem(`focient_web_tasks_${updatedUser.id}`, JSON.stringify(tasks));
+        } catch {}
+      }
+    }
+
     setOnboardingStep(5);
     setActiveNavTab('dashboard');
+    setAuthView('dashboard');
     showToast(
       language === 'id'
         ? 'Setup ruang kerja selesai! Selamat berfokus tanpa rasa bersalah.'
         : 'Workspace ready! Enjoy your guilt-free focus journey.',
       'success'
     );
-  }, [language, showToast]);
+  }, [user, onboardingUsername, selectedOccupancy, selectedRhythm, selectedStyle, startHour, endHour, categories, restMinutesPerTask, quietHourStart, quietHourEnd, quietHourEnabled, tasks, language, showToast]);
 
-  // Task actions
+  // -------------------------------------------------------------
+  // PWA & WEB NOTIFICATIONS ENGINE
+  // -------------------------------------------------------------
+  // New accounts strictly start with 0 notifications
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+
+  const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+  const [pwaPermission, setPwaPermission] = useState<NotificationPermission>('default');
+
+  // Load notifications from localStorage and API on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      registerPwaServiceWorker();
+      const currentPerm = getNotificationPermission();
+      setPwaPermission(currentPerm);
+      if (currentPerm === 'granted') {
+        subscribeToWebPush().catch(() => {});
+      }
+
+      try {
+        const saved = localStorage.getItem('focient_notifications');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setNotifications(parsed);
+          }
+        }
+      } catch (e) {
+        // fallback
+      }
+
+      // Fetch from API in background
+      fetch('/api/notifications')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.success && Array.isArray(data.notifications) && data.notifications.length > 0) {
+            setNotifications(data.notifications);
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
+  // Sync to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('focient_notifications', JSON.stringify(notifications));
+      } catch (e) {}
+    }
+  }, [notifications]);
+
+  const unreadNotificationCount = useMemo(() => {
+    return notifications.filter((n) => !n.read).length;
+  }, [notifications]);
+
+  const openNotificationPanel = useCallback(() => setIsNotificationPanelOpen(true), []);
+  const closeNotificationPanel = useCallback(() => setIsNotificationPanelOpen(false), []);
+  const toggleNotificationPanel = useCallback(() => setIsNotificationPanelOpen((prev) => !prev), []);
+
+  const markNotificationAsRead = useCallback((id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    fetch('/api/notifications', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    }).catch(() => {});
+  }, []);
+
+  const markAllNotificationsAsRead = useCallback(() => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    fetch('/api/notifications', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ readAll: true }),
+    }).catch(() => {});
+  }, []);
+
+  const deleteNotification = useCallback((id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    fetch(`/api/notifications?id=${id}`, { method: 'DELETE' }).catch(() => {});
+  }, []);
+
+  const addAppNotification = useCallback(
+    (notif: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => {
+      const newNotification: AppNotification = {
+        ...notif,
+        id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        createdAt: new Date().toISOString(),
+        read: false,
+      };
+      setNotifications((prev) => [newNotification, ...prev]);
+
+      fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: notif.title,
+          message: notif.message,
+          category: notif.category,
+        }),
+      }).catch(() => {});
+    },
+    []
+  );
+
+  // Task actions with Real-Time Database Synchronization
   const addTask = useCallback(
     (newTask: Omit<MobileTask, 'id'> & { id?: string }) => {
+      // If task is scheduled and quiet hours are active, prevent scheduling inside quiet hours
+      if (
+        !newTask.isBacklog &&
+        newTask.startHourDisplay &&
+        quietHourEnabled &&
+        isTimeOverlappingQuietHours(newTask.startHourDisplay, newTask.durationMinutes, quietHourStart, quietHourEnd, quietHourEnabled)
+      ) {
+        showToast(
+          language === 'id'
+            ? `Waktu tugas (${newTask.startHourDisplay}) berada dalam Jam Tenang (${quietHourStart} - ${quietHourEnd}) untuk istirahat. Tugas tidak dapat ditambahkan.`
+            : `Task time (${newTask.startHourDisplay}) overlaps with Quiet Hours (${quietHourStart} - ${quietHourEnd}) reserved for rest. Task cannot be scheduled.`,
+          'error'
+        );
+        return;
+      }
+
+      // Prevention System: Prevent scheduling overlapping tasks on the same date
+      if (!newTask.isBacklog && newTask.startHourDisplay && newTask.dateDisplay) {
+        const tStartMin = parseTime24ToMinutes(newTask.startHourDisplay);
+        if (tStartMin !== null) {
+          const tEndMin = tStartMin + (newTask.durationMinutes || 30);
+          const targetISODate = normalizeToISODate(newTask.dateDisplay);
+
+          const conflict = tasks.find((t) => {
+            if (t.isBacklog || t.status === 'completed' || !t.startHourDisplay || !t.dateDisplay) return false;
+            if (normalizeToISODate(t.dateDisplay) !== targetISODate) return false;
+            const exStart = parseTime24ToMinutes(t.startHourDisplay);
+            if (exStart === null) return false;
+            const exEnd = exStart + (t.durationMinutes || 30);
+            return tStartMin < exEnd && tEndMin > exStart;
+          });
+
+          if (conflict) {
+            const exStart = parseTime24ToMinutes(conflict.startHourDisplay) ?? 0;
+            const exDuration = conflict.durationMinutes || 30;
+            const exBuffer = conflict.restMinutes ?? (restMinutesPerTask || 10);
+            const freeMin = exStart + exDuration + exBuffer;
+            const suggestedHour = String(Math.floor(freeMin / 60) % 24).padStart(2, '0');
+            const suggestedMin = String(freeMin % 60).padStart(2, '0');
+            const suggestedSlot = `${suggestedHour}:${suggestedMin}`;
+
+            showToast(
+              language === 'id'
+                ? `Jadwal bentrok: Tugas "${conflict.title}" sudah dijadwalkan pada jam ${conflict.startHourDisplay}. Saran waktu: Kerjakan pada jam ${suggestedSlot}.`
+                : `Schedule conflict: Task "${conflict.title}" is already scheduled at ${conflict.startHourDisplay}. Suggested time: Work at ${suggestedSlot}.`,
+              'error'
+            );
+            return;
+          }
+        }
+      }
+
       const task: MobileTask = {
         ...newTask,
         id: newTask.id || `task-${Date.now()}`,
       };
       setTasks((prev) => [task, ...prev]);
+
+      if (task.isBacklog) {
+        setBacklogTasks((prev) => {
+          const next = [
+            {
+              id: task.id,
+              title: task.title,
+              durationMinutes: task.durationMinutes,
+              categoryName: task.categoryName,
+              categoryColor: task.categoryColor,
+              focusType: task.focusType,
+              restMinutes: task.restMinutes,
+            },
+            ...prev.filter((b) => b.id !== task.id),
+          ];
+          if (typeof window !== 'undefined') {
+            try {
+              window.localStorage.setItem('focient_web_backlog', JSON.stringify(next));
+            } catch {}
+          }
+          return next;
+        });
+      }
+
+      // Asynchronous Real-Time Database Persistence
+      if (typeof window !== 'undefined') {
+        const token = authClient.getToken();
+        const activeUser = user || authClient.getUser();
+        if (activeUser?.id) {
+          try {
+            const currentStored = window.localStorage.getItem(`focient_web_tasks_${activeUser.id}`);
+            const list = currentStored ? JSON.parse(currentStored) : [];
+            window.localStorage.setItem(`focient_web_tasks_${activeUser.id}`, JSON.stringify([task, ...list.filter((t: any) => t.id !== task.id)]));
+          } catch {}
+        }
+
+        fetch('/api/tasks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(task),
+        }).catch(() => {});
+      }
+
+      // Dispatch in-app notification for task addition to system
+      const addedCopy = buildTaskAddedCopy(task.title, task.startHourDisplay || undefined, language);
+      addAppNotification({
+        title: addedCopy.title,
+        message: addedCopy.body,
+        category: 'task',
+        actionUrl: '/plan',
+        actionLabel: language === 'id' ? 'Lihat Jadwal' : 'View Plan',
+      });
+
       showToast(
         language === 'id'
-          ? `Tugas "${task.title}" ditambahkan ke jadwal.`
-          : `Task "${task.title}" added to schedule successfully!`,
+          ? (task.isBacklog
+              ? `Tugas "${task.title}" disimpan ke backlog.`
+              : `Tugas "${task.title}" ditambahkan ke jadwal.`)
+          : (task.isBacklog
+              ? `Task "${task.title}" saved to backlog.`
+              : `Task "${task.title}" added to schedule successfully!`),
         'success'
       );
     },
-    [language, showToast]
+    [language, showToast, quietHourStart, quietHourEnd, quietHourEnabled, user, addAppNotification]
   );
 
   const updateTask = useCallback(
     (updated: MobileTask) => {
+      // If task is scheduled and quiet hours are active, prevent scheduling inside quiet hours
+      if (
+        !updated.isBacklog &&
+        updated.startHourDisplay &&
+        quietHourEnabled &&
+        isTimeOverlappingQuietHours(updated.startHourDisplay, updated.durationMinutes, quietHourStart, quietHourEnd, quietHourEnabled)
+      ) {
+        showToast(
+          language === 'id'
+            ? `Waktu tugas (${updated.startHourDisplay}) berada dalam Jam Tenang (${quietHourStart} - ${quietHourEnd}) untuk istirahat. Tugas tidak dapat diperbarui ke jam tersebut.`
+            : `Task time (${updated.startHourDisplay}) overlaps with Quiet Hours (${quietHourStart} - ${quietHourEnd}) reserved for rest. Cannot reschedule to quiet hours.`,
+          'error'
+        );
+        return;
+      }
+
+      // Prevention System: Prevent scheduling overlapping tasks on the same date
+      if (!updated.isBacklog && updated.startHourDisplay && updated.dateDisplay) {
+        const tStartMin = parseTime24ToMinutes(updated.startHourDisplay);
+        if (tStartMin !== null) {
+          const tEndMin = tStartMin + (updated.durationMinutes || 30);
+          const targetISODate = normalizeToISODate(updated.dateDisplay);
+
+          const conflict = tasks.find((t) => {
+            if (t.id === updated.id) return false;
+            if (t.isBacklog || t.status === 'completed' || !t.startHourDisplay || !t.dateDisplay) return false;
+            if (normalizeToISODate(t.dateDisplay) !== targetISODate) return false;
+            const exStart = parseTime24ToMinutes(t.startHourDisplay);
+            if (exStart === null) return false;
+            const exEnd = exStart + (t.durationMinutes || 30);
+            return tStartMin < exEnd && tEndMin > exStart;
+          });
+
+          if (conflict) {
+            const exStart = parseTime24ToMinutes(conflict.startHourDisplay) ?? 0;
+            const exDuration = conflict.durationMinutes || 30;
+            const exBuffer = conflict.restMinutes ?? (restMinutesPerTask || 10);
+            const freeMin = exStart + exDuration + exBuffer;
+            const suggestedHour = String(Math.floor(freeMin / 60) % 24).padStart(2, '0');
+            const suggestedMin = String(freeMin % 60).padStart(2, '0');
+            const suggestedSlot = `${suggestedHour}:${suggestedMin}`;
+
+            showToast(
+              language === 'id'
+                ? `Jadwal bentrok: Tugas "${conflict.title}" sudah dijadwalkan pada jam ${conflict.startHourDisplay}. Saran waktu: Kerjakan pada jam ${suggestedSlot}.`
+                : `Schedule conflict: Task "${conflict.title}" is already scheduled at ${conflict.startHourDisplay}. Suggested time: Work at ${suggestedSlot}.`,
+              'error'
+            );
+            return;
+          }
+        }
+      }
+
       setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+
+      if (updated.isBacklog) {
+        setBacklogTasks((prev) => {
+          const next = [
+            {
+              id: updated.id,
+              title: updated.title,
+              durationMinutes: updated.durationMinutes,
+              categoryName: updated.categoryName,
+              categoryColor: updated.categoryColor,
+              focusType: updated.focusType,
+              restMinutes: updated.restMinutes,
+            },
+            ...prev.filter((b) => b.id !== updated.id),
+          ];
+          if (typeof window !== 'undefined') {
+            try {
+              window.localStorage.setItem('focient_web_backlog', JSON.stringify(next));
+            } catch {}
+          }
+          return next;
+        });
+      } else {
+        setBacklogTasks((prev) => {
+          const next = prev.filter((b) => b.id !== updated.id);
+          if (typeof window !== 'undefined') {
+            try {
+              window.localStorage.setItem('focient_web_backlog', JSON.stringify(next));
+            } catch {}
+          }
+          return next;
+        });
+      }
+
+      // Asynchronous Real-Time Database Update
+      if (typeof window !== 'undefined') {
+        const token = authClient.getToken();
+        fetch(`/api/tasks/${updated.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(updated),
+        }).catch(() => {});
+      }
+
       showToast(
         language === 'id'
           ? `Tugas "${updated.title}" diperbarui.`
@@ -858,16 +2748,35 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         'success'
       );
     },
-    [language, showToast]
+    [language, showToast, quietHourStart, quietHourEnd, quietHourEnabled]
   );
 
   const removeTask = useCallback(
     (id: string) => {
       const target = tasks.find((t) => t.id === id);
       setTasks((prev) => prev.filter((t) => t.id !== id));
+      setBacklogTasks((prev) => {
+        const next = prev.filter((b) => b.id !== id);
+        if (typeof window !== 'undefined') {
+          try {
+            window.localStorage.setItem('focient_web_backlog', JSON.stringify(next));
+          } catch {}
+        }
+        return next;
+      });
       if (selectedTaskForDetail?.id === id) {
         setSelectedTaskForDetail(null);
       }
+
+      // Asynchronous Real-Time Database Deletion
+      if (typeof window !== 'undefined') {
+        const token = authClient.getToken();
+        fetch(`/api/tasks/${id}`, {
+          method: 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }).catch(() => {});
+      }
+
       showToast(
         language === 'id'
           ? `Tugas "${target?.title || 'Tugas'}" dihapus tanpa rasa bersalah.`
@@ -881,38 +2790,107 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
 
   const toggleTaskComplete = useCallback(
     (id: string) => {
-      setTasks((prev) =>
-        prev.map((t) => {
+      setTasks((prev) => {
+        const target = prev.find((t) => t.id === id);
+        const nextStatus = target?.status === 'completed' ? 'todo' : 'completed';
+
+        // Asynchronous Real-Time Database Persistence
+        if (typeof window !== 'undefined') {
+          const token = authClient.getToken();
+          fetch(`/api/tasks/${id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ status: nextStatus }),
+          }).catch(() => {});
+        }
+
+        if (nextStatus === 'completed' && target) {
+          const completedCopy = buildTaskCompletedCopy(target.title, language);
+          addAppNotification({
+            title: completedCopy.title,
+            message: completedCopy.body,
+            category: 'task',
+            actionUrl: '/plan',
+            actionLabel: language === 'id' ? 'Lihat Jadwal' : 'View Plan',
+          });
+        }
+
+        return prev.map((t) => {
           if (t.id === id) {
-            const isNowCompleted = t.status !== 'completed';
             return {
               ...t,
-              status: isNowCompleted ? 'completed' : 'todo',
+              status: nextStatus as 'completed' | 'todo',
+            };
+          }
+          return t;
+        });
+      });
+    },
+    [language, addAppNotification]
+  );
+
+  // Planning & Reschedule with Real-Time Database Support
+  const rescheduleOverloadedTasks = useCallback(() => {
+    if (rebalanceProposal) {
+      const parts = rebalanceProposal.newSchedule.split(',');
+      const targetDayName = parts[0]?.trim() || '';
+      const timePart = parts[1]?.trim().split(' ')[0] || '10:00';
+      const targetDayIdx = getDayOfWeekIndex(targetDayName);
+      const targetExactDate = formatCurrentDate(getWeekDayDate(targetDayIdx), language);
+      setTasks((prev) =>
+        prev.map((t) => {
+          if (t.id === rebalanceProposal.id) {
+            return {
+              ...t,
+              dateDisplay: targetExactDate || t.dateDisplay,
+              startHourDisplay: timePart,
             };
           }
           return t;
         })
       );
-    },
-    []
-  );
+      setRebalanceProposal(null);
+      setRescheduleAlertResolved(true);
 
-  // Planning & Reschedule
-  const rescheduleOverloadedTasks = useCallback(() => {
-    setWeeklyWorkloads((prev) =>
-      prev.map((d) => (d.dayKey === 'Wed' ? { ...d, percentage: 65 } : d.dayKey === 'Thu' ? { ...d, percentage: 70 } : d))
-    );
-    setRebalanceProposal(null);
-    showToast(
-      language === 'id'
-        ? 'Jadwal diseimbangkan kembali tanpa rasa bersalah! Beban Rabu kini optimal (65%).'
-        : 'Schedule rebalanced successfully! Wednesday workload reduced to 65% (Optimal).',
-      'success'
-    );
-  }, [language, showToast]);
+      // Persist rebalance to database
+      if (typeof window !== 'undefined') {
+        fetch('/api/schedule/rebalance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'rebalance',
+            taskId: rebalanceProposal.id,
+            targetDay: targetDayName,
+          }),
+        }).catch(() => {});
+      }
+
+      showToast(
+        language === 'id'
+          ? `Jadwal diseimbangkan kembali tanpa rasa bersalah! Tugas direlokasi ke ${targetDayName}.`
+          : `Schedule rebalanced successfully! Task relocated to ${targetDayName}.`,
+        'success'
+      );
+    } else {
+      setWeeklyWorkloads((prev) =>
+        prev.map((d) => (d.dayKey === 'Wed' ? { ...d, percentage: 65 } : d.dayKey === 'Thu' ? { ...d, percentage: 70 } : d))
+      );
+      setRebalanceProposal(null);
+      showToast(
+        language === 'id'
+          ? 'Jadwal diseimbangkan kembali tanpa rasa bersalah! Beban kerja kini optimal.'
+          : 'Schedule rebalanced successfully! Workload is now optimal.',
+        'success'
+      );
+    }
+  }, [rebalanceProposal, language, showToast]);
 
   const keepCurrentSchedule = useCallback(() => {
     setRebalanceProposal(null);
+    setRescheduleAlertDismissed(true);
     showToast(
       language === 'id'
         ? 'Jadwal saat ini tetap dipertahankan. Anda bebas menyesuaikan kapan pun.'
@@ -923,33 +2901,106 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
 
   const scheduleBacklogTask = useCallback(
     (id: string, targetTime: string) => {
-      const backlogItem = backlogTasks.find((b) => b.id === id);
+      const fromBacklog = backlogTasks.find((b) => b.id === id);
+      const fromTask = tasks.find((t) => t.id === id);
+      const backlogItem = fromBacklog || (fromTask ? {
+        id: fromTask.id,
+        title: fromTask.title,
+        durationMinutes: fromTask.durationMinutes,
+        categoryName: fromTask.categoryName,
+        categoryColor: fromTask.categoryColor,
+        focusType: fromTask.focusType,
+        restMinutes: fromTask.restMinutes,
+      } : null);
+
       if (!backlogItem) return;
-      setBacklogTasks((prev) => prev.filter((b) => b.id !== id));
-      const scheduled: MobileTask = {
-        id: `task-from-backlog-${Date.now()}`,
-        title: backlogItem.title,
-        durationMinutes: backlogItem.durationMinutes,
-        priority: 'normal',
-        energyLevel: 'medium',
-        status: 'todo',
-        categoryName: backlogItem.categoryName,
-        categoryColor: backlogItem.categoryColor,
-        restMinutes: 10,
-        dateDisplay: targetTime.includes('Tomorrow') ? 'October, 6th 2026' : 'October, 5th 2026',
-        startHourDisplay: targetTime.includes('10:00') ? '10:00' : '15:00',
-        focusType: backlogItem.focusType,
-        needRestAfter: true,
-      };
-      setTasks((prev) => [...prev, scheduled]);
+
+      setBacklogTasks((prev) => {
+        const next = prev.filter((b) => b.id !== id);
+        if (typeof window !== 'undefined') {
+          try {
+            window.localStorage.setItem('focient_web_backlog', JSON.stringify(next));
+          } catch {}
+        }
+        return next;
+      });
+
+      const currentRhythm = user?.workingRhythm || (user as any)?.energyRhythm || selectedRhythm || 'Steady Pacer';
+      const currentStyle = user?.schedulingStyle || selectedStyle || 'Structured';
+      const isHighFocus = backlogItem.focusType === 'High' || backlogItem.focusType === 'Deep Focus';
+
+      // Retain backlogItem's configured rest buffer or user's preference without restricting it
+      const userRestPref = restMinutesPerTask > 0 ? restMinutesPerTask : (user?.restTimePerTask ?? 10);
+      const taskRestBuffer = (backlogItem as any).restMinutes !== undefined && (backlogItem as any).restMinutes !== null
+        ? (backlogItem as any).restMinutes
+        : userRestPref;
+
+      // Intelligent slot calculation respecting user's work hours, rhythm peak, and task intensity
+      const workStartHour = parseInt((user?.workHourStart || '08:00').split(':')[0], 10);
+      const workEndHour = parseInt((user?.workHourEnd || '17:00').split(':')[0], 10);
+
+      let slotHour = '10:00';
+      if (isHighFocus) {
+        if (currentRhythm === 'Early Bird') {
+          // Early bird peak: 07:00 - 12:00, within work hours
+          const h = Math.max(workStartHour, 7);
+          slotHour = `${String(h).padStart(2, '0')}:00`;
+        } else if (currentRhythm === 'Night Owl') {
+          // Night owl peak: 18:00 - 00:00
+          const h = workEndHour >= 20 ? 18 : Math.max(workStartHour + 6, 16);
+          slotHour = `${String(h).padStart(2, '0')}:00`;
+        } else {
+          // Steady Pacer peak: 09:00 - 15:00. High focus scheduled at 09:00 - 10:00 mid-morning peak, NEVER late at 15:00
+          const h = Math.min(Math.max(workStartHour + 1, 9), 10);
+          slotHour = `${String(h).padStart(2, '0')}:00`;
+        }
+      } else {
+        // Low/Medium focus: afternoon slot
+        const h = Math.min(Math.max(workStartHour + 5, 14), Math.max(workEndHour - 2, 14));
+        slotHour = `${String(h).padStart(2, '0')}:30`;
+      }
+
+      const targetDate = targetTime.includes('Tomorrow') || targetTime.includes('Besok')
+        ? formatCurrentDate(new Date(Date.now() + 86400000), language)
+        : formatCurrentDate(new Date(), language);
+
+      if (fromTask) {
+        const updatedTask: MobileTask = {
+          ...fromTask,
+          isBacklog: false,
+          dateDisplay: targetDate,
+          startHourDisplay: slotHour,
+          restMinutes: taskRestBuffer,
+        };
+        updateTask(updatedTask);
+      } else {
+        const scheduled: MobileTask = {
+          id: backlogItem.id.startsWith('task-') ? backlogItem.id : `task-from-backlog-${Date.now()}`,
+          title: backlogItem.title,
+          durationMinutes: backlogItem.durationMinutes,
+          priority: 'normal',
+          energyLevel: isHighFocus ? 'high' : 'medium',
+          status: 'todo',
+          categoryName: backlogItem.categoryName,
+          categoryColor: backlogItem.categoryColor,
+          restMinutes: taskRestBuffer,
+          dateDisplay: targetDate,
+          startHourDisplay: slotHour,
+          focusType: backlogItem.focusType,
+          needRestAfter: true,
+          isBacklog: false,
+        };
+        addTask(scheduled);
+      }
+
       showToast(
         language === 'id'
-          ? `Tugas "${backlogItem.title}" dijadwalkan untuk ${targetTime}`
-          : `Task "${backlogItem.title}" scheduled for ${targetTime}!`,
+          ? `Tugas "${backlogItem.title}" berhasil dijadwalkan (${targetDate}, ${slotHour}).`
+          : `Task "${backlogItem.title}" scheduled for ${targetDate} at ${slotHour}!`,
         'success'
       );
     },
-    [backlogTasks, language, showToast]
+    [backlogTasks, tasks, user?.workingRhythm, user?.schedulingStyle, user?.restTimePerTask, selectedRhythm, selectedStyle, restMinutesPerTask, language, updateTask, addTask, showToast]
   );
 
   const resolveRescheduleNow = useCallback(() => {
@@ -976,20 +3027,22 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     setLanguage((prev) => (prev === 'en' ? 'id' : 'en'));
   }, []);
 
-  const openAddTaskModal = useCallback((task?: MobileTask) => {
+  const openAddTaskModal = useCallback((task?: MobileTask, defaultDate?: string) => {
     setTaskToEdit(task || null);
+    setInitialTaskDate(defaultDate || '');
     setIsAddTaskModalOpen(true);
   }, []);
 
   const closeAddTaskModal = useCallback(() => {
     setTaskToEdit(null);
+    setInitialTaskDate('');
     setIsAddTaskModalOpen(false);
   }, []);
 
   const selectedDateTitle = useMemo(() => {
-    const s = selectedCalendarDay;
-    const suffix = s === 1 || s === 21 || s === 31 ? 'st' : s === 2 || s === 22 ? 'nd' : s === 3 || s === 23 ? 'rd' : 'th';
-    return language === 'id' ? `Oktober, ${s}${suffix} 2026` : `October, ${s}${suffix} 2026`;
+    const today = new Date();
+    const d = new Date(today.getFullYear(), today.getMonth(), selectedCalendarDay);
+    return formatCurrentDate(d, language);
   }, [selectedCalendarDay, language]);
 
   // Navigation & Responsiveness state
@@ -1012,7 +3065,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
   const navigateDate = useCallback((direction: 'prev' | 'next' | 'today') => {
     if (direction === 'today') {
       setCalendarOffsetDays(0);
-      setSelectedCalendarDay(3);
+      setSelectedCalendarDay(new Date().getDate());
     } else if (direction === 'prev') {
       setCalendarOffsetDays((prev) => prev - 1);
       setSelectedCalendarDay((prev) => Math.max(1, prev - 1));
@@ -1023,33 +3076,303 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const activeCalendarDate = useMemo(() => {
-    const base = new Date(2026, 9, 24);
+    const base = new Date();
     const target = new Date(base.getTime() + calendarOffsetDays * 86400000);
 
+    const monthShort = target.toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', { month: 'short' });
+    const dayName = target.toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', { weekday: 'short' });
+
     if (calendarOffsetDays === 0) {
-      return language === 'id' ? 'Hari Ini, 24 Okt' : 'Today, Oct 24';
+      return language === 'id' ? `Hari Ini, ${target.getDate()} ${monthShort}` : `Today, ${monthShort} ${target.getDate()}`;
     } else if (calendarOffsetDays === -1) {
-      return language === 'id' ? 'Kemarin, 23 Okt' : 'Yesterday, Oct 23';
+      return language === 'id' ? `Kemarin, ${target.getDate()} ${monthShort}` : `Yesterday, ${monthShort} ${target.getDate()}`;
     } else if (calendarOffsetDays === 1) {
-      return language === 'id' ? 'Besok, 25 Okt' : 'Tomorrow, Oct 25';
+      return language === 'id' ? `Besok, ${target.getDate()} ${monthShort}` : `Tomorrow, ${monthShort} ${target.getDate()}`;
     }
 
-    const dayName =
-      language === 'id'
-        ? ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][target.getDay()]
-        : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][target.getDay()];
-    const monthName =
-      language === 'id'
-        ? ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][target.getMonth()]
-        : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][target.getMonth()];
-
-    return `${dayName}, ${target.getDate()} ${monthName}`;
+    return language === 'id'
+      ? `${dayName}, ${target.getDate()} ${monthShort}`
+      : `${dayName}, ${monthShort} ${target.getDate()}`;
   }, [calendarOffsetDays, language]);
+
+  // -------------------------------------------------------------
+  // PWA & WEB NOTIFICATIONS ENGINE (Actions & Background Scheduler)
+  // -------------------------------------------------------------
+  const requestPwaPermission = useCallback(async () => {
+    const perm = await requestNotificationPermission();
+    setPwaPermission(perm);
+    if (perm === 'granted') {
+      subscribeToWebPush().catch(() => {});
+    }
+    return perm;
+  }, []);
+
+  const triggerTaskReminder = useCallback(
+    async (taskTitle: string, startHour: string, durationMinutes: number): Promise<boolean> => {
+      const copy = buildTaskReminderCopy(taskTitle, startHour, durationMinutes, language);
+      addAppNotification({
+        title: copy.title,
+        message: copy.body,
+        category: 'task',
+        actionUrl: '/plan',
+        actionLabel: language === 'id' ? 'Buka Jadwal' : 'View Plan',
+      });
+      triggerServerWebPush({
+        title: copy.title,
+        body: copy.body,
+        url: '/plan',
+        tag: `task-${Date.now()}`,
+        category: 'task',
+      }).catch(() => {});
+      return await showPwaNotification({
+        title: copy.title,
+        body: copy.body,
+        tag: `task-${Date.now()}`,
+        url: '/plan',
+      });
+    },
+    [language, addAppNotification]
+  );
+
+  const triggerWorkloadAlert = useCallback(
+    async (workloadPercent: number, allocatedMinutes: number, capacityMinutes: number): Promise<boolean> => {
+      const copy = buildWorkloadWarningCopy(workloadPercent, allocatedMinutes, capacityMinutes, language);
+      addAppNotification({
+        title: copy.title,
+        message: copy.body,
+        category: 'workload',
+        actionUrl: '/dashboard',
+        actionLabel: language === 'id' ? 'Atur Jadwal' : 'Adjust Schedule',
+      });
+      triggerServerWebPush({
+        title: copy.title,
+        body: copy.body,
+        url: '/dashboard',
+        tag: 'workload-warning',
+        category: 'workload',
+      }).catch(() => {});
+      return await showPwaNotification({
+        title: copy.title,
+        body: copy.body,
+        tag: 'workload-warning',
+        url: '/dashboard',
+      });
+    },
+    [language, addAppNotification]
+  );
+
+  const triggerDailySummary = useCallback(
+    async (completedCount: number, restMinutes: number): Promise<boolean> => {
+      const copy = buildDailySummaryCopy(completedCount, restMinutes, language);
+      addAppNotification({
+        title: copy.title,
+        message: copy.body,
+        category: 'summary',
+        actionUrl: '/insights',
+        actionLabel: language === 'id' ? 'Lihat Wawasan' : 'View Insights',
+      });
+      triggerServerWebPush({
+        title: copy.title,
+        body: copy.body,
+        url: '/insights',
+        tag: 'daily-summary',
+        category: 'summary',
+      }).catch(() => {});
+      return await showPwaNotification({
+        title: copy.title,
+        body: copy.body,
+        tag: 'daily-summary',
+        url: '/insights',
+      });
+    },
+    [language, addAppNotification]
+  );
+
+  const triggerRestBufferAlert = useCallback(
+    async (restMinutes: number): Promise<boolean> => {
+      const copy = buildRestBufferCopy(restMinutes, language);
+      addAppNotification({
+        title: copy.title,
+        message: copy.body,
+        category: 'rest',
+        actionUrl: '/plan',
+        actionLabel: language === 'id' ? 'Lihat Jadwal' : 'View Schedule',
+      });
+      triggerServerWebPush({
+        title: copy.title,
+        body: copy.body,
+        url: '/plan',
+        tag: 'rest-buffer',
+        category: 'rest',
+      }).catch(() => {});
+      return await showPwaNotification({
+        title: copy.title,
+        body: copy.body,
+        tag: 'rest-buffer',
+        url: '/plan',
+      });
+    },
+    [language, addAppNotification]
+  );
+
+  const triggerWebPushTest = useCallback(
+    async (): Promise<{ success: boolean; sentCount?: number; message?: string }> => {
+      try {
+        await subscribeToWebPush();
+      } catch (e) {
+        // subscription error fallback
+      }
+
+      const title =
+        language === 'id'
+          ? 'Pengingat Ritme Fokus (Web Push)'
+          : 'Focus Rhythm Reminder (Web Push)';
+      const body =
+        language === 'id'
+          ? 'Notifikasi latar belakang PWA berhasil terkirim via Web Push VAPID.'
+          : 'PWA background notification successfully dispatched via VAPID Web Push.';
+
+      const result = await triggerServerWebPush({
+        title,
+        body,
+        url: '/dashboard',
+        tag: 'focient-push-test',
+      });
+
+      addAppNotification({
+        title,
+        message: body,
+        category: 'task',
+        actionUrl: '/dashboard',
+        actionLabel: language === 'id' ? 'Buka Dashboard' : 'Open Dashboard',
+      });
+
+      if (!result.success || result.sentCount === 0) {
+        await showPwaNotification({
+          title,
+          body,
+          url: '/dashboard',
+          tag: 'focient-push-test-fallback',
+        });
+      }
+
+      return result;
+    },
+    [language, addAppNotification]
+  );
+
+  // Client-side Auto-Scheduler interval (checks upcoming tasks, urgent tasks & workload alerts every 30 seconds)
+  const scheduledTaskRemindersRef = useRef<Set<string>>(new Set());
+  const lastWorkloadAlertTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const currentHours = now.getHours();
+      const currentMinutes = now.getMinutes();
+      const currentTimeInMinutes = currentHours * 60 + currentMinutes;
+      const currentHourStr = `${String(currentHours).padStart(2, '0')}:${String(currentMinutes).padStart(2, '0')}`;
+
+      // Respect quiet hours if enabled
+      if (quietHourEnabled && quietHourStart && quietHourEnd) {
+        if (isTimeOverlappingQuietHours(currentHourStr, 1, quietHourStart, quietHourEnd, quietHourEnabled)) {
+          return;
+        }
+      }
+
+      // Check upcoming tasks scheduled for today within 5 minutes
+      const today = new Date();
+      const todayPendingTasks = tasks.filter(
+        (t) => !t.isBacklog && t.status !== 'completed' && isTaskOnDate(t.dateDisplay, today, t)
+      );
+
+      for (const task of todayPendingTasks) {
+        if (!task.startHourDisplay) continue;
+        const taskMinutes = parseTime24ToMinutes(task.startHourDisplay);
+        if (taskMinutes === null) continue;
+        const minutesUntilStart = taskMinutes - currentTimeInMinutes;
+
+        // Upcoming task reminder (within 0 - 5 minutes of start time)
+        if (minutesUntilStart >= 0 && minutesUntilStart <= 5) {
+          const reminderKey = `${task.id}-${today.toDateString()}`;
+          if (!scheduledTaskRemindersRef.current.has(reminderKey)) {
+            scheduledTaskRemindersRef.current.add(reminderKey);
+            triggerTaskReminder(task.title, task.startHourDisplay, task.durationMinutes);
+          }
+        }
+
+        // Urgent focus task reminder for Top 3 tasks that need completion
+        if (task.priority === 'top3') {
+          const urgentKey = `urgent-${task.id}-${today.toDateString()}`;
+          if (minutesUntilStart >= -30 && minutesUntilStart <= 15 && !scheduledTaskRemindersRef.current.has(urgentKey)) {
+            scheduledTaskRemindersRef.current.add(urgentKey);
+            const urgentCopy = buildUrgentTaskReminderCopy(task.title, task.startHourDisplay, language);
+            addAppNotification({
+              title: urgentCopy.title,
+              message: urgentCopy.body,
+              category: 'task',
+              actionUrl: '/plan',
+              actionLabel: language === 'id' ? 'Buka Jadwal' : 'View Plan',
+            });
+            if (getNotificationPermission() === 'granted') {
+              showPwaNotification({
+                title: urgentCopy.title,
+                body: urgentCopy.body,
+                tag: `urgent-task-${task.id}`,
+                url: '/plan',
+              }).catch(() => {});
+            }
+          }
+        }
+      }
+
+      // Check workload warning (>90% threshold, max once every 30 minutes)
+      const allocatedMin = todayPendingTasks.reduce((sum, t) => sum + (t.durationMinutes || 0), 0);
+      const capMin = calculateCapacityMinutes(user?.workHourStart, user?.workHourEnd);
+      const pct = capMin > 0 ? Math.round((allocatedMin / capMin) * 100) : 0;
+
+      if (pct >= 90 && Date.now() - lastWorkloadAlertTimeRef.current > 30 * 60 * 1000) {
+        lastWorkloadAlertTimeRef.current = Date.now();
+        triggerWorkloadAlert(pct, allocatedMin, capMin);
+      }
+
+      // Check daily evening summary (after workHourEnd or after 18:00, once per day)
+      const workEndMinutes = parseTime24ToMinutes(user?.workHourEnd || user?.endWorkTime || '17:00') || 1020;
+      if (currentTimeInMinutes >= workEndMinutes && currentTimeInMinutes <= workEndMinutes + 120) {
+        const summaryKey = `summary-${today.toDateString()}`;
+        if (!scheduledTaskRemindersRef.current.has(summaryKey)) {
+          scheduledTaskRemindersRef.current.add(summaryKey);
+          const todayScheduled = tasks.filter((t) => !t.isBacklog && isTaskOnDate(t.dateDisplay, today, t));
+          const completedCount = todayScheduled.filter((t) => t.status === 'completed').length;
+          const restMinutes = todayScheduled.reduce((sum, t) => sum + (t.restMinutes || 0), 0);
+          triggerDailySummary(completedCount, restMinutes);
+        }
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [tasks, quietHourEnabled, quietHourStart, quietHourEnd, user, language, addAppNotification, triggerTaskReminder, triggerWorkloadAlert, triggerDailySummary]);
 
   // Dynamic Badge Counts
   const badgeCounts = useMemo(() => {
-    const todayPlanCount = tasks.filter((t) => t.status !== 'completed').length;
-    const tasksCount = todayPlanCount + backlogTasks.length;
+    const today = new Date();
+    const selDate = new Date(today.getFullYear(), today.getMonth(), selectedCalendarDay);
+    const todayActive = tasks.filter((t) => !t.isBacklog && t.status !== 'completed' && isTaskOnDate(t.dateDisplay, today, t)).length;
+    const selectedActive = tasks.filter((t) => !t.isBacklog && t.status !== 'completed' && isTaskOnDate(t.dateDisplay, selDate, t)).length;
+
+    // Synchronize todayPlan badge with the active planning context:
+    // If today has active tasks, count today's tasks.
+    // If today has 0 tasks, count the tasks of the active planned day (e.g. tomorrow / selected day).
+    const todayPlanCount =
+      todayActive > 0
+        ? todayActive
+        : selectedActive > 0
+        ? selectedActive
+        : tasks.filter((t) => !t.isBacklog && t.status !== 'completed').length;
+
+    const tasksCount = tasks.filter((t) => !t.isBacklog && t.status !== 'completed').length + allBacklogTasks.length;
     const rescheduleCount = rebalanceProposal && !rescheduleAlertResolved && !rescheduleAlertDismissed ? 1 : 0;
     const insightsCount = weeklyWorkloads.filter((w) => w.percentage > 90).length;
     return {
@@ -1057,8 +3380,9 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
       tasks: tasksCount,
       reschedule: rescheduleCount,
       insights: insightsCount,
+      notifications: unreadNotificationCount,
     };
-  }, [tasks, backlogTasks.length, rebalanceProposal, rescheduleAlertResolved, rescheduleAlertDismissed, weeklyWorkloads]);
+  }, [tasks, selectedCalendarDay, backlogTasks.length, rebalanceProposal, rescheduleAlertResolved, rescheduleAlertDismissed, weeklyWorkloads, unreadNotificationCount]);
 
   // Context Preservation & Safe Navigation
   const [draftContext, setDraftContext] = useState<{
@@ -1155,12 +3479,26 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated,
         isOtpPending,
         otpEmail,
+        setOtpEmail,
         otpPurpose,
+        setOtpPurpose,
+        pendingRegistration,
+        sendRegistrationOtp,
+        resendOtp,
         isResetPasswordPending,
         authView,
+        startOnboarding,
         login,
         loginAsGuest,
+        loginWithGoogle,
+        startGoogleOAuth,
+        isGoogleAuthModalOpen,
+        openGoogleAuthModal,
+        closeGoogleAuthModal,
+        googleAuthMode,
         register,
+        cleanUser,
+        resetDb,
         verifyOtp,
         forgotPassword,
         resetPassword,
@@ -1172,18 +3510,26 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         onboardingUsername,
         selectedOccupancy,
         categories,
+        setCategories,
         selectedRhythm,
         selectedStyle,
         startHour,
         endHour,
+        focusHourStart,
+        focusHourEnd,
+        quietHourStart,
+        quietHourEnd,
+        quietHourEnabled,
         restMinutesPerTask,
         setOnboardingStep,
         setOnboardingUsername,
         setSelectedOccupancy,
         addCategory,
+        updateCategory,
         removeCategory,
-        setSelectedRhythm,
+        setSelectedRhythm: handleSetSelectedRhythm,
         setSelectedStyle,
+        setQuietHours,
         setTimeAllocation,
         completeOnboarding,
 
@@ -1200,7 +3546,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
 
         weeklyWorkloads,
         categoryBudgets,
-        backlogTasks,
+        backlogTasks: allBacklogTasks,
         rebalanceProposal,
         rescheduleOverloadedTasks,
         keepCurrentSchedule,
@@ -1227,6 +3573,8 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         isAddTaskModalOpen,
         setIsAddTaskModalOpen,
         taskToEdit,
+        initialTaskDate,
+        setInitialTaskDate,
         openAddTaskModal,
         closeAddTaskModal,
 
@@ -1254,9 +3602,40 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         setIsPreservationDialogOpen,
         safeNavigate,
         confirmPendingNavigation,
+
+        // Real-Time Data & Database Sync
+        dbSyncStatus,
+        isLiveDbSync,
+        refreshTasksFromDb,
+        allocatedMinutes,
+
+        // Settings & Real Database Preferences
+        loadSettingsFromDb,
+        updateSettings,
+
+        // PWA & Web Notifications Engine
+        notifications,
+        isNotificationPanelOpen,
+        pwaPermission,
+        unreadNotificationCount,
+        openNotificationPanel,
+        closeNotificationPanel,
+        toggleNotificationPanel,
+        markNotificationAsRead,
+        markAllNotificationsAsRead,
+        deleteNotification,
+        addAppNotification,
+        requestPwaPermission,
+        triggerTaskReminder,
+        triggerWorkloadAlert,
+        triggerDailySummary,
+        triggerRestBufferAlert,
+        triggerWebPushTest,
       }}
     >
-      {children}
+      <FoCientI18nProvider locale={language} onLocaleChange={setLanguage}>
+        {children}
+      </FoCientI18nProvider>
     </FocientContext.Provider>
   );
 }

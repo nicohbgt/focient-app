@@ -21,30 +21,30 @@ export const Step2RhythmScreen: React.FC = () => {
       id: 'Early Bird',
       titleEn: 'Early Bird',
       titleId: 'Early Bird',
-      badgeEn: '08:00 - 12:00',
-      badgeId: '08:00 - 12:00',
-      descEn: 'Peak cognitive focus in the morning. Best for strategic planning and deep problem solving.',
-      descId: 'Puncak fokus kognitif di pagi hari. Cocok untuk perencanaan strategis dan pemecahan masalah rumit.',
+      badgeEn: '07:00 - 12:00',
+      badgeId: '07:00 - 12:00',
+      descEn: 'Most alert and focused in the morning.',
+      descId: 'Paling berenergi dan fokus di pagi hari.',
       icon: <SunIcon size="sm" />,
     },
     {
       id: 'Steady Pacer',
       titleEn: 'Steady Pacer',
       titleId: 'Steady Pacer',
-      badgeEn: 'All-Day Rhythm',
-      badgeId: 'Ritme Seharian',
-      descEn: 'Balanced energy throughout the day with regular interval pauses to sustain momentum.',
-      descId: 'Tingkat energi seimbang sepanjang hari dengan jeda berkala untuk menjaga momentum.',
+      badgeEn: '09:00 - 15:00',
+      badgeId: '09:00 - 15:00',
+      descEn: 'Steady energy all day with regular short breaks.',
+      descId: 'Energi stabil sepanjang hari dengan jeda santai.',
       icon: <ActivityIcon size="sm" />,
     },
     {
       id: 'Night Owl',
       titleEn: 'Night Owl',
       titleId: 'Night Owl',
-      badgeEn: '16:00 - 21:00',
-      badgeId: '16:00 - 21:00',
-      descEn: 'Flow state thrives in late afternoon and evening when interruptions decline.',
-      descId: 'Kondisi flow state optimal di sore hingga malam hari saat gangguan eksternal berkurang.',
+      badgeEn: '18:00 - 00:00',
+      badgeId: '18:00 - 00:00',
+      descEn: "Peak focus in late afternoon or evening when it's quiet.",
+      descId: 'Paling fokus di sore atau malam hari saat suasana lebih tenang.',
       icon: <MoonIcon size="sm" />,
     },
   ];
@@ -54,15 +54,15 @@ export const Step2RhythmScreen: React.FC = () => {
       id: 'Structured',
       titleEn: 'Structured',
       titleId: 'Terstruktur',
-      descEn: 'Clear time-boxed slots with planned buffer rests.',
-      descId: 'Slot waktu terencana jelas dengan jeda istirahat teratur.',
+      descEn: 'Prioritizes high-focus tasks early in your peak energy window in sequential time blocks. Rest buffer per task remains fully customizable by you.',
+      descId: 'Mengelompokkan tugas intensitas tinggi di awal jam energi puncak secara berurutan. Jeda istirahat per tugas tetap bebas kamu atur sepenuhnya.',
     },
     {
       id: 'Flexible',
       titleEn: 'Flexible',
       titleId: 'Fleksibel',
-      descEn: 'Fluid sequencing that adapts naturally to the flow of work.',
-      descId: 'Urutan mengalir dinamis yang menyesuaikan laju kerja tanpa beban.',
+      descEn: 'Distributes work evenly across the day, alternating high and low focus tasks. You retain complete freedom to set any rest buffer per task.',
+      descId: 'Menyebar beban secara seimbang dengan menyelingi tugas berat dan ringan sepanjang hari. Bebas tentukan jeda istirahat per tugas sesuai kenyamananmu.',
     },
   ];
 
@@ -70,8 +70,8 @@ export const Step2RhythmScreen: React.FC = () => {
     if (!selectedRhythm || !selectedStyle) {
       setError(
         language === 'id'
-          ? 'Pilih ritme energi harian dan gaya penjadwalan Anda'
-          : 'Please select both your energy rhythm and scheduling style'
+          ? 'Pilih ritme energi dan gaya jadwalmu dulu ya'
+          : 'Please select both your energy rhythm and schedule style'
       );
       return;
     }
@@ -101,12 +101,12 @@ export const Step2RhythmScreen: React.FC = () => {
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
         <h2 className="text-2xl font-bold text-slate-900 mb-1">
-          {language === 'id' ? 'Ritme Kerja Harian' : 'Working Rhythm Setup'}
+          {language === 'id' ? 'Tentukan Ritme Kerjamu' : 'Choose Your Work Rhythm'}
         </h2>
         <p className="text-sm text-slate-500 mb-6">
           {language === 'id'
-            ? 'Selaraskan penempatan tugas dengan waktu puncak energi alami Anda.'
-            : 'Align task placement with your natural peak energy levels.'}
+            ? 'Kapan waktu terbaikmu untuk fokus dan bagaimana gaya kerjamu?'
+            : 'When do you focus best, and how do you prefer to plan your day?'}
         </p>
 
         {error && (
@@ -115,11 +115,18 @@ export const Step2RhythmScreen: React.FC = () => {
           </div>
         )}
 
-        {/* Section 1: Daily Energy Rhythm */}
+        {/* Daily Energy Rhythm */}
         <div className="space-y-4 mb-6">
-          <label className="block text-xs font-semibold text-slate-700">
-            {language === 'id' ? '1. Ritme Energi Harian' : '1. Daily Energy Rhythm'}
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-semibold text-slate-700">
+              {language === 'id' ? 'Ritme Energi Harian' : 'Daily Energy Rhythm'}
+            </label>
+            {!selectedRhythm && (
+              <span className="text-[11px] text-slate-400 font-medium">
+                {language === 'id' ? 'Belum dipilih' : 'Not selected'}
+              </span>
+            )}
+          </div>
           <div className="space-y-2.5">
             {rhythms.map((r) => {
               const isSelected = selectedRhythm === r.id;
@@ -160,14 +167,28 @@ export const Step2RhythmScreen: React.FC = () => {
               );
             })}
           </div>
+
+          {/* Rhythm Prioritization Note */}
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-500 leading-relaxed">
+            {language === 'id'
+              ? 'Jam ritme energi berfungsi sebagai referensi jam fokus utama (tugas berat diprioritaskan di jam ini). Alokasi tugas kamu tetap mengikuti jam kerja aktif dan jam istirahat (quiet hours) yang kamu tentukan di langkah berikutnya.'
+              : 'Energy rhythm hours act as a peak-focus reference (heavy tasks are prioritized during this window). Your actual schedule remains strictly governed by your active work hours and quiet hours in the next step.'}
+          </div>
         </div>
 
-        {/* Section 2: Scheduling Style */}
+        {/* Scheduling Style */}
         <div className="space-y-3 mb-6">
-          <label className="block text-xs font-semibold text-slate-700">
-            {language === 'id' ? '2. Gaya Penjadwalan' : '2. Scheduling Style'}
-          </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-semibold text-slate-700">
+              {language === 'id' ? 'Gaya Penjadwalan' : 'Scheduling Style'}
+            </label>
+            {!selectedStyle && (
+              <span className="text-[11px] text-slate-400 font-medium">
+                {language === 'id' ? 'Belum dipilih' : 'Not selected'}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {styles.map((s) => {
               const isSelected = selectedStyle === s.id;
               return (
@@ -177,17 +198,21 @@ export const Step2RhythmScreen: React.FC = () => {
                     setSelectedStyle(s.id);
                     setError(null);
                   }}
-                  className={`p-3 rounded-xl border cursor-pointer transition-all text-left ${
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all text-left flex flex-col justify-between ${
                     isSelected
                       ? 'border-blue-600 bg-blue-50/70 shadow-sm'
                       : 'border-slate-200 hover:border-slate-300 bg-white'
                   }`}
                 >
-                  <div className="text-sm font-bold text-slate-900 mb-1">
-                    {language === 'id' ? s.titleId : s.titleEn}
-                  </div>
-                  <div className="text-xs text-slate-600 leading-snug">
-                    {language === 'id' ? s.descId : s.descEn}
+                  <div>
+                    <div className="mb-1.5">
+                      <span className="text-sm font-bold text-slate-900">
+                        {language === 'id' ? s.titleId : s.titleEn}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-600 leading-relaxed">
+                      {language === 'id' ? s.descId : s.descEn}
+                    </div>
                   </div>
                 </div>
               );

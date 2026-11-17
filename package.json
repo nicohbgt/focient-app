@@ -13,6 +13,9 @@
   ],
   "scripts": {
     "postinstall": "npm run db:generate --prefix packages/database",
+    "db:reset": "npm run db:reset --prefix packages/database",
+    "db:push": "npm run db:push --prefix packages/database",
+    "db:studio": "npm run db:studio --prefix packages/database",
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "test": "turbo run test",

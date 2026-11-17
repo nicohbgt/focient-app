@@ -67,7 +67,7 @@ class _FocientDashboardScreenState
     'Personal': Color(0xFFD97706),
   };
 
-  final List<int> _availableDurations = const [10, 15, 20, 25, 30];
+  final List<int> _availableDurations = const [10, 15, 30, 45, 50, 60];
   bool _isLoadingTasks = false;
   String? _errorMessage;
 
@@ -521,10 +521,20 @@ class _FocientDashboardScreenState
                 shape: BoxShape.circle,
                 border: Border.all(color: const Color(0xFFBFDBFE)),
               ),
-              child: const Icon(
-                Icons.person_outline_rounded,
-                size: 20,
-                color: Color(0xFF2563EB),
+              child: ClipOval(
+                child: Center(
+                  child: Text(
+                    userName.trim().isNotEmpty
+                        ? userName.trim().split(RegExp(r'\s+')).first[0].toUpperCase()
+                        : 'U',
+                    style: const TextStyle(
+                      fontFamily: FocientTypographyTokens.fontFamily,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

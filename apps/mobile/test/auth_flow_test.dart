@@ -34,29 +34,39 @@ import 'package:focient_mobile/presentation/riverpod_providers.dart';
 
 class TestRealAuthNotifier extends AuthNotifier {
   @override
-  Future<bool> initiateRegistration({
+  Future<bool> register({
     required String name,
     required String email,
     required String password,
   }) async {
     state = state.copyWith(
-      status: AuthStatus.otpVerificationPending,
-      otpPurpose: OtpPurpose.registration,
-      pendingName: name.trim(),
-      pendingEmail: email.trim().toLowerCase(),
-      pendingPassword: password,
-      otpCooldownSeconds: 30,
+      status: AuthStatus.authenticated,
+      user: AuthUser(
+        id: 'usr-real-123',
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        roleArchetype: 'General',
+        dailyCapacityMinutes: 480,
+        isOnboardingCompleted: false,
+      ),
     );
     return true;
   }
 
   @override
+  Future<bool> initiateRegistration({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    return register(name: name, email: email, password: password);
+  }
+
+  @override
   Future<bool> requestPasswordReset(String email) async {
     state = state.copyWith(
-      status: AuthStatus.otpVerificationPending,
-      otpPurpose: OtpPurpose.forgotPassword,
+      status: AuthStatus.unauthenticated,
       pendingEmail: email.trim().toLowerCase(),
-      otpCooldownSeconds: 30,
     );
     return true;
   }
@@ -272,7 +282,7 @@ void main() {
       // Title & Subtitle
       expect(find.text('Forgot Password?'), findsOneWidget);
       expect(
-        find.text('Enter your email address to receive the OTP Verification code'),
+        find.text('Enter your email address to receive password reset instructions'),
         findsOneWidget,
       );
 
@@ -280,8 +290,8 @@ void main() {
       expect(find.text('Email Address'), findsOneWidget);
       expect(find.text('Input your email here'), findsOneWidget);
 
-      // "Get OTP" CTA button
-      expect(find.text('Get OTP'), findsOneWidget);
+      // "Send Reset Instructions" CTA button
+      expect(find.text('Send Reset Instructions'), findsOneWidget);
     });
   });
 
@@ -379,21 +389,7 @@ void main() {
       await tester.tap(find.text('Create Account'));
       await tester.pumpAndSettle();
 
-      // 3. OTP Verification
-      expect(find.text('Verify Your OTP'), findsOneWidget);
-      expect(find.text('a******@gmail.com'), findsOneWidget);
-
-      final otpFields = find.descendant(
-        of: find.byType(FocientOtpInput),
-        matching: find.byType(TextField),
-      );
-      for (int i = 0; i < 6; i++) {
-        await tester.enterText(otpFields.at(i), '${i + 1}');
-      }
-      await tester.tap(find.text('Submit'));
-      await tester.pumpAndSettle();
-
-      // 4. Onboarding Step 1: Personalize your Workspace
+      // Directly into Onboarding Step 1: Personalize your Workspace (No OTP!)
       expect(find.text('Personalize your Workspace'), findsOneWidget);
       expect(find.text('1 of 5 steps'), findsOneWidget);
       expect(find.text('General'), findsOneWidget);
@@ -468,7 +464,7 @@ void main() {
       expect(find.text('Create Your Task'), findsOneWidget);
       await tester.enterText(find.byType(TextField).first, 'Create the Annual OKR');
       await tester.tap(find.text('Personal').last);
-      await tester.tap(find.text('25 Minute'));
+      await tester.tap(find.text('30 Minute'));
       await tester.tap(find.text('Deep Focus'));
       await tester.pumpAndSettle();
 
@@ -529,7 +525,7 @@ void main() {
       expect(find.text('My Dashboard'), findsOneWidget);
     });
 
-    testWidgets('Flow 3: login -> forgot password -> input email -> OTP -> reset password -> login', (tester) async {
+    testWidgets('Flow 3: login -> forgot password -> input email -> instructions sent -> login', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -546,39 +542,21 @@ void main() {
       await tester.tap(find.text('Forgot Password?'));
       await tester.pumpAndSettle();
 
-      // 2. On Forgot Password screen (Image 1 & 2), enter email
+      // 2. On Forgot Password screen, enter email
       expect(find.text('Forgot Password?'), findsOneWidget);
-      expect(find.text('Enter your email address to receive the OTP Verification code'), findsOneWidget);
+      expect(find.text('Enter your email address to receive password reset instructions'), findsOneWidget);
 
       final emailField = find.byType(TextField);
       await tester.enterText(emailField, 'alex@gmail.com');
-      await tester.tap(find.text('Get OTP'));
+      await tester.tap(find.text('Send Reset Instructions'));
       await tester.pumpAndSettle();
 
-      // 3. On OTP Verification screen (Image 3)
-      expect(find.text('Verify Your OTP'), findsOneWidget);
-      expect(find.text('a******@gmail.com'), findsOneWidget);
-
-      final otpFields = find.descendant(
-        of: find.byType(FocientOtpInput),
-        matching: find.byType(TextField),
-      );
-      for (int i = 0; i < 6; i++) {
-        await tester.enterText(otpFields.at(i), '${i + 1}');
-      }
-      await tester.tap(find.text('Submit'));
+      // 3. Confirmation screen: Instructions Sent
+      expect(find.text('Instructions Sent'), findsOneWidget);
+      await tester.tap(find.text('Back to Login'));
       await tester.pumpAndSettle();
 
-      // 4. On Reset Password screen
-      expect(find.text('Set your new password to regain access to your account'), findsOneWidget);
-      final passFields = find.byType(TextField);
-      await tester.enterText(passFields.at(0), 'NewPass2026!');
-      await tester.enterText(passFields.at(1), 'NewPass2026!');
-
-      await tester.tap(find.text('Reset Password').last);
-      await tester.pumpAndSettle();
-
-      // 5. Back to Login screen!
+      // 4. Back to Login screen!
       expect(find.text('Welcome Back!'), findsOneWidget);
     });
   });
@@ -1016,7 +994,7 @@ void main() {
       // Enter task info
       await tester.enterText(find.byType(TextField).first, 'Create the Annual OKR');
       await tester.tap(find.text('Strategic').last);
-      await tester.tap(find.text('25 Minute'));
+      await tester.tap(find.text('30 Minute'));
       await tester.tap(find.text('Deep Focus'));
       await tester.pumpAndSettle();
 
@@ -1028,7 +1006,7 @@ void main() {
       // Verified: (B) Task Added card is rendered
       expect(find.byType(FocientTaskAddedCard), findsOneWidget);
       expect(find.text('Create the Annual OKR'), findsOneWidget);
-      expect(find.text('25" Task'), findsOneWidget);
+      expect(find.text('30" Task'), findsOneWidget);
       // Item 2: Rest badge is removed across all task cards
       expect(find.text('20" Rest'), findsNothing);
       expect(find.text('Strategic'), findsAtLeastNWidgets(1));
@@ -1626,7 +1604,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select duration
-      await tester.tap(find.text('20 Minute'));
+      await tester.tap(find.text('30 Minute'));
       await tester.pumpAndSettle();
 
       // Tap Add New Task

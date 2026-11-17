@@ -139,18 +139,16 @@ class _FocientAppRootState extends ConsumerState<FocientAppRoot> {
     final authState = ref.watch(authProvider);
 
     Widget activeFlow;
-    if (authState.isAuthenticated) {
-      if (!(authState.user?.isOnboardingCompleted ?? false)) {
-        activeFlow = FocientOnboardingFlow(
-          onCancel: () {
-            ref.read(authProvider.notifier).logout();
-          },
-        );
-      } else {
-        activeFlow = const FocientDashboardScreen();
-      }
+    if (!authState.isAuthenticated) {
+      activeFlow = const FocientAuthFlow();
+    } else if (!(authState.user?.isOnboardingCompleted ?? false)) {
+      activeFlow = FocientOnboardingFlow(
+        onCancel: () {
+          ref.read(authProvider.notifier).logout();
+        },
+      );
     } else {
-      activeFlow = const FocientAuthFlow(initialView: AuthScreenView.welcome);
+      activeFlow = const FocientDashboardScreen();
     }
 
     return Stack(

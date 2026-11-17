@@ -6,9 +6,7 @@ import '../dashboard/focient_dashboard_screen.dart';
 import '../onboarding/focient_onboarding_flow.dart';
 import 'focient_forgot_password_screen.dart';
 import 'focient_login_screen.dart';
-import 'focient_otp_screen.dart';
 import 'focient_register_screen.dart';
-import 'focient_reset_password_screen.dart';
 import 'focient_welcome_screen.dart';
 
 enum AuthScreenView {
@@ -74,36 +72,7 @@ class _FocientAuthFlowState extends ConsumerState<FocientAuthFlow> {
       return const FocientDashboardScreen();
     }
 
-    // 2. If OTP verification pending -> render OTP screen (Image 3)
-    if (authState.isOtpPending) {
-      return FocientOtpScreen(
-        onBack: () {
-          ref.read(authProvider.notifier).cancelOtp();
-          setState(() {
-            if (authState.otpPurpose == OtpPurpose.forgotPassword) {
-              _activeView = AuthScreenView.forgotPassword;
-            } else {
-              _activeView = AuthScreenView.register;
-            }
-          });
-        },
-      );
-    }
-
-    // 3. If OTP verified for password reset -> render Reset Password screen
-    if (authState.isResetPasswordPending) {
-      return FocientResetPasswordScreen(
-        onBack: () {
-          ref.read(authProvider.notifier).cancelOtp();
-          setState(() => _activeView = AuthScreenView.forgotPassword);
-        },
-        onPasswordResetComplete: () {
-          setState(() => _activeView = AuthScreenView.login);
-        },
-      );
-    }
-
-    // 4. Render Active View
+    // 2. Render Active View (Login, Register, Forgot Password)
     switch (_activeView) {
       case AuthScreenView.welcome:
         return FocientWelcomeScreen(

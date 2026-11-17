@@ -3,14 +3,23 @@
 import React from 'react';
 import { useFocient } from '../../state/focient-store';
 import { TargetIcon, SparklesIcon, ClockIcon, ArrowRightIcon } from '../../components/icons';
+import { FoCientWordmark } from '../../components/brand/FoCientWordmark';
 
 export const WelcomeScreen: React.FC = () => {
   const { language, setLanguage, setAuthView, loginAsGuest } = useFocient();
 
   return (
     <div className="min-h-full flex flex-col justify-center items-center px-4 py-8 max-w-lg mx-auto w-full animate-fade-in">
-      {/* Language Switcher Bar */}
-      <div className="w-full flex justify-end mb-6">
+      {/* Top Bar with Back to Landing & Language Switcher */}
+      <div className="w-full flex justify-between items-center mb-6">
+        <button
+          type="button"
+          onClick={() => setAuthView('landing')}
+          className="text-xs font-semibold text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-1"
+        >
+          <span>← {language === 'id' ? 'Halaman Utama' : 'Landing Page'}</span>
+        </button>
+
         <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200 shadow-sm text-xs font-semibold">
           <button
             type="button"
@@ -33,18 +42,15 @@ export const WelcomeScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Brand Icon & Tagline */}
+      {/* Brand Wordmark & Tagline (Standalone & Spacious) */}
       <div className="text-center mb-8">
-        <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-focient-3 mb-4">
-          <TargetIcon size="xl" strokeWidth={2.2} />
+        <div className="flex justify-center mb-4">
+          <FoCientWordmark height={22} className="hover:opacity-90 transition-opacity" />
         </div>
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
-          FoCient
-        </h1>
         <p className="text-base text-slate-600 max-w-sm mx-auto font-medium">
           {language === 'id'
-            ? 'Produktivitas bebas rasa bersalah dan ritme kognitif adaptif untuk performa terbaik Anda.'
-            : 'Guilt-free productivity and adaptive cognitive rhythm for your best work.'}
+            ? 'Fokus kerja lebih tenang tanpa beban dan tanpa rasa bersalah.'
+            : 'Focus on your work with ease and peace of mind.'}
         </p>
       </div>
 
@@ -56,8 +62,8 @@ export const WelcomeScreen: React.FC = () => {
           </div>
           <div className="text-sm font-semibold text-slate-800">
             {language === 'id'
-              ? 'Fokus tugas tunggal tanpa rasa bersalah atau burnout'
-              : 'Single-task flow without guilt or burnout'}
+              ? 'Fokus satu per satu tugas tanpa panik'
+              : 'Focus on one task at a time without stress'}
           </div>
         </div>
 
@@ -67,8 +73,8 @@ export const WelcomeScreen: React.FC = () => {
           </div>
           <div className="text-sm font-semibold text-slate-800">
             {language === 'id'
-              ? 'Penjadwalan ulang adaptif tanpa stigma kegagalan'
-              : 'Guilt-free adaptive rescheduling'}
+              ? 'Geser jadwal kapan saja dengan santai'
+              : 'Reschedule tasks easily anytime'}
           </div>
         </div>
 
@@ -78,8 +84,8 @@ export const WelcomeScreen: React.FC = () => {
           </div>
           <div className="text-sm font-semibold text-slate-800">
             {language === 'id'
-              ? 'Batas kapasitas kerja harian yang sehat (maks 8 jam)'
-              : 'Daily work capacity limits (max 8h standard)'}
+              ? 'Jaga batas kerja harian agar malammu bebas tugas'
+              : 'Healthy daily work limits to protect your rest'}
           </div>
         </div>
       </div>

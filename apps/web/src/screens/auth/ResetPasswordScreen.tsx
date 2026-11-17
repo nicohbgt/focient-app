@@ -1,15 +1,34 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFocient } from '../../state/focient-store';
 import { ArrowLeftIcon, AlertCircleIcon } from '../../components/icons';
 
 export const ResetPasswordScreen: React.FC = () => {
-  const { resetPassword, cancelOtp, language } = useFocient();
+  const { resetPassword, cancelOtp, setAuthView, language, otpEmail, setOtpEmail } = useFocient();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const emailParam = searchParams.get('email');
+      if (emailParam && !otpEmail) {
+        setOtpEmail(emailParam.trim().toLowerCase());
+      }
+    }
+  }, [otpEmail, setOtpEmail]);
+
+  const handleBackToLogin = () => {
+    cancelOtp();
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
+      window.location.href = '/auth/login';
+    } else {
+      setAuthView('login');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,22 +44,29 @@ export const ResetPasswordScreen: React.FC = () => {
     setError(null);
     setIsLoading(true);
     try {
-      await resetPassword(password);
+      const ok = await resetPassword(password);
+      if (ok) {
+        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
+          window.location.href = '/auth/login';
+        }
+      }
+    } catch (err: any) {
+      setError(err?.message || (language === 'id' ? 'Gagal mengubah kata sandi' : 'Failed to reset password'));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-full flex flex-col justify-center px-4 py-8 max-w-md mx-auto w-full animate-fade-in">
+    <div className="min-h-full flex flex-col justify-center px-4 py-8 max-w-md mx-auto w-full animate-fade-in font-sans">
       <div className="mb-6">
         <button
           type="button"
-          onClick={cancelOtp}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+          onClick={handleBackToLogin}
+          aria-label={language === 'id' ? 'Kembali' : 'Back'}
+          className="inline-flex items-center justify-center p-2 -ml-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
         >
           <ArrowLeftIcon size="sm" />
-          <span>{language === 'id' ? 'Batal' : 'Cancel'}</span>
         </button>
       </div>
 
@@ -50,8 +76,8 @@ export const ResetPasswordScreen: React.FC = () => {
         </h2>
         <p className="text-sm text-slate-500 mb-6">
           {language === 'id'
-            ? 'Buat kata sandi baru yang kuat untuk akun Anda.'
-            : 'Create a new strong password for your account.'}
+            ? 'Buat kata sandi baru untuk akunmu.'
+            : 'Create a new password for your account.'}
         </p>
 
         {error && (
@@ -73,7 +99,7 @@ export const ResetPasswordScreen: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+              className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
             />
           </div>
 
@@ -88,7 +114,7 @@ export const ResetPasswordScreen: React.FC = () => {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
               required
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+              className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
             />
           </div>
 

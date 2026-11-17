@@ -29,6 +29,12 @@ class FocientRepository {
     }
   }
 
+  /// Clears repository in-memory cache and wipes persisted user storage
+  Future<void> clearCache() async {
+    _taskCache.clear();
+    await focientLocalStorage.clearAllUserData();
+  }
+
   /// Fetches tasks from backend with optional date filtering
   Future<List<MobileTask>> getTasks({String? date}) async {
     try {

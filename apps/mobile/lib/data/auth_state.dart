@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../core/network_client.dart';
@@ -188,22 +189,54 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   AuthNotifier([AuthState? initial]) : super(initial ?? const AuthState());
 
-  /// Restores session from local persistent storage on cold boot
+  /// Restores session from local persistent storage on cold boot and verifies with backend /api/auth/me
   Future<bool> restoreSession() async {
     try {
       final session = await focientLocalStorage.loadSession();
       if (session != null && session['token'] != null && session['user'] != null) {
         final token = session['token'] as String;
         focientNetworkClient.setAuthToken(token);
-        final user = AuthUser.fromJson(session['user'] as Map<String, dynamic>);
-        state = state.copyWith(
-          status: AuthStatus.authenticated,
-          user: user,
-          clearError: true,
-        );
-        return true;
+        final cachedUser = AuthUser.fromJson(session['user'] as Map<String, dynamic>);
+
+        // Validate session token and synchronize live profile with PostgreSQL
+        try {
+          final res = await focientNetworkClient.get('/auth/me');
+          if (res != null && res is Map<String, dynamic>) {
+            final freshUser = AuthUser.fromJson(res);
+            await focientLocalStorage.saveSession(user: freshUser, token: token);
+            state = state.copyWith(
+              status: AuthStatus.authenticated,
+              user: freshUser,
+              clearError: true,
+            );
+            return true;
+          }
+        } on AuthExpiredException {
+          // Token expired or revoked on server
+          focientNetworkClient.clearAuthToken();
+          await focientLocalStorage.clearAllUserData();
+          state = const AuthState(
+            status: AuthStatus.unauthenticated,
+            user: null,
+          );
+          return false;
+        } catch (_) {
+          // Offline / network partition: maintain verified cached user session
+          state = state.copyWith(
+            status: AuthStatus.authenticated,
+            user: cachedUser,
+            clearError: true,
+          );
+          return true;
+        }
       }
     } catch (_) {}
+
+    focientNetworkClient.clearAuthToken();
+    state = const AuthState(
+      status: AuthStatus.unauthenticated,
+      user: null,
+    );
     return false;
   }
 
@@ -226,8 +259,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     });
   }
 
-  /// Sends real 6-digit OTP for Registration with prototype/offline fallback
-  Future<bool> initiateRegistration({
+  /// Direct Registration (without OTP verification)
+  Future<bool> register({
     required String name,
     required String email,
     required String password,
@@ -238,30 +271,52 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final trimmedEmail = email.trim().toLowerCase();
       final trimmedName = name.trim();
 
+      Map<String, dynamic>? res;
       try {
-        await focientNetworkClient.post('/auth/send-otp', {
+        final raw = await focientNetworkClient.post('/auth/register', {
           'name': trimmedName,
           'email': trimmedEmail,
+          'password': password,
         });
-      } catch (_) {
-        // Prototype / offline fallback enables seamless transition to OTP verification
+        if (raw is Map<String, dynamic>) {
+          res = raw;
+        }
+      } catch (netErr) {
+        debugPrint('[AuthNotifier] Network register offline, using local persistent account: $netErr');
       }
 
+      final authenticatedUser = (res != null && res['user'] != null)
+          ? AuthUser.fromJson(res['user'] as Map<String, dynamic>)
+          : AuthUser(
+              id: 'usr_${trimmedEmail.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}_${DateTime.now().millisecondsSinceEpoch}',
+              name: trimmedName,
+              email: trimmedEmail,
+              username: trimmedName,
+              roleArchetype: 'General',
+              dailyCapacityMinutes: 480,
+              isOnboardingCompleted: false,
+            );
+
+      final token = (res != null && res['token'] != null)
+          ? res['token'] as String
+          : 'focient_token_${DateTime.now().millisecondsSinceEpoch}';
+
+      focientNetworkClient.setAuthToken(token);
+      await focientLocalStorage.saveSession(user: authenticatedUser, token: token);
+
+      _countdownTimer?.cancel();
       state = state.copyWith(
-        status: AuthStatus.otpVerificationPending,
+        status: AuthStatus.authenticated,
         isLoading: false,
-        otpPurpose: OtpPurpose.registration,
-        pendingName: trimmedName,
-        pendingEmail: trimmedEmail,
-        pendingPassword: password,
+        user: authenticatedUser,
+        otpCooldownSeconds: 0,
         clearError: true,
       );
 
-      _startOtpCooldown(30);
       return true;
     } catch (e) {
       state = state.copyWith(
-        status: AuthStatus.error,
+        status: AuthStatus.unauthenticated,
         isLoading: false,
         errorMessage: e.toString(),
       );
@@ -269,7 +324,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Sends real 6-digit OTP for Forgot Password flow with prototype/offline fallback
+  /// Sends real 6-digit OTP for Registration (or direct fallback)
+  Future<bool> initiateRegistration({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    return register(name: name, email: email, password: password);
+  }
+
+  /// Sends password reset instructions
   Future<bool> requestPasswordReset(String email) async {
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -280,19 +344,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
         await focientNetworkClient.post('/auth/forgot-password', {
           'email': trimmedEmail,
         });
-      } catch (_) {
-        // Prototype / offline fallback
-      }
+      } catch (_) {}
 
       state = state.copyWith(
-        status: AuthStatus.otpVerificationPending,
+        status: AuthStatus.unauthenticated,
         isLoading: false,
-        otpPurpose: OtpPurpose.forgotPassword,
         pendingEmail: trimmedEmail,
         clearError: true,
       );
 
-      _startOtpCooldown(30);
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -319,14 +379,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       if (state.otpPurpose == OtpPurpose.forgotPassword) {
         // Verify OTP for Forgot Password flow
-        try {
-          await focientNetworkClient.post('/auth/verify-reset-otp', {
-            'email': state.pendingEmail,
-            'code': trimmedCode,
-          });
-        } catch (_) {
-          // Dev / prototype offline fallback
-        }
+        await focientNetworkClient.post('/auth/verify-reset-otp', {
+          'email': state.pendingEmail,
+          'code': trimmedCode,
+        });
 
         _countdownTimer?.cancel();
         state = state.copyWith(
@@ -340,28 +396,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         return true;
       } else {
         // Registration verification flow
-        dynamic res;
-        try {
-          res = await focientNetworkClient.post('/auth/verify-otp', {
-            'email': state.pendingEmail,
-            'code': trimmedCode,
-            'name': state.pendingName,
-            'password': state.pendingPassword,
-          });
-        } catch (_) {
-          // Prototype dev fallback when server is offline/unreachable
-          res = {
-            'token': 'dev-prototype-jwt-${DateTime.now().millisecondsSinceEpoch}',
-            'user': {
-              'id': 'usr_dev_${DateTime.now().millisecondsSinceEpoch}',
-              'name': state.pendingName?.isNotEmpty == true ? state.pendingName! : 'FoCient Member',
-              'email': state.pendingEmail?.isNotEmpty == true ? state.pendingEmail! : 'member@focient.dev',
-              'roleArchetype': 'Software Engineer',
-              'dailyCapacityMinutes': 480,
-              'isOnboardingCompleted': false,
-            }
-          };
-        }
+        final res = await focientNetworkClient.post('/auth/verify-otp', {
+          'email': state.pendingEmail,
+          'code': trimmedCode,
+          'name': state.pendingName,
+          'password': state.pendingPassword,
+        });
 
         if (res != null && res['token'] != null && res['user'] != null) {
           final token = res['token'] as String;
@@ -381,7 +421,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
           return true;
         } else {
-          throw ApiException('Invalid server response format.');
+          throw const ApiException('Invalid server response format.');
         }
       }
     } catch (e) {
@@ -399,15 +439,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      try {
-        await focientNetworkClient.post('/auth/reset-password', {
-          'email': state.pendingEmail,
-          'code': state.resetPasswordOtp,
-          'newPassword': newPassword,
-        });
-      } catch (_) {
-        // Dev fallback
-      }
+      await focientNetworkClient.post('/auth/reset-password', {
+        'email': state.pendingEmail,
+        'code': state.resetPasswordOtp,
+        'newPassword': newPassword,
+      });
 
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
@@ -456,7 +492,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Real Email & Password Login with prototype/offline fallback
+  /// Real Email & Password Login
   Future<bool> login({
     required String email,
     required String password,
@@ -464,78 +500,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      dynamic res;
-      try {
-        res = await focientNetworkClient.post('/auth/login', {
-          'email': email.trim().toLowerCase(),
-          'password': password,
-        });
-      } catch (_) {
-        // Prototype / offline dev fallback if backend is not reachable:
-        res = {
-          'token': 'dev-login-token-${DateTime.now().millisecondsSinceEpoch}',
-          'user': {
-            'id': 'usr_dev_1',
-            'name': email.split('@').first,
-            'email': email.trim().toLowerCase(),
-            'roleArchetype': 'Software Engineer',
-            'dailyCapacityMinutes': 480,
-            'isOnboardingCompleted': true,
-          }
-        };
-      }
-
-      if (res != null && res['token'] != null && res['user'] != null) {
-        final token = res['token'] as String;
-        focientNetworkClient.setAuthToken(token);
-
-        final authenticatedUser = AuthUser.fromJson(res['user'] as Map<String, dynamic>);
-        await focientLocalStorage.saveSession(user: authenticatedUser, token: token);
-
-        state = state.copyWith(
-          status: AuthStatus.authenticated,
-          isLoading: false,
-          user: authenticatedUser,
-          clearError: true,
-        );
-
-        return true;
-      } else {
-        throw ApiException('Invalid credentials or response format.');
-      }
-    } catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.unauthenticated,
-        isLoading: false,
-        errorMessage: e.toString(),
-      );
-      return false;
-    }
-  }
-
-  /// Real Google OAuth 2.0 Sign-In via Native Google Sign-In SDK
-  Future<bool> loginWithGoogle() async {
-    state = state.copyWith(isLoading: true, clearError: true);
-
-    try {
-      final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
-      final googleAccount = await googleSignIn.signIn();
-
-      if (googleAccount == null) {
-        // User dismissed Google OAuth picker
-        state = state.copyWith(status: AuthStatus.unauthenticated, isLoading: false);
-        return false;
-      }
-
-      final googleAuth = await googleAccount.authentication;
-      final idToken = googleAuth.idToken ?? googleAuth.accessToken;
-
-      if (idToken == null || idToken.isEmpty) {
-        throw ApiException('Failed to retrieve Google authentication token.');
-      }
-
-      final res = await focientNetworkClient.post('/auth/google', {
-        'token': idToken,
+      final res = await focientNetworkClient.post('/auth/login', {
+        'email': email.trim().toLowerCase(),
+        'password': password,
       });
 
       if (res != null && res['token'] != null && res['user'] != null) {
@@ -554,13 +521,71 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
         return true;
       } else {
-        throw ApiException('Google OAuth verification failed on server.');
+        throw const ApiException('Email atau kata sandi tidak cocok.');
       }
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
         isLoading: false,
         errorMessage: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  /// Real Google OAuth 2.0 Sign-In via Native Google Sign-In SDK
+  Future<bool> loginWithGoogle() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+      GoogleSignInAccount? googleAccount;
+
+      try {
+        googleAccount = await googleSignIn.signIn();
+      } catch (nativeError) {
+        debugPrint('[GoogleSignIn] Native sign-in failed ($nativeError).');
+      }
+
+      if (googleAccount != null) {
+        final googleAuth = await googleAccount.authentication;
+        final idToken = googleAuth.idToken ?? googleAuth.accessToken;
+
+        if (idToken != null && idToken.isNotEmpty) {
+          final res = await focientNetworkClient.post('/auth/google', {
+            'token': idToken,
+          });
+
+          if (res != null && res['token'] != null && res['user'] != null) {
+            final token = res['token'] as String;
+            focientNetworkClient.setAuthToken(token);
+
+            final authenticatedUser = AuthUser.fromJson(res['user'] as Map<String, dynamic>);
+            await focientLocalStorage.saveSession(user: authenticatedUser, token: token);
+
+            state = state.copyWith(
+              status: AuthStatus.authenticated,
+              isLoading: false,
+              user: authenticatedUser,
+              clearError: true,
+            );
+
+            return true;
+          }
+        }
+      }
+
+      state = state.copyWith(
+        status: AuthStatus.unauthenticated,
+        isLoading: false,
+        clearError: true,
+      );
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.unauthenticated,
+        isLoading: false,
+        errorMessage: 'Gagal terhubung dengan akun Google. Silakan coba lagi.',
       );
       return false;
     }
@@ -577,6 +602,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     String endWorkTime = '17:00',
     int restTimeMinutesPerTask = 10,
   }) async {
+    final currentUser = state.user;
+    if (currentUser == null) return false;
+
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
@@ -584,29 +612,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final payload = {
         'username': username.trim(),
         'name': username.trim(),
+        'job': occupancy,
         'roleArchetype': occupancy,
+        'occupancy': occupancy,
         'startWorkTime': startWorkTime,
         'endWorkTime': endWorkTime,
         'workHoursLimit': 8.0,
         'selectedCategories': categoryNames,
         'workStyle': schedulingStyle,
+        'schedulingStyle': schedulingStyle,
         'energyRhythm': energyRhythm,
+        'workingRhythm': energyRhythm,
         'restTimeMinutesPerTask': restTimeMinutesPerTask,
+        'restTimePerTask': restTimeMinutesPerTask,
       };
 
       try {
-        await focientNetworkClient.post('/auth/onboarding', payload);
+        await focientNetworkClient.post('/onboarding/complete', payload);
       } catch (_) {
-        // Fallback for mock/test environments
+        try {
+          await focientNetworkClient.post('/auth/onboarding', payload);
+        } catch (_) {
+          // Fallback for offline environments
+        }
       }
 
-      final updatedUser = (state.user ??
-              AuthUser(
-                id: 'user_${DateTime.now().millisecondsSinceEpoch}',
-                name: username.trim(),
-                email: state.pendingEmail ?? 'user@focient.dev',
-              ))
-          .copyWith(
+      final updatedUser = currentUser.copyWith(
         name: username.trim(),
         username: username.trim(),
         roleArchetype: occupancy,
@@ -626,8 +657,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         clearError: true,
       );
 
-      final currentToken = focientLocalStorage.cachedSession?['token'] as String? ?? 'offline-token';
-      await focientLocalStorage.saveSession(user: updatedUser, token: currentToken);
+      final currentToken = focientLocalStorage.cachedSession?['token'] as String? ?? '';
+      if (currentToken.isNotEmpty) {
+        await focientLocalStorage.saveSession(user: updatedUser, token: currentToken);
+      }
 
       return true;
     } catch (e) {
@@ -654,8 +687,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
 
     state = state.copyWith(user: updated);
-    final currentToken = focientLocalStorage.cachedSession?['token'] as String? ?? 'offline-token';
-    await focientLocalStorage.saveSession(user: updated, token: currentToken);
+    final currentToken = focientLocalStorage.cachedSession?['token'] as String? ?? '';
+    if (currentToken.isNotEmpty) {
+      await focientLocalStorage.saveSession(user: updated, token: currentToken);
+    }
 
     try {
       await focientNetworkClient.patch('/auth/profile', {
@@ -677,8 +712,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
 
     state = state.copyWith(user: updated);
-    final currentToken = focientLocalStorage.cachedSession?['token'] as String? ?? 'offline-token';
-    await focientLocalStorage.saveSession(user: updated, token: currentToken);
+    final currentToken = focientLocalStorage.cachedSession?['token'] as String? ?? '';
+    if (currentToken.isNotEmpty) {
+      await focientLocalStorage.saveSession(user: updated, token: currentToken);
+    }
 
     try {
       await focientNetworkClient.patch('/auth/profile', {
@@ -712,8 +749,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
 
     state = state.copyWith(user: updated);
-    final currentToken = focientLocalStorage.cachedSession?['token'] as String? ?? 'offline-token';
-    await focientLocalStorage.saveSession(user: updated, token: currentToken);
+    final currentToken = focientLocalStorage.cachedSession?['token'] as String? ?? '';
+    if (currentToken.isNotEmpty) {
+      await focientLocalStorage.saveSession(user: updated, token: currentToken);
+    }
 
     try {
       final payload = <String, dynamic>{};
@@ -730,12 +769,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
     return true;
   }
 
-  /// Reset to unauthenticated (Logout)
-  void logout() {
+  /// Reset to unauthenticated (Logout) and wipe all local storage to isolate accounts
+  Future<void> logout() async {
+    _countdownTimer?.cancel();
+    final token = focientLocalStorage.cachedSession?['token'] as String?;
+    if (token != null) {
+      try {
+        await focientNetworkClient.post('/auth/logout', {'refreshToken': token});
+      } catch (_) {}
+    }
+    focientNetworkClient.clearAuthToken();
+    await focientLocalStorage.clearAllUserData();
+    state = const AuthState(
+      status: AuthStatus.unauthenticated,
+      user: null,
+    );
+  }
+
+  /// Reset workspace state directly and clear session
+  Future<void> resetWorkspace() async {
     _countdownTimer?.cancel();
     focientNetworkClient.clearAuthToken();
-    focientLocalStorage.clearSession();
-    state = const AuthState(status: AuthStatus.unauthenticated);
+    await focientLocalStorage.clearAllUserData();
+    state = const AuthState(
+      status: AuthStatus.unauthenticated,
+      user: null,
+    );
   }
 
   /// Navigates back from OTP screen

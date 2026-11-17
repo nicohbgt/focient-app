@@ -505,9 +505,11 @@ export class NotificationService {
 
   async sendDailySummary(userId: string, completedCount: number, focusMinutes: number) {
     let recordId = `notif_${Date.now()}`;
-    const hours = (focusMinutes / 60).toFixed(1);
+    const h = Math.floor(focusMinutes / 60);
+    const m = focusMinutes % 60;
+    const focusDurationText = h > 0 ? (m > 0 ? `${h} jam ${m} menit` : `${h} jam`) : `${m} menit`;
     const title = 'Refleksi Fokus Hari Ini';
-    const message = `Hari ini kamu telah menyelesaikan ${completedCount} tugas penting dengan total fokus ${hours} jam. Istirahatlah dengan tenang malam ini.`;
+    const message = `Hari ini kamu telah menyelesaikan ${completedCount} tugas penting dengan total fokus ${focusDurationText}. Istirahatlah dengan tenang malam ini.`;
 
     if (this.isDbAvailable()) {
       const record = await prisma.notification.create({

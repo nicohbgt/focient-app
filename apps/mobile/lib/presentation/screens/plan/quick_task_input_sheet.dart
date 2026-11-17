@@ -26,11 +26,11 @@ class QuickTaskInputSheet extends ConsumerStatefulWidget {
 class _QuickTaskInputSheetState extends ConsumerState<QuickTaskInputSheet> {
   final _titleController = TextEditingController();
   final _focusNode = FocusNode();
-  int _selectedDuration = 25;
+  int _selectedDuration = 30;
   bool _isDeepFocus = false;
   String? _validationError;
 
-  final List<int> _durationOptions = const [15, 25, 45, 60];
+  final List<int> _durationOptions = const [10, 15, 30, 45, 50, 60];
 
   @override
   void initState() {
@@ -285,41 +285,44 @@ class _QuickTaskInputSheetState extends ConsumerState<QuickTaskInputSheet> {
                 ),
               ),
               const SizedBox(height: 8),
-              Row(
-                children: _durationOptions.map((duration) {
-                  final isSelected = _selectedDuration == duration;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: InkWell(
-                      onTap: () => setState(() => _selectedDuration = duration),
-                      borderRadius: BorderRadius.circular(10),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(0xFF0D9488)
-                              : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: isSelected ? const Color(0xFF0D9488) : borderColor,
-                          ),
-                        ),
-                        child: Text(
-                          '$duration m',
-                          style: TextStyle(
-                            fontFamily: FocientTypographyTokens.fontFamily,
-                            fontSize: 13,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _durationOptions.map((duration) {
+                    final isSelected = _selectedDuration == duration;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: InkWell(
+                        onTap: () => setState(() => _selectedDuration = duration),
+                        borderRadius: BorderRadius.circular(10),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
                             color: isSelected
-                                ? Colors.white
-                                : (isDark ? FocientColorDarkTokens.neutralTextBold : const Color(0xFF334155)),
+                                ? const Color(0xFF0D9488)
+                                : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSelected ? const Color(0xFF0D9488) : borderColor,
+                            ),
+                          ),
+                          child: Text(
+                            '$duration m',
+                            style: TextStyle(
+                              fontFamily: FocientTypographyTokens.fontFamily,
+                              fontSize: 13,
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                              color: isSelected
+                                  ? Colors.white
+                                  : (isDark ? FocientColorDarkTokens.neutralTextBold : const Color(0xFF334155)),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }).toList(),
+                ),
               ),
               const SizedBox(height: 18),
 

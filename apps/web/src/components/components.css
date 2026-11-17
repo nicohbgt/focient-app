@@ -1481,7 +1481,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
   cursor: pointer;
   margin-top: -18px;
   transition: transform 150ms ease, background-color 150ms ease;
@@ -2580,7 +2580,7 @@
 .focient-card--single-focus {
   background-color: var(--color-primary-bg-subtle, #EFF6FF);
   border: 1.5px solid var(--color-primary-action-base, #2563EB);
-  box-shadow: var(--shadow-2, 0 4px 10px rgba(37, 99, 235, 0.15));
+  box-shadow: var(--shadow-2, 0 1px 3px 0 rgba(0, 0, 0, 0.08));
   flex-direction: column;
   align-items: stretch;
   gap: var(--space-3, 12px);

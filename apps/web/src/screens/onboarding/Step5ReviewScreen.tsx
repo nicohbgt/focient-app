@@ -2,21 +2,27 @@
 
 import React from 'react';
 import { useFocient } from '../../state/focient-store';
-import { ArrowLeftIcon, SparklesIcon, CheckCircleIcon, ClockIcon } from '../../components/icons';
+import { ArrowLeftIcon, CheckCircleIcon, ClockIcon } from '../../components/icons';
+import { calculateCapacityMinutes } from '../../lib/date-utils';
 
 export const Step5ReviewScreen: React.FC = () => {
   const {
     tasks,
+    startHour,
+    endHour,
     completeOnboarding,
     setOnboardingStep,
     language,
   } = useFocient();
 
-  const allocatedMinutes = tasks
+  const scheduledTasks = tasks.filter((t) => !t.isBacklog);
+  const backlogCount = tasks.filter((t) => t.isBacklog).length;
+
+  const allocatedMinutes = scheduledTasks
     .filter((t) => t.status !== 'completed')
     .reduce((sum, t) => sum + t.durationMinutes + (t.restMinutes || 0), 0);
 
-  const capacityMinutes = 480; // 8 hours
+  const capacityMinutes = calculateCapacityMinutes(startHour, endHour);
   const percentage = Math.min(100, Math.round((allocatedMinutes / capacityMinutes) * 100));
 
   let statusText = 'Optimal';
@@ -74,17 +80,13 @@ export const Step5ReviewScreen: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
-        <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 mb-1">
-          <SparklesIcon size="xs" />
-          <span>{language === 'id' ? 'SIAP UNTUK FOKUS' : 'READY TO FOCUS'}</span>
-        </div>
         <h2 className="text-2xl font-bold text-slate-900 mb-1">
-          {language === 'id' ? 'Tinjauan Beban Kerja' : 'Review & Workload Engine'}
+          {language === 'id' ? 'Ringkasan Rencana Kerjamu' : 'Review Your Daily Plan'}
         </h2>
         <p className="text-sm text-slate-500 mb-6">
           {language === 'id'
-            ? 'Rencana harian Anda telah dihitung secara adaptif agar tetap sehat dan seimbang.'
-            : 'Your initial plan has been balanced to preserve energy and prevent overload.'}
+            ? 'Rencana harianmu sudah siap dan seimbang. Waktunya mulai harimu!'
+            : 'Your daily plan is set and balanced. Ready to get started!'}
         </p>
 
         {/* Workload Capacity Meter Card */}
@@ -116,9 +118,9 @@ export const Step5ReviewScreen: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-            <span>{tasks.length} {language === 'id' ? 'Tugas Terjadwal' : 'Scheduled Tasks'}</span>
+            <span>{scheduledTasks.length} {language === 'id' ? 'Tugas Terjadwal' : 'Scheduled Tasks'}{backlogCount > 0 ? ` (${backlogCount} Backlog)` : ''}</span>
             <span>
-              {tasks.filter((t) => t.priority === 'top3').length} {language === 'id' ? 'Prioritas Utama' : 'Top 3 Focus'}
+              {scheduledTasks.filter((t) => t.priority === 'top3').length} {language === 'id' ? 'Prioritas Utama' : 'Top 3 Focus'}
             </span>
           </div>
         </div>
@@ -149,14 +151,6 @@ export const Step5ReviewScreen: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Anti-Burnout Note */}
-        <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-blue-900 leading-relaxed mb-6">
-          💡{' '}
-          {language === 'id'
-            ? 'Ingat: Anda dapat menjadwalkan ulang atau menggeser tugas kapan saja tanpa rasa bersalah. FoCient akan membantu menyelaraskan ritme kerja Anda.'
-            : 'Remember: You can reschedule or shift tasks anytime without guilt. FoCient will gently help balance your daily flow.'}
         </div>
 
         {/* Start Plan CTA */}

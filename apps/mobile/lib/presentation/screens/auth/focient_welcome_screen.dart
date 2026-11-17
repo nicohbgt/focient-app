@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../focient_copywriting.dart';
 import '../../primitive/focient_button.dart';
+import '../../primitive/focient_logo.dart';
+import '../../primitive/focient_wordmark.dart';
 import '../../riverpod_providers.dart';
 
 /// FoCient Welcome / Onboarding Landing Page
@@ -70,15 +72,13 @@ class FocientWelcomeScreen extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'FoCient',
-                    style: TextStyle(
-                      fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.5,
-                      color: titleColor,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const FoCientLogo(size: 24),
+                      const SizedBox(width: 8),
+                      FoCientWordmark(height: 22, light: isDark),
+                    ],
                   ),
                   Container(
                     padding: const EdgeInsets.all(4),

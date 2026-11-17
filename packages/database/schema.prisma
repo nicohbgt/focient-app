@@ -135,10 +135,13 @@ model Task {
   status              TaskStatus            @default(TODO)
   deadline            DateTime?
   completedAt         DateTime?
-  focusType           String?               @default("Deep Focus")
+  focusType           String?               @default("High")
   restMinutes         Int                   @default(10)
   needRestAfter       Boolean               @default(true)
   isBacklog           Boolean               @default(false)
+  isRecurring         Boolean               @default(false)
+  recurrencePattern   String?
+  recurrenceDays      String?
   categoryName        String?
   categoryColor       String?
   dateDisplay         String?

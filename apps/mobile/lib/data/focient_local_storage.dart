@@ -172,6 +172,26 @@ class FocientLocalStorage {
     }
   }
 
+  /// Wipes all persistent user session and task data on logout to guarantee total account isolation
+  Future<void> clearAllUserData() async {
+    _cachedSession = null;
+    _cachedTasks.clear();
+    _cachedSyncQueue.clear();
+    _cachedCategories.clear();
+    try {
+      final sessionFile = _getFile(_sessionFileName);
+      if (await sessionFile.exists()) await sessionFile.delete();
+      final tasksFile = _getFile(_tasksFileName);
+      if (await tasksFile.exists()) await tasksFile.delete();
+      final queueFile = _getFile(_syncQueueFileName);
+      if (await queueFile.exists()) await queueFile.delete();
+      final catFile = _getFile(_categoriesFileName);
+      if (await catFile.exists()) await catFile.delete();
+    } catch (e) {
+      debugPrint('[FocientLocalStorage] Failed to clear all user data: $e');
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // OFFLINE MUTATION SYNC QUEUE
   // ---------------------------------------------------------------------------

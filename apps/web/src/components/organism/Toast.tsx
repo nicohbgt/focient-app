@@ -106,7 +106,7 @@ export const Toast: React.FC<ToastProps> = ({ toast, onDismiss, className = '' }
         onClick={() => onDismiss(toast.id)}
         aria-label={copywriting.actions.close}
       >
-        ✕
+        <XIcon size="xs" />
       </button>
     </div>
   );

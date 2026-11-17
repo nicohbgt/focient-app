@@ -1,6 +1,6 @@
 import React from 'react';
 import { useFoCientI18n } from '../i18n/I18nContext.js';
-import { CheckCircleIcon } from '../icons/index.js';
+import { CheckCircleIcon, XIcon } from '../icons/index.js';
 
 export interface DailySuccessBannerProps {
   title?: string;
@@ -57,7 +57,7 @@ export const DailySuccessBanner: React.FC<DailySuccessBannerProps> = ({
           onClick={onDismiss}
           aria-label={copywriting.actions.close}
         >
-          ✕
+          <XIcon size="xs" />
         </button>
       )}
     </div>

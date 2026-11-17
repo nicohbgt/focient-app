@@ -19,6 +19,11 @@ import {
   enCopywriting,
   dictionaries,
 } from '../src/components/i18n/copywriting.ts';
+import {
+  isTimeOverlappingQuietHours,
+  calculateQuietHoursDuration,
+} from '../src/lib/date-utils.ts';
+import { getAvatarInitial } from '../src/lib/utils.ts';
 
 test('FoCient Validation Contract Specification Suite', async (t) => {
   await t.test('1. Task Management: title validation rules & empathetic message', () => {
@@ -392,5 +397,52 @@ test('FoCient Validation Contract Specification Suite', async (t) => {
     assert.equal(enCopywriting.validations.workHoursRange, 'Work hour range is not aligned. Make sure end time is after start time.');
     assert.equal(enCopywriting.validations.selectedCategories, 'Select at least one work category to start your first plan.');
     assert.equal(enCopywriting.validations.confirmedStartTime, 'This time slot has already passed. Choose the current time or the next available slot.');
+  });
+
+  await t.test('12. Quiet Hours Contract: Prevents scheduling tasks overlapping quiet hours & calculates duration', () => {
+    // 1. Duration calculation
+    assert.equal(calculateQuietHoursDuration('12:00', '13:00'), '1');
+    assert.equal(calculateQuietHoursDuration('12:00', '13:30'), '1.5');
+    assert.equal(calculateQuietHoursDuration('21:00', '06:00'), '9'); // overnight
+    assert.equal(calculateQuietHoursDuration('00:00', '00:00'), null); // empty
+    assert.equal(calculateQuietHoursDuration('21:00', '00:00'), null); // unconfigured end time returns null
+    assert.equal(calculateQuietHoursDuration('00:00', '06:00'), null); // unconfigured start time returns null
+    assert.equal(calculateQuietHoursDuration('10:00', '10:00'), null); // identical
+
+    // 2. Overlap detection (Same day: 12:00 - 13:00)
+    // Task inside quiet hours: 12:15 to 12:45
+    assert.equal(isTimeOverlappingQuietHours('12:15', 30, '12:00', '13:00', true), true);
+    // Task spanning into quiet hours: 11:30 to 12:30
+    assert.equal(isTimeOverlappingQuietHours('11:30', 60, '12:00', '13:00', true), true);
+    // Task starting in quiet hours: 12:30 to 13:30
+    assert.equal(isTimeOverlappingQuietHours('12:30', 60, '12:00', '13:00', true), true);
+    // Task completely before quiet hours: 10:00 to 11:30
+    assert.equal(isTimeOverlappingQuietHours('10:00', 90, '12:00', '13:00', true), false);
+    // Task ending exactly at quiet hour start: 11:00 to 12:00
+    assert.equal(isTimeOverlappingQuietHours('11:00', 60, '12:00', '13:00', true), false);
+    // Task starting exactly at quiet hour end: 13:00 to 14:00
+    assert.equal(isTimeOverlappingQuietHours('13:00', 60, '12:00', '13:00', true), false);
+
+    // 3. Overlap detection (Overnight: 22:00 - 06:00)
+    // Task at night: 23:00 to 23:45
+    assert.equal(isTimeOverlappingQuietHours('23:00', 45, '22:00', '06:00', true), true);
+    // Task early morning: 05:00 to 05:30
+    assert.equal(isTimeOverlappingQuietHours('05:00', 30, '22:00', '06:00', true), true);
+    // Task midday: 10:00 to 11:00
+    assert.equal(isTimeOverlappingQuietHours('10:00', 60, '22:00', '06:00', true), false);
+
+    // 4. When quiet hours disabled
+    assert.equal(isTimeOverlappingQuietHours('12:15', 30, '12:00', '13:00', false), false);
+  });
+
+  await t.test('13. Avatar Initial Contract: First letter of first word across all representations', () => {
+    assert.equal(getAvatarInitial('Nico'), 'N');
+    assert.equal(getAvatarInitial('Nico Pratama'), 'N');
+    assert.equal(getAvatarInitial('  nico  '), 'N');
+    assert.equal(getAvatarInitial('john doe'), 'J');
+    assert.equal(getAvatarInitial(''), 'U');
+    assert.equal(getAvatarInitial(null), 'U');
+    assert.equal(getAvatarInitial(undefined), 'U');
+    assert.equal(getAvatarInitial('FoCient User'), 'F');
   });
 });

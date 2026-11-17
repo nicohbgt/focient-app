@@ -6,7 +6,7 @@ import '../../../data/auth_state.dart';
 import '../../primitive/focient_button.dart';
 import '../../primitive/focient_checkbox.dart';
 import '../../primitive/focient_input_field.dart';
-import '../../primitive/google_logo.dart';
+import '../../primitive/focient_logo.dart';
 import '../../riverpod_providers.dart';
 import '../../focient_copywriting.dart';
 import 'focient_terms_sheet.dart';
@@ -19,8 +19,6 @@ import 'focient_terms_sheet.dart';
 /// - Password visibility toggle + canonical requirement guidance
 /// - Term and Condition checkbox with interactive sheet
 /// - "Create Account" primary action with loading and error states
-/// - "Or continue with" divider
-/// - "Continue with Google" branded action
 /// - "Already have an account? Login" transition
 class FocientRegisterScreen extends ConsumerStatefulWidget {
   final VoidCallback onNavigateToLogin;
@@ -91,7 +89,7 @@ class _FocientRegisterScreenState extends ConsumerState<FocientRegisterScreen> {
       return;
     }
 
-    final success = await ref.read(authProvider.notifier).initiateRegistration(
+    final success = await ref.read(authProvider.notifier).register(
           name: _nameController.text,
           email: _emailController.text,
           password: _passwordController.text,
@@ -124,14 +122,6 @@ class _FocientRegisterScreenState extends ConsumerState<FocientRegisterScreen> {
         ? FocientColorDarkTokens.neutralTextBold
         : FocientColorTokens.neutralTextBold;
 
-    final dividerLineColor = isDark
-        ? FocientColorDarkTokens.neutralBorderSubtle
-        : const Color(0xFFCBD5E1);
-
-    final mutedTextColor = isDark
-        ? FocientColorDarkTokens.neutralTextMuted
-        : const Color(0xFF64748B);
-
     return Scaffold(
       backgroundColor: isDark
           ? FocientColorDarkTokens.neutralBgCanvas
@@ -149,6 +139,13 @@ class _FocientRegisterScreenState extends ConsumerState<FocientRegisterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const SizedBox(height: 16),
+
+                  // FoCient Official Brand Logo
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: FoCientLogo(size: 36, withBackground: true),
+                  ),
                   const SizedBox(height: 16),
 
                   // Header Title - Left/Start Aligned (No center)
@@ -338,88 +335,7 @@ class _FocientRegisterScreenState extends ConsumerState<FocientRegisterScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: FocientSpacingTokens.space5),
-
-                  // Divider: "Or continue with"
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Divider(
-                          color: dividerLineColor,
-                          thickness: 1,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          'Or continue with',
-                          style: TextStyle(
-                            fontFamily: FocientTypographyTokens.fontFamily,
-                            fontSize: 13,
-                            color: mutedTextColor,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Divider(
-                          color: dividerLineColor,
-                          thickness: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: FocientSpacingTokens.space5),
-
-                  // Button: Continue with Google
-                  SizedBox(
-                    height: 48,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: isDark
-                            ? FocientColorDarkTokens.neutralSurfaceCard
-                            : Colors.white,
-                        side: BorderSide(
-                          color: dividerLineColor,
-                          width: 1,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            FocientBorderRadiusTokens.radiusLg,
-                          ),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                      ),
-                      onPressed: authState.isLoading
-                          ? null
-                          : () async {
-                              final success = await ref
-                                  .read(authProvider.notifier)
-                                  .loginWithGoogle();
-                              if (success && mounted) {
-                                widget.onRegistrationSuccess?.call();
-                              }
-                            },
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const GoogleLogo(size: 20),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Continue with Google',
-                            style: TextStyle(
-                              fontFamily: FocientTypographyTokens.fontFamily,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: titleColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
 
                   // Footer: Already have an account? Login
                   Wrap(

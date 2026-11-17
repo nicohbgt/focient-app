@@ -6,6 +6,10 @@ export * from './i18n/index.js';
 // Lucide Icon System
 export * from './icons/index.js';
 
+// FoCient Official Brand Logo & Wordmark
+export * from './brand/FoCientLogo.js';
+export * from './brand/FoCientWordmark.js';
+
 // Primitive Components (Atomic Form Controls)
 export * from './primitive/index.js';
 

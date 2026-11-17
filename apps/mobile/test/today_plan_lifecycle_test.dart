@@ -61,7 +61,7 @@ void main() {
       expect(find.text('Quick Task Input'), findsOneWidget);
       expect(find.text('Judul Aktivitas'), findsOneWidget);
       expect(find.text('Estimasi Durasi (Menit)'), findsOneWidget);
-      expect(find.text('25 m'), findsOneWidget);
+      expect(find.text('30 m'), findsOneWidget);
       expect(find.text('Deep Focus (Prioritas Top 3)'), findsOneWidget);
 
       // Fill form: Title, 45m duration chip, toggle Deep Focus

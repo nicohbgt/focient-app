@@ -7,14 +7,15 @@ import '../../primitive/focient_button.dart';
 import '../../primitive/focient_input_field.dart';
 import '../../riverpod_providers.dart';
 
-/// FoCient Forgot Password Screen (Matches Uploaded Mock Specification)
+/// FoCient Forgot Password Screen
 ///
 /// Implements:
 /// - Top back arrow navigation (`<`)
 /// - Title: "Forgot Password?"
-/// - Subtitle: "Enter your email address to receive the OTP Verification code"
+/// - Subtitle: "Enter your email address to receive password reset instructions"
 /// - Email Address input field with validation
-/// - "Get OTP" primary action
+/// - "Send Reset Instructions" primary action
+/// - Clean confirmation screen upon submission
 class FocientForgotPasswordScreen extends ConsumerStatefulWidget {
   final VoidCallback onBack;
   final VoidCallback? onOtpDispatched;
@@ -35,6 +36,7 @@ class _FocientForgotPasswordScreenState
   final _emailController = TextEditingController();
   bool _emailTouched = false;
   bool _submittedOnce = false;
+  bool _isSubmitted = false;
 
   @override
   void dispose() {
@@ -42,7 +44,7 @@ class _FocientForgotPasswordScreenState
     super.dispose();
   }
 
-  void _handleGetOtp() async {
+  void _handleSendInstructions() async {
     setState(() {
       _submittedOnce = true;
       _emailTouched = true;
@@ -59,6 +61,9 @@ class _FocientForgotPasswordScreenState
         .requestPasswordReset(_emailController.text.trim());
 
     if (success && mounted) {
+      setState(() {
+        _isSubmitted = true;
+      });
       widget.onOtpDispatched?.call();
     }
   }
@@ -116,96 +121,154 @@ class _FocientForgotPasswordScreenState
 
                   const SizedBox(height: 20),
 
-                  // Title: "Forgot Password?" - Left/Start Aligned
-                  Text(
-                    'Forgot Password?',
-                    textAlign: TextAlign.start,
-                    style: TextStyle(
-                      fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.5,
-                      color: titleColor,
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Subtitle - Left/Start Aligned
-                  Text(
-                    'Enter your email address to receive the OTP Verification code',
-                    textAlign: TextAlign.start,
-                    style: TextStyle(
-                      fontFamily: FocientTypographyTokens.fontFamily,
-                      fontSize: 14,
-                      height: 1.4,
-                      color: subtitleColor,
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Email Address Input Field
-                  FocientInputField(
-                    controller: _emailController,
-                    label: 'Email Address',
-                    hintText: 'Input your email here',
-                    keyboardType: TextInputType.emailAddress,
-                    errorText: emailResult.errorMessage,
-                    isInvalid: !emailResult.isValid,
-                    borderRadius: FocientBorderRadiusTokens.radiusLg,
-                    textInputAction: TextInputAction.done,
-                    onChanged: (val) {
-                      if (_submittedOnce) setState(() => _emailTouched = true);
-                    },
-                    onSubmitted: (_) => _handleGetOtp(),
-                  ),
-
-                  if (authState.errorMessage != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      authState.errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: FocientTypographyTokens.fontFamily,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: isDark
-                            ? FocientColorDarkTokens.dangerTextBold
-                            : FocientColorTokens.dangerTextBold,
+                  if (_isSubmitted) ...[
+                    // Success Confirmation State
+                    const SizedBox(height: 16),
+                    Container(
+                      width: 56,
+                      height: 56,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.check_circle_outline_rounded,
+                        color: Color(0xFF059669),
+                        size: 32,
                       ),
                     ),
-                  ],
-
-                  const SizedBox(height: 28),
-
-                  // "Get OTP" Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: FocientButton(
-                      isFullWidth: true,
-                      onPressed: authState.isLoading ? null : _handleGetOtp,
-                      child: authState.isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Text(
-                              'Get OTP',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Instructions Sent',
+                      textAlign: TextAlign.start,
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.5,
+                        color: titleColor,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'We have sent password reset instructions to ${_emailController.text.trim()}. Please check your email inbox.',
+                      textAlign: TextAlign.start,
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 14,
+                        height: 1.4,
+                        color: subtitleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: FocientButton(
+                        isFullWidth: true,
+                        onPressed: widget.onBack,
+                        child: const Text(
+                          'Back to Login',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    // Title: "Forgot Password?" - Left/Start Aligned
+                    Text(
+                      'Forgot Password?',
+                      textAlign: TextAlign.start,
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.5,
+                        color: titleColor,
+                      ),
+                    ),
 
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 8),
+
+                    // Subtitle - Left/Start Aligned
+                    Text(
+                      'Enter your email address to receive password reset instructions',
+                      textAlign: TextAlign.start,
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 14,
+                        height: 1.4,
+                        color: subtitleColor,
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Email Address Input Field
+                    FocientInputField(
+                      controller: _emailController,
+                      label: 'Email Address',
+                      hintText: 'Input your email here',
+                      keyboardType: TextInputType.emailAddress,
+                      errorText: emailResult.errorMessage,
+                      isInvalid: !emailResult.isValid,
+                      borderRadius: FocientBorderRadiusTokens.radiusLg,
+                      textInputAction: TextInputAction.done,
+                      onChanged: (val) {
+                        if (_submittedOnce) setState(() => _emailTouched = true);
+                      },
+                      onSubmitted: (_) => _handleSendInstructions(),
+                    ),
+
+                    if (authState.errorMessage != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        authState.errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: isDark
+                              ? FocientColorDarkTokens.dangerTextBold
+                              : FocientColorTokens.dangerTextBold,
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 28),
+
+                    // "Send Reset Instructions" Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: FocientButton(
+                        isFullWidth: true,
+                        onPressed: authState.isLoading ? null : _handleSendInstructions,
+                        child: authState.isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Send Reset Instructions',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+                  ],
                 ],
               ),
             ),

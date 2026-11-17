@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useFocient, MobileTask } from '../../state/focient-store';
+import React, { useState, useEffect } from 'react';
+import { useFocient, MobileTask, RecurrencePattern } from '../../state/focient-store';
 import {
   BellIcon,
   SparklesIcon,
@@ -12,12 +12,21 @@ import {
   ChevronUpIcon,
   PlusIcon,
   RotateCcwIcon,
+  TargetIcon,
+  CalendarIcon,
+  ActivityIcon,
+  RepeatIcon,
 } from '../../components/icons';
+import { calculateCapacityMinutes, formatCurrentDate, isTaskOnDate } from '../../lib/date-utils';
+import { TimePicker24 } from '../../components/primitive/TimePicker24';
+import { DatePickerField } from '../../components/primitive/DatePickerField';
+import { getAvatarInitial } from '../../lib/utils';
 
 export const DashboardScreen: React.FC = () => {
   const {
     user,
     tasks,
+    categories: storeCategories,
     addTask,
     toggleTaskComplete,
     setSelectedTaskForDetail,
@@ -27,34 +36,100 @@ export const DashboardScreen: React.FC = () => {
     resolveRescheduleNow,
     dismissRescheduleLater,
     setActiveNavTab,
+    restMinutesPerTask,
     language,
     logout,
+    openNotificationPanel,
+    unreadNotificationCount,
+    startHour,
+    endHour,
+    selectedRhythm,
   } = useFocient();
 
   const [showDetailedTop3, setShowDetailedTop3] = useState(true);
   const [quickTitle, setQuickTitle] = useState('');
-  const [quickCategory, setQuickCategory] = useState('Strategic');
-  const [quickDuration, setQuickDuration] = useState(20);
 
-  const categories = ['Strategic', 'Execution', 'Meeting', 'Operation', 'Personal'];
-  const categoryColors: Record<string, string> = {
-    Strategic: '#7C3AED',
-    Execution: '#0284C7',
-    Meeting: '#B45309',
-    Operation: '#0D9488',
-    Personal: '#059669',
+  // Helper to get today's date formatted for HTML date picker (YYYY-MM-DD)
+  const getTodayIsoDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
-  const durations = [10, 15, 20, 25, 30];
+  // Helper to get current hour or next 15m slot today (HH:MM)
+  const getCurrentHourSlot = () => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(Math.ceil(now.getMinutes() / 15) * 15 % 60).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
 
-  // Workload calculations
-  const todayTasks = tasks.filter((t) => !t.isBacklog);
+  const [quickDate, setQuickDate] = useState('');
+  const [quickStartHour, setQuickStartHour] = useState('');
+  const [quickNeedRest, setQuickNeedRest] = useState(false);
+  const configuredRestMinutes = restMinutesPerTask || user?.restTimePerTask || 10;
+
+  const userCategories =
+    storeCategories && storeCategories.length > 0
+      ? storeCategories
+      : [
+          { id: 'c1', name: 'Strategic', colorHex: '#7C3AED', focusType: 'High' as const, isDefault: true },
+          { id: 'c2', name: 'Execution', colorHex: '#0284C7', focusType: 'Medium' as const, isDefault: true },
+          { id: 'c3', name: 'Meeting', colorHex: '#B45309', focusType: 'Medium' as const, isDefault: true },
+          { id: 'c4', name: 'Personal', colorHex: '#059669', focusType: 'Low' as const, isDefault: true },
+        ];
+
+  const [quickCategory, setQuickCategory] = useState<string>('');
+  const [quickDuration, setQuickDuration] = useState<number | null>(null);
+  const [quickError, setQuickError] = useState<string | null>(null);
+  const [quickIsRecurring, setQuickIsRecurring] = useState(false);
+  const [quickRecurrencePattern, setQuickRecurrencePattern] = useState<RecurrencePattern>('daily');
+
+  const durations = [10, 15, 20, 25, 30, 45, 60];
+
+  // Workload calculations: strictly filter tasks for TODAY only
+  const today = new Date();
+  const todayTasks = tasks.filter((t) => !t.isBacklog && isTaskOnDate(t.dateDisplay, today, t));
   const allocatedMinutes = todayTasks
     .filter((t) => t.status !== 'completed')
     .reduce((sum, t) => sum + t.durationMinutes, 0);
 
-  const capacityMinutes = 480;
+  const capacityMinutes = calculateCapacityMinutes(
+    user?.workHourStart || user?.startWorkTime || startHour || '09:00',
+    user?.workHourEnd || user?.endWorkTime || endHour || '17:00'
+  );
   const workloadPercent = todayTasks.length === 0 ? 0 : Math.min(100, Math.round((allocatedMinutes / capacityMinutes) * 100));
+
+  // Real schedule collision and overload detection
+  const scheduledTasks = todayTasks
+    .filter((t) => t.startHourDisplay && t.startHourDisplay.includes(':') && t.status !== 'completed')
+    .map((t) => {
+      const parts = t.startHourDisplay.split(':');
+      const startMin = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+      return {
+        ...t,
+        startMin,
+        endMin: startMin + t.durationMinutes,
+      };
+    })
+    .sort((a, b) => a.startMin - b.startMin);
+
+  let overlappingTasks: [MobileTask, MobileTask] | null = null;
+  for (let i = 0; i < scheduledTasks.length - 1; i++) {
+    const cur = scheduledTasks[i];
+    const next = scheduledTasks[i + 1];
+    if (cur.endMin > next.startMin) {
+      overlappingTasks = [cur, next];
+      break;
+    }
+  }
+
+  const isOverloaded = workloadPercent > 90;
+  const hasCollision = overlappingTasks !== null;
+  const shouldShowReschedule =
+    (isOverloaded || hasCollision) && !rescheduleAlertResolved && !rescheduleAlertDismissed;
 
   let workloadStatus = 'Optimal';
   let workloadBadgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
@@ -89,79 +164,115 @@ export const DashboardScreen: React.FC = () => {
 
   const handleQuickAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quickTitle.trim()) return;
+    if (!quickTitle.trim()) {
+      setQuickError(language === 'id' ? 'Judul tugas tidak boleh kosong' : 'Task title cannot be empty');
+      return;
+    }
+    if (!quickCategory) {
+      setQuickError(language === 'id' ? 'Kategori tugas wajib dipilih' : 'Task category is required');
+      return;
+    }
+    if (!quickDuration || quickDuration <= 0) {
+      setQuickError(language === 'id' ? 'Durasi tugas wajib dipilih' : 'Task duration is required');
+      return;
+    }
+    setQuickError(null);
+
+    const foundCat = userCategories.find((c) => c.name === quickCategory);
+    const categoryColor = foundCat?.colorHex || '#2563EB';
+    const focusType = foundCat?.focusType || 'Medium';
+
+    // Format dateDisplay from quickDate input
+    let formattedDate = formatCurrentDate(new Date(), language);
+    if (quickDate) {
+      try {
+        const d = new Date(`${quickDate}T00:00:00`);
+        if (!isNaN(d.getTime())) {
+          formattedDate = formatCurrentDate(d, language);
+        }
+      } catch {}
+    }
 
     addTask({
       title: quickTitle.trim(),
       categoryName: quickCategory,
-      categoryColor: categoryColors[quickCategory] || '#7C3AED',
+      categoryColor,
       durationMinutes: quickDuration,
-      priority: 'normal',
-      energyLevel: 'medium',
+      priority: focusType === 'High' ? 'top3' : 'normal',
+      energyLevel: focusType === 'High' ? 'high' : focusType === 'Low' ? 'low' : 'medium',
       status: 'todo',
-      focusType: 'Medium',
-      dateDisplay: 'October, 5th 2026',
-      startHourDisplay: '14:30',
-      needRestAfter: true,
-      restMinutes: 10,
+      focusType,
+      dateDisplay: formattedDate,
+      startHourDisplay: quickStartHour || '14:00',
+      needRestAfter: quickNeedRest,
+      restMinutes: quickNeedRest ? configuredRestMinutes : 0,
+      isRecurring: quickIsRecurring,
+      recurrencePattern: quickIsRecurring ? quickRecurrencePattern : undefined,
     });
 
     setQuickTitle('');
+    setQuickCategory('');
+    setQuickDuration(null);
+    setQuickDate('');
+    setQuickStartHour('');
+    setQuickNeedRest(false);
+    setQuickIsRecurring(false);
+    setQuickRecurrencePattern('daily');
+    setQuickError(null);
   };
 
   return (
-    <div className="space-y-6 pb-20 animate-fade-in max-w-4xl mx-auto">
+    <div className="space-y-6 pb-24 md:pb-12 animate-fade-in max-w-6xl mx-auto w-full">
       {/* Top Bar Header */}
       <div className="flex items-center justify-between bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-sm shadow-sm shrink-0">
-            {user?.name?.slice(0, 2).toUpperCase() || 'AJ'}
+          <div className="w-11 h-11 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-sm shadow-sm shrink-0 overflow-hidden">
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user?.name || 'User'} className="w-full h-full object-cover" />
+            ) : (
+              getAvatarInitial(user?.name)
+            )}
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-slate-900">
-                {language === 'id' ? 'Halo' : 'Hi'}, {user?.name || 'Alex Johnson'}
-              </h2>
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${workloadBadgeColor}`}>
-                ⚡ {workloadPercent}% {workloadStatus}
-              </span>
-            </div>
-            <p className="text-xs text-slate-500">Monday, October 5th 2026</p>
+            <h2 className="text-base font-bold text-slate-900">
+              {language === 'id' ? 'Halo' : 'Hi'}, {user?.name || (language === 'id' ? 'Pengguna FoCient' : 'FoCient Member')}
+            </h2>
+            <p className="text-xs text-slate-500">{formatCurrentDate(new Date(), language)}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setActiveNavTab('plan')}
+            onClick={openNotificationPanel}
             className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors relative"
-            title={language === 'id' ? 'Notifikasi Jadwal' : 'Notifications'}
+            title={language === 'id' ? 'Pusat Pemberitahuan' : 'Notifications'}
           >
             <BellIcon size="sm" />
-            {!rescheduleAlertResolved && !rescheduleAlertDismissed && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500" />
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={logout}
-            className="text-xs font-semibold px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-          >
-            {language === 'id' ? 'Keluar' : 'Sign Out'}
+            {unreadNotificationCount > 0 ? (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">
+                {unreadNotificationCount}
+              </span>
+            ) : shouldShowReschedule ? (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white animate-pulse" />
+            ) : null}
           </button>
         </div>
       </div>
 
-      {/* Card 1: Today Workload */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+      {/* Responsive Workspace Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left / Primary Focus Column (8 cols on lg) */}
+        <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+          {/* Card 1: Today Workload */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <span className="text-xs font-semibold text-slate-500 block mb-0.5">
               {language === 'id' ? 'Beban Kerja Hari Ini' : 'Today Workload'}
             </span>
             <div className="text-2xl font-extrabold text-slate-900 tabular-nums">
-              {allocatedMinutes}{' '}
-              <span className="text-xs font-medium text-slate-500">/ {capacityMinutes} min limit</span>
+              {workloadPercent}%
             </div>
           </div>
           <div className={`px-3 py-1 rounded-full text-xs font-bold border ${workloadBadgeColor}`}>
@@ -177,22 +288,22 @@ export const DashboardScreen: React.FC = () => {
           />
         </div>
 
-        {/* Priority breakdown tags */}
+        {/* Intensity breakdown tags: Low = Green, Medium = Blue, High = Red */}
         <div className="flex items-center gap-2 pt-1 text-xs">
-          <span className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-semibold border border-rose-100">
-            {highCount} {language === 'id' ? 'Fokus Tinggi' : 'High Focus'}
+          <span className="px-2.5 py-1 rounded-lg bg-red-50 text-red-700 font-semibold border border-red-200">
+            {highCount} {language === 'id' ? 'Tinggi' : 'High'}
           </span>
-          <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 font-semibold border border-amber-100">
+          <span className="px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 font-semibold border border-sky-200">
             {mediumCount} {language === 'id' ? 'Sedang' : 'Medium'}
           </span>
-          <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-semibold">
-            {lowCount} {language === 'id' ? 'Ringan' : 'Low'}
+          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">
+            {lowCount} {language === 'id' ? 'Rendah' : 'Low'}
           </span>
         </div>
       </div>
 
-      {/* Card 2: Empathetic Reschedule Suggestion Alert */}
-      {!rescheduleAlertResolved && !rescheduleAlertDismissed && (
+      {/* Card 2: Empathetic Reschedule Suggestion Alert (Shown ONLY when workload is unbalanced or overlapping) */}
+      {shouldShowReschedule && (
         <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-900 shadow-sm space-y-3 animate-fade-in">
           <div className="flex items-start gap-3">
             <div className="p-2 rounded-xl bg-amber-100 text-amber-800 shrink-0">
@@ -200,12 +311,18 @@ export const DashboardScreen: React.FC = () => {
             </div>
             <div className="flex-1">
               <h3 className="text-sm font-bold text-amber-900">
-                {language === 'id' ? 'Penyesuaian Jadwal Disarankan' : 'Schedule Adjustment Needed'}
+                {hasCollision
+                  ? (language === 'id' ? 'Ada Jadwal yang Bertabrakan' : 'Schedule Overlap Detected')
+                  : (language === 'id' ? 'Beban Hari Ini Cukup Padat' : 'Today Is Getting Full')}
               </h3>
               <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-                {language === 'id'
-                  ? 'Terdapat tumpang tindih waktu antara "Implement Color Palette Token" dan "Review PRs". Disarankan geser 25 menit dengan jeda istirahat 10 menit tanpa rasa bersalah.'
-                  : 'Time collision detected between "Implement Color Palette Token" and "Review PRs". Adaptive suggestion: Shift 25m with a 10m buffer.'}
+                {hasCollision && overlappingTasks
+                  ? (language === 'id'
+                      ? `Jadwal "${overlappingTasks[0].title}" (${overlappingTasks[0].startHourDisplay}) dan "${overlappingTasks[1].title}" (${overlappingTasks[1].startHourDisplay}) bertabrakan. Yuk rapikan jadwalmu agar tetap santai.`
+                      : `"${overlappingTasks[0].title}" (${overlappingTasks[0].startHourDisplay}) and "${overlappingTasks[1].title}" (${overlappingTasks[1].startHourDisplay}) overlap. Let's adjust your schedule so you stay relaxed.`)
+                  : (language === 'id'
+                      ? `Beban kerja hari ini sudah ${workloadPercent}% dari kapasitasmu. Kamu bisa geser sebagian tugas ke besok tanpa beban.`
+                      : `Today's schedule has reached ${workloadPercent}% capacity. Consider moving a few tasks to tomorrow.`)}
               </p>
             </div>
           </div>
@@ -216,14 +333,14 @@ export const DashboardScreen: React.FC = () => {
               onClick={dismissRescheduleLater}
               className="px-3 py-1.5 rounded-xl text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-colors"
             >
-              {language === 'id' ? 'Nanti Saja' : 'Reschedule Later'}
+              {language === 'id' ? 'Nanti Saja' : 'Maybe Later'}
             </button>
             <button
               type="button"
-              onClick={resolveRescheduleNow}
+              onClick={() => setActiveNavTab('plan')}
               className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all"
             >
-              {language === 'id' ? 'Terapkan Penyesuaian Sekarang' : 'Reschedule Now'}
+              {language === 'id' ? 'Lihat Jadwal' : 'Check Schedule'}
             </button>
           </div>
         </div>
@@ -232,14 +349,9 @@ export const DashboardScreen: React.FC = () => {
       {/* Card 3: Top 3 Priority Tasks */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
-              🎯
-            </div>
-            <h3 className="text-sm font-bold text-slate-900">
-              {language === 'id' ? 'Fokus Utama Hari Ini (Top 3)' : 'Today Priority Focus (Top 3)'}
-            </h3>
-          </div>
+          <h3 className="text-sm font-bold text-slate-900">
+            {language === 'id' ? 'Fokus Utama Hari Ini (Top 3)' : 'Today Priority Focus (Top 3)'}
+          </h3>
 
           <button
             type="button"
@@ -300,6 +412,17 @@ export const DashboardScreen: React.FC = () => {
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700">
                           {t.focusType}
                         </span>
+                        {t.isRecurring && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200">
+                            {t.recurrencePattern === 'daily'
+                              ? (language === 'id' ? 'Harian' : 'Daily')
+                              : t.recurrencePattern === 'weekdays'
+                              ? (language === 'id' ? 'Hari Kerja' : 'Weekdays')
+                              : t.recurrencePattern === 'weekly'
+                              ? (language === 'id' ? 'Mingguan' : 'Weekly')
+                              : (language === 'id' ? 'Pilihan' : 'Custom')}
+                          </span>
+                        )}
                       </div>
 
                       <div
@@ -318,7 +441,7 @@ export const DashboardScreen: React.FC = () => {
                           </span>
                           {t.restMinutes > 0 && (
                             <span className="text-teal-600 font-medium">
-                              +{t.restMinutes}m rest buffer
+                              +{t.restMinutes}m {language === 'id' ? 'jeda istirahat' : 'rest'}
                             </span>
                           )}
                         </div>
@@ -335,12 +458,9 @@ export const DashboardScreen: React.FC = () => {
       {/* Section 4: Today Timeline */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-base">📅</span>
-            <h3 className="text-sm font-bold text-slate-900">
-              {language === 'id' ? 'Lini Masa Hari Ini (13:30 - 17:30)' : 'Today Timeline (13:30 - 17:30)'}
-            </h3>
-          </div>
+          <h3 className="text-sm font-bold text-slate-900">
+            {language === 'id' ? 'Lini Masa Hari Ini' : 'Today Timeline'}
+          </h3>
           <button
             type="button"
             onClick={() => setActiveNavTab('tasks')}
@@ -351,104 +471,279 @@ export const DashboardScreen: React.FC = () => {
         </div>
 
         <div className="space-y-3">
-          {todayTasks.slice(2, 6).map((t, idx) => (
-            <React.Fragment key={t.id}>
-              <div
-                onClick={() => setSelectedTaskForDetail(t)}
-                className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 shadow-sm cursor-pointer transition-all"
-              >
-                <div className="text-xs font-bold text-slate-600 w-12 tabular-nums">
-                  {t.startHourDisplay}
-                </div>
-                <div className="w-1 h-8 rounded-full" style={{ backgroundColor: t.categoryColor }} />
-                <div className="flex-1 truncate">
-                  <div className="text-xs font-bold text-slate-900 truncate">{t.title}</div>
-                  <div className="text-[11px] text-slate-500 flex items-center gap-2">
-                    <span>{t.categoryName}</span>
-                    <span>•</span>
-                    <span className="tabular-nums font-semibold">{t.durationMinutes} min</span>
+          {todayTasks.length === 0 ? (
+            <div className="p-6 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl">
+              {language === 'id' ? 'Belum ada jadwal tugas untuk hari ini.' : 'No scheduled tasks for today.'}
+            </div>
+          ) : (
+            (scheduledTasks.length > 0 ? scheduledTasks : todayTasks).slice(0, 6).map((t, idx) => (
+              <React.Fragment key={t.id}>
+                <div
+                  onClick={() => setSelectedTaskForDetail(t)}
+                  className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 shadow-sm cursor-pointer transition-all"
+                >
+                  <div className="text-xs font-bold text-slate-600 w-12 tabular-nums">
+                    {t.startHourDisplay || '09:00'}
+                  </div>
+                  <div className="w-1 h-8 rounded-full" style={{ backgroundColor: t.categoryColor }} />
+                  <div className="flex-1 truncate">
+                    <div className="text-xs font-bold text-slate-900 truncate">{t.title}</div>
+                    <div className="text-[11px] text-slate-500 flex items-center gap-2">
+                      <span>{t.categoryName}</span>
+                      <span>•</span>
+                      <span className="tabular-nums font-semibold">{t.durationMinutes} min</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Resting buffer representation */}
-              {idx < 3 && t.restMinutes > 0 && (
-                <div className="flex items-center gap-3 pl-14 text-[11px] text-teal-700 font-semibold py-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
-                  <span>
-                    {t.restMinutes} {language === 'id' ? 'Menit Jeda Istirahat' : 'Min Rest Buffer'}
-                  </span>
-                </div>
-              )}
-            </React.Fragment>
-          ))}
+                {/* Resting buffer representation */}
+                {idx < 5 && t.restMinutes > 0 && (
+                  <div className="flex items-center gap-3 pl-14 text-[11px] text-teal-700 font-semibold py-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                    <span>
+                      {t.restMinutes} {language === 'id' ? 'Menit Jeda Istirahat' : 'Min Rest Buffer'}
+                    </span>
+                  </div>
+                )}
+              </React.Fragment>
+            ))
+          )}
         </div>
       </div>
+    </div>
 
-      {/* Card 5: Quick Add Task */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
-        <h3 className="text-sm font-bold text-slate-900">
-          {language === 'id' ? 'Tambah Cepat Tugas Hari Ini' : 'Quick Add Task to Today'}
-        </h3>
+    {/* Right / Secondary Column (4-5 cols on lg) */}
+    <div className="lg:col-span-5 xl:col-span-4 space-y-6">
+        {/* Card 5: Quick Add Task */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <h3 className="text-sm font-bold text-slate-900">
+            {language === 'id' ? 'Tambah Cepat Tugas Hari Ini' : 'Quick Add Task to Today'}
+          </h3>
 
-        <form onSubmit={handleQuickAdd} className="space-y-3">
-          <input
-            type="text"
-            value={quickTitle}
-            onChange={(e) => setQuickTitle(e.target.value)}
-            placeholder={
-              language === 'id' ? 'Ketik nama tugas baru di sini...' : 'Type a task name here...'
-            }
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-          />
+          <form onSubmit={handleQuickAdd} className="space-y-3.5">
+            {quickError && (
+              <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
+                {quickError}
+              </div>
+            )}
+            <input
+              type="text"
+              value={quickTitle}
+              onChange={(e) => {
+                setQuickTitle(e.target.value);
+                if (quickError) setQuickError(null);
+              }}
+              placeholder={
+                language === 'id' ? 'Ketik nama tugas baru di sini...' : 'Type a task name here...'
+              }
+              className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+            />
 
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap gap-1">
-              {categories.slice(0, 4).map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setQuickCategory(c)}
-                  className={`px-2 py-1 rounded-md text-xs font-medium border transition-all ${
-                    quickCategory === c
-                      ? 'border-blue-600 bg-blue-50 text-blue-700 font-bold'
-                      : 'border-slate-200 text-slate-600'
-                  }`}
-                >
-                  {c}
-                </button>
-              ))}
+            {/* Category selection: horizontally scrollable pills */}
+            <div>
+              <span className="block text-[11px] font-semibold text-slate-500 mb-1.5">
+                {language === 'id' ? 'Kategori Tugas *' : 'Category *'}
+              </span>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none no-scrollbar touch-pan-x whitespace-nowrap">
+                {userCategories.map((c) => {
+                  const isSelected = quickCategory === c.name;
+                  return (
+                    <button
+                      key={c.id || c.name}
+                      type="button"
+                      onClick={() => {
+                        setQuickCategory(isSelected ? '' : c.name);
+                        if (quickError) setQuickError(null);
+                      }}
+                      className={`shrink-0 inline-flex items-center justify-center gap-1.5 px-3.5 min-w-[96px] h-9 rounded-xl text-xs font-semibold border transition-all text-center ${
+                        isSelected
+                          ? 'border-blue-600 bg-blue-50 text-blue-700 font-bold shadow-xs ring-2 ring-blue-600/20'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                      }`}
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: c.colorHex }}
+                      />
+                      <span className="truncate">{c.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="flex items-center gap-1">
-              {durations.map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setQuickDuration(d)}
-                  className={`px-2 py-1 rounded-md text-xs font-semibold tabular-nums border ${
-                    quickDuration === d
-                      ? 'border-slate-900 bg-slate-900 text-white'
-                      : 'border-slate-200 text-slate-600'
-                  }`}
-                >
-                  {d}m
-                </button>
-              ))}
+            {/* Duration selection: horizontally scrollable pills */}
+            <div>
+              <span className="block text-[11px] font-semibold text-slate-500 mb-1.5">
+                {language === 'id' ? 'Durasi Waktu *' : 'Duration *'}
+              </span>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none no-scrollbar touch-pan-x whitespace-nowrap">
+                {durations.map((d) => {
+                  const isSelected = quickDuration === d;
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => {
+                        setQuickDuration(isSelected ? null : d);
+                        if (quickError) setQuickError(null);
+                      }}
+                      className={`shrink-0 inline-flex items-center justify-center gap-1.5 px-3.5 min-w-[76px] h-9 rounded-xl text-xs font-semibold tabular-nums border transition-all text-center ${
+                        isSelected
+                          ? 'border-slate-900 bg-slate-900 text-white shadow-xs ring-2 ring-slate-900/20'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                      }`}
+                    >
+                      {d} {language === 'id' ? 'menit' : 'min'}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
+            {/* Start Date & Start Hour (Adjusted for Today) */}
+            <div className="grid grid-cols-2 gap-3 pt-0.5">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1" htmlFor="quick-date">
+                  {language === 'id' ? 'Tanggal (Hari Ini) *' : 'Date (Today) *'}
+                </label>
+                <DatePickerField
+                  id="quick-date"
+                  value={quickDate}
+                  onChange={(val) => setQuickDate(val)}
+                  language={language}
+                  size="lg"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1" htmlFor="quick-hour">
+                  {language === 'id' ? 'Jam Mulai *' : 'Start Hour *'}
+                </label>
+                <TimePicker24
+                  id="quick-hour"
+                  value={quickStartHour}
+                  onChange={(val) => setQuickStartHour(val)}
+                  language={language}
+                  size="lg"
+                />
+              </div>
+            </div>
+
+            {/* Checkbox for Rest Time */}
+            <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100/60 transition-colors">
+              <div>
+                <span className="text-xs font-semibold text-slate-800 block">
+                  {language === 'id' ? 'Jeda Istirahat Setelah Tugas' : 'Rest Buffer After Task'}
+                </span>
+                <span className="text-[11px] text-slate-500">
+                  {language === 'id'
+                    ? `Sistem menyisipkan jeda ${configuredRestMinutes}m untuk memulihkan energi`
+                    : `System suggests a ${configuredRestMinutes}m buffer to sustain energy`}
+                </span>
+              </div>
+              <input
+                type="checkbox"
+                checked={quickNeedRest}
+                onChange={(e) => setQuickNeedRest(e.target.checked)}
+                className="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer"
+              />
+            </label>
+
+            {/* Checkbox for Recurring Task */}
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5 transition-all">
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 block">
+                    {language === 'id' ? 'Tugas Berulang (Repetitif)' : 'Recurring Task (Repetitive)'}
+                  </span>
+                  <span className="text-[11px] text-slate-500 block">
+                    {language === 'id'
+                      ? 'Otomatis diulang setiap jadwal untuk menghemat waktu input'
+                      : 'Automatically repeats to reduce friction and save time'}
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={quickIsRecurring}
+                  onChange={(e) => setQuickIsRecurring(e.target.checked)}
+                  className="rounded border-slate-300 text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
+                />
+              </label>
+
+              {quickIsRecurring && (
+                <div className="pt-2 border-t border-slate-200/80 animate-fade-in flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none no-scrollbar touch-pan-x whitespace-nowrap">
+                  {[
+                    { id: 'daily', labelEn: 'Daily', labelId: 'Setiap Hari' },
+                    { id: 'weekdays', labelEn: 'Weekdays', labelId: 'Hari Kerja' },
+                    { id: 'weekly', labelEn: 'Weekly', labelId: 'Mingguan' },
+                  ].map((pattern) => {
+                    const isSelected = quickRecurrencePattern === pattern.id;
+                    return (
+                      <button
+                        key={pattern.id}
+                        type="button"
+                        onClick={() => setQuickRecurrencePattern(pattern.id as RecurrencePattern)}
+                        className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all ${
+                          isSelected
+                            ? 'border-purple-600 bg-purple-600 text-white shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                        }`}
+                      >
+                        {language === 'id' ? pattern.labelId : pattern.labelEn}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="submit"
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5"
+              >
+                <PlusIcon size="xs" />
+                <span>{language === 'id' ? 'Konfirmasi Tugas Baru' : 'Confirm New Task'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Card 6: Cognitive Energy & Recovery Buffer Status */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500">
+              {language === 'id' ? 'Ritme Energi Kognitif' : 'Cognitive Energy Rhythm'}
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
+              {user?.workingRhythm || selectedRhythm || 'Steady Pacer'}
+            </span>
           </div>
 
-          <div className="flex justify-end pt-1">
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5"
-            >
-              <PlusIcon size="xs" />
-              <span>{language === 'id' ? 'Konfirmasi Tugas Baru' : 'Confirm New Task'}</span>
-            </button>
+          <div className="space-y-3 text-xs">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-slate-700">
+                <span className="w-2.5 h-2.5 rounded-full bg-teal-500" />
+                <span className="font-semibold">{language === 'id' ? 'Jeda Istirahat Otomatis' : 'Auto Rest Buffer'}</span>
+              </div>
+              <span className="font-bold text-slate-900 tabular-nums">
+                {configuredRestMinutes} min / task
+              </span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-slate-700">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                <span className="font-semibold">{language === 'id' ? 'Rentang Jam Kerja' : 'Schedule Window'}</span>
+              </div>
+              <span className="font-bold text-slate-900 tabular-nums">
+                {user?.workHourStart || user?.startWorkTime || startHour || '09:00'} - {user?.workHourEnd || user?.endWorkTime || endHour || '17:00'}
+              </span>
+            </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
+  </div>
   );
 };

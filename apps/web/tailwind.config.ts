@@ -4,6 +4,7 @@ const config: Config = {
   content: [
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/screens/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   darkMode: ['class', '[data-theme="dark"]'],
   theme: {
@@ -48,10 +49,10 @@ const config: Config = {
         },
       },
       boxShadow: {
-        'focient-1': '0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 1px 3px 1px rgba(0, 0, 0, 0.20)',
-        'focient-2': '0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 2px 6px 2px rgba(0, 0, 0, 0.20)',
-        'focient-3': '0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 4px 12px 4px rgba(0, 0, 0, 0.20)',
-        'focient-4': '0px 1px 2px 0px rgba(0, 0, 0, 0.30), 0px 8px 24px 8px rgba(0, 0, 0, 0.20)',
+        'focient-1': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        'focient-2': '0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06)',
+        'focient-3': '0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04)',
+        'focient-4': '0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.02)',
       },
       transitionDuration: {
         fast: '150ms',

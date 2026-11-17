@@ -133,7 +133,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         {/* Top Header: Badge [SEDANG BERJALAN] + Timer */}
         <div className="focient-focus-top-bar">
           <Badge variant="focus" size="sm">
-            ⚡ {copywriting.status.inProgress}
+            {copywriting.status.inProgress}
           </Badge>
           <span className="focient-tnum" style={{ fontWeight: 700, fontSize: '15px', color: '#1E3A8A' }}>
             {timerDisplay}

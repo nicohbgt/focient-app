@@ -1,8 +1,10 @@
 import React from 'react';
 import { useFoCientI18n, LanguageSwitcher } from '../i18n/I18nContext.js';
 import { Badge } from '../primitive/Badge.js';
-import { DailyCapacityMeter } from './DailyCapacityMeter.js';
 import { SearchIcon, BellIcon, SunIcon, PlusIcon } from '../icons/index.js';
+import { FoCientLogo } from '../brand/FoCientLogo.js';
+import { FoCientWordmark } from '../brand/FoCientWordmark.js';
+import { getAvatarInitial } from '../../lib/utils.js';
 
 export interface TopNavBarProps {
   pageTitle?: string;
@@ -25,7 +27,7 @@ export interface TopNavBarProps {
  *
  * Desktop 64px, Mobile 56px.
  * Features quick search (⌘K), date navigator / timeline switcher,
- * live workload indicator (⚡ 65%), adaptive notification bell, and language selector.
+ * live workload indicator (65%), adaptive notification bell, and language selector.
  * Scrolled elevation activates dynamic backdrop blur without layout shift.
  */
 export const TopNavBar: React.FC<TopNavBarProps> = ({
@@ -103,32 +105,29 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
         )}
       </div>
 
-      {/* Center: Quick Search Bar with Cmd+K (Desktop) */}
-      <div className="focient-top-nav-center">
-        <button
-          type="button"
-          className="focient-btn focient-btn--ghost focient-btn--sm"
-          style={{ width: '100%', justifyContent: 'space-between', color: 'var(--color-text-muted, #64748B)' }}
-          onClick={onSearchClick}
-          aria-label={copywriting.navigation.searchPlaceholder}
-        >
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <SearchIcon size="xs" />
-            <span>{copywriting.navigation.searchPlaceholder}</span>
-          </span>
-          <kbd style={{ fontSize: '11px', padding: '1px 5px', background: '#F1F5F9', borderRadius: '4px', border: '1px solid #CBD5E1', fontFamily: 'monospace' }}>
-            ⌘K
-          </kbd>
-        </button>
-      </div>
+      {/* Center: Quick Search Bar with Cmd+K (Desktop - Optional) */}
+      {onSearchClick && (
+        <div className="focient-top-nav-center">
+          <button
+            type="button"
+            className="focient-btn focient-btn--ghost focient-btn--sm"
+            style={{ width: '100%', justifyContent: 'space-between', color: 'var(--color-text-muted, #64748B)' }}
+            onClick={onSearchClick}
+            aria-label={copywriting.navigation.searchPlaceholder}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <SearchIcon size="xs" />
+              <span>{copywriting.navigation.searchPlaceholder}</span>
+            </span>
+            <kbd style={{ fontSize: '11px', padding: '1px 5px', background: '#F1F5F9', borderRadius: '4px', border: '1px solid #CBD5E1', fontFamily: 'monospace' }}>
+              ⌘K
+            </kbd>
+          </button>
+        </div>
+      )}
 
-      {/* Right: Workload Indicator + Notifications + Avatar + Lang Switcher */}
+      {/* Right: Notifications + Avatar + Lang Switcher */}
       <div className="focient-top-nav-right">
-        {/* Workload Indicator Pill */}
-        <Badge variant={workloadPercentage > 90 ? 'warning' : 'focus'} size="sm">
-          {copywriting.navigation.workloadShort(workloadPercentage)}
-        </Badge>
-
         {/* Adaptive Notification Bell */}
         <button
           type="button"
@@ -173,9 +172,9 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           aria-label={userName}
         >
           {userAvatarUrl ? (
-            <img src={userAvatarUrl} alt={userName} style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
+            <img src={userAvatarUrl} alt={userName} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
           ) : (
-            userName.slice(0, 2).toUpperCase()
+            getAvatarInitial(userName)
           )}
         </div>
       </div>
@@ -222,6 +221,7 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
   className = '',
 }) => {
   const { copywriting } = useFoCientI18n();
+  const workloadPercent = totalCapacityMinutes > 0 ? Math.min(100, Math.round((allocatedMinutes / totalCapacityMinutes) * 100)) : 0;
 
   return (
     <aside
@@ -234,31 +234,52 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
         .join(' ')}
     >
       <div>
-        {/* Brand / Logo + Collapse Button */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-          {!collapsed && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '20px' }}>⚡</span>
-              <span style={{ fontWeight: 700, fontSize: '18px', color: 'var(--color-primary-text-bold, #1E3A8A)' }}>
-                FoCient
-              </span>
-            </div>
-          )}
-          {onToggleCollapse && (
+        {/* Brand / Logo + Collapse Button (Collapsed: Logo only acting as expand button; Expanded: Wordmark + Collapse button) */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: collapsed ? 'center' : 'space-between',
+            marginBottom: '24px',
+            padding: collapsed ? '4px 0' : '0',
+          }}
+        >
+          {collapsed ? (
             <button
               type="button"
-              className="focient-btn focient-btn--ghost focient-btn--sm"
               onClick={onToggleCollapse}
-              aria-label={collapsed ? copywriting.navigation.sidebarExpand : copywriting.navigation.sidebarCollapse}
-              title={collapsed ? copywriting.navigation.sidebarExpand : copywriting.navigation.sidebarCollapse}
-              style={{ padding: '0 6px', margin: collapsed ? '0 auto' : undefined }}
+              className="group flex items-center justify-center p-1.5 rounded-xl bg-white border border-slate-200 shadow-xs hover:border-blue-500 hover:shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              aria-label={copywriting.navigation.sidebarExpand}
+              title={copywriting.navigation.sidebarExpand}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
+              <img
+                src="/brand/focient-logo.png"
+                alt="FoCient Logo"
+                className="w-7 h-7 object-contain rounded-lg transition-transform group-hover:scale-105"
+              />
             </button>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', padding: '2px 0' }}>
+                <FoCientWordmark height={16} />
+              </div>
+              {onToggleCollapse && (
+                <button
+                  type="button"
+                  className="focient-btn focient-btn--ghost focient-btn--sm"
+                  onClick={onToggleCollapse}
+                  aria-label={copywriting.navigation.sidebarCollapse}
+                  title={copywriting.navigation.sidebarCollapse}
+                  style={{ padding: '0 6px' }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="18" x2="21" y2="18" />
+                  </svg>
+                </button>
+              )}
+            </>
           )}
         </div>
 
@@ -291,47 +312,82 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
         </nav>
       </div>
 
-      {/* Bottom Integrated Widget: Daily Capacity Meter + Profile */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {!collapsed && (
-          <div style={{ padding: '12px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #CBD5E1' }}>
-            <DailyCapacityMeter
-              allocatedMinutes={allocatedMinutes}
-              totalCapacityMinutes={totalCapacityMinutes}
-            />
-          </div>
-        )}
-
-        {/* Profile Card */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      {/* Sidebar Workload Capacity Indicator */}
+      <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
+        {!collapsed ? (
           <div
             style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '50%',
-              backgroundColor: '#EFF6FF',
-              color: '#2563EB',
+              padding: '12px 14px',
+              backgroundColor: '#F8FAFC',
+              borderRadius: '12px',
+              border: '1px solid #E2E8F0',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 600,
-              fontSize: '13px',
-              flexShrink: 0,
+              flexDirection: 'column',
+              gap: '8px',
             }}
           >
-            {userName.slice(0, 2).toUpperCase()}
-          </div>
-          {!collapsed && (
-            <div style={{ overflow: 'hidden' }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-main, #0F172A)' }}>
-                {userName}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span
+                  style={{
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    backgroundColor: workloadPercent > 90 ? '#D97706' : workloadPercent > 75 ? '#2563EB' : '#0D9488',
+                  }}
+                />
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {copywriting.capacity.dailyWorkload}
+                </span>
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--color-text-muted, #64748B)' }}>
-                {userRole}
-              </div>
+              <span className="focient-tnum" style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A' }}>
+                {workloadPercent}%
+              </span>
             </div>
-          )}
-        </div>
+            <div style={{ width: '100%', height: '6px', backgroundColor: '#E2E8F0', borderRadius: '3px', overflow: 'hidden' }}>
+              <div
+                style={{
+                  width: `${Math.min(100, workloadPercent)}%`,
+                  height: '100%',
+                  backgroundColor: workloadPercent > 90 ? '#D97706' : workloadPercent > 75 ? '#2563EB' : '#0D9488',
+                  borderRadius: '3px',
+                  transition: 'width 250ms ease',
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748B' }}>
+              <span>{allocatedMinutes}m</span>
+              <span>{totalCapacityMinutes}m</span>
+            </div>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              padding: '8px 4px',
+              backgroundColor: '#F8FAFC',
+              borderRadius: '8px',
+              border: '1px solid #E2E8F0',
+              gap: '4px',
+            }}
+            data-tooltip={`${copywriting.capacity.dailyWorkload}: ${workloadPercent}%`}
+            title={`${copywriting.capacity.dailyWorkload}: ${workloadPercent}%`}
+          >
+            <span
+              style={{
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                backgroundColor: workloadPercent > 90 ? '#D97706' : workloadPercent > 75 ? '#2563EB' : '#0D9488',
+              }}
+            />
+            <span className="focient-tnum" style={{ fontSize: '10px', fontWeight: 700, color: '#0F172A' }}>
+              {workloadPercent}%
+            </span>
+          </div>
+        )}
       </div>
     </aside>
   );

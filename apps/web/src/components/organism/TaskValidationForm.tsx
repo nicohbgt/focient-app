@@ -5,6 +5,7 @@ import { Button } from '../primitive/Button.js';
 import { Radio } from '../primitive/Radio.js';
 import { Badge } from '../primitive/Badge.js';
 import { Alert } from './Toast.js';
+import { AlertTriangleIcon } from '../icons/index.js';
 import {
   CreateTaskSchema,
   checkTop3Quota,
@@ -260,7 +261,7 @@ export const TaskValidationForm: React.FC<TaskValidationFormProps> = ({
         />
         {startTimeWarning && (
           <div className="focient-warning-banner" role="alert">
-            <span aria-hidden="true">⚠️</span>
+            <AlertTriangleIcon size="xs" className="shrink-0 text-amber-600" />
             <span>{startTimeWarning}</span>
           </div>
         )}

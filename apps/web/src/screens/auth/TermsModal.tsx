@@ -48,8 +48,8 @@ export const TermsModal: React.FC = () => {
             </h3>
             <p>
               {language === 'id'
-                ? 'Sistem kami membatasi waktu kerja fokus standar maksimal 8 jam per hari untuk melindungi energi mental dan mencegah kelelahan kognitif.'
-                : 'Our algorithm encourages a healthy daily ceiling (standard max 8 hours) with mandatory buffer intervals to prevent cognitive fatigue.'}
+                ? 'Sistem kami mendorong batas kapasitas harian yang sehat dengan jeda istirahat teratur untuk melindungi energi mental dan mencegah kelelahan kognitif.'
+                : 'Our algorithm encourages a healthy daily ceiling with mandatory buffer intervals to prevent cognitive fatigue.'}
             </p>
           </section>
 

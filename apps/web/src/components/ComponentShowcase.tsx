@@ -312,7 +312,7 @@ export const ComponentShowcaseInner: React.FC = () => {
         <section style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '24px' }}>⚡</span>
+              <SparklesIcon size="md" className="text-blue-600" />
               <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: '#1E3A8A' }}>
                 FoCient Living Component System & Showcase
               </h2>
@@ -516,7 +516,7 @@ export const ComponentShowcaseInner: React.FC = () => {
                 <Badge variant="focus">#TopPriority</Badge>
                 <Badge variant="neutral">45mnt</Badge>
                 <Badge variant="accent">Pilar Khusus</Badge>
-                <Badge variant="warning">⚡ 92% Kapasitas</Badge>
+                <Badge variant="warning">92% Kapasitas</Badge>
                 <Badge variant="success">Selesai</Badge>
               </div>
 
@@ -626,7 +626,7 @@ export const ComponentShowcaseInner: React.FC = () => {
                   setMobileKeyboardOpen(true);
                 }}
               >
-                📱 Open Mobile Number Sheet
+                Open Mobile Number Sheet
               </Button>
               <Button
                 size="sm"
@@ -636,7 +636,7 @@ export const ComponentShowcaseInner: React.FC = () => {
                   setMobileKeyboardOpen(true);
                 }}
               >
-                📱 Open Mobile Text Sheet
+                Open Mobile Text Sheet
               </Button>
             </div>
           </div>
@@ -728,10 +728,10 @@ export const ComponentShowcaseInner: React.FC = () => {
                 variant={isSimulatedDragging ? 'primary' : 'ghost'}
                 onClick={() => setIsSimulatedDragging((prev) => !prev)}
               >
-                {isSimulatedDragging ? '🖐️ Matikan Simulasi Drag' : '🖐️ Uji Dragging (Scale 1.02 & Shadow 3)'}
+                {isSimulatedDragging ? 'Matikan Simulasi Drag' : 'Uji Dragging (Scale 1.02 & Shadow 3)'}
               </Button>
               <Button size="sm" variant="secondary" onClick={() => setMobileSheetOpen(true)}>
-                📱 Uji Mobile BottomSheet
+                Uji Mobile BottomSheet
               </Button>
               <Button size="sm" variant="primary" onClick={() => setQuickTaskModalOpen(true)}>
                 + {copywriting.actions.saveToTimeline}
@@ -1059,7 +1059,7 @@ export const ComponentShowcaseInner: React.FC = () => {
                 ⌘K Buka Command Palette
               </Button>
               <Button size="sm" variant="secondary" onClick={() => setPreservationDialogOpen(true)}>
-                🛡️ Uji Context Preservation
+                Uji Context Preservation
               </Button>
             </div>
           </div>
@@ -1102,7 +1102,7 @@ export const ComponentShowcaseInner: React.FC = () => {
             <div style={{ flex: 1, padding: '24px', backgroundColor: '#F8FAFC', overflowY: 'auto' }}>
               <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', fontWeight: 600 }}>Content Area (Simulated Desktop View)</h4>
               <p style={{ color: '#64748B', fontSize: '14px', marginBottom: '16px' }}>
-                Side navigation maintains 240px–260px expanded width or 72px collapsed width, with integrated Daily Capacity Meter widget.
+                Side navigation maintains 240px–260px expanded width or 72px collapsed width, focused purely on clean, accessible navigation items.
               </p>
               <Alert variant="adaptive" title="Adaptive Rhythm Status">
                 Semua jadwal berjalan optimal dan seimbang tanpa beban berlebih.
@@ -1158,7 +1158,7 @@ export const ComponentShowcaseInner: React.FC = () => {
         <section style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '20px' }}>🛡️</span>
+              <CheckIcon size="sm" className="text-blue-600" />
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>
                 7. FoCient Guilt-Free Validation & Contract Standards (Client & Server)
               </h3>
@@ -1656,7 +1656,7 @@ export const ComponentShowcaseInner: React.FC = () => {
         <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '20px' }}>🌱</span>
+              <SparklesIcon size="sm" className="text-emerald-600" />
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#065F46' }}>
                 Section 13: Success State System (Calm Affirmation & Reversibility Buffer)
               </h3>
@@ -1799,7 +1799,7 @@ export const ComponentShowcaseInner: React.FC = () => {
         <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '20px' }}>✨</span>
+              <SparklesIcon size="sm" className="text-blue-600" />
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1E3A8A' }}>
                 Section 14: Microinteraction &amp; Scalable Motion Token Matrix
               </h3>

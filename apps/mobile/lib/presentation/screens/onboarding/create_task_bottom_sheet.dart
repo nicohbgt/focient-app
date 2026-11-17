@@ -62,11 +62,21 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
   bool _needsRestAfter = false;
   String? _errorMessage;
 
-  final List<int> _durations = [10, 15, 20, 25, 30, 45, 60];
+  final List<int> _durations = [10, 15, 30, 45, 50, 60];
+  final List<int> _restPresets = [0, 5, 10, 15, 30, 45];
+  int _selectedRestMinutes = 10;
+  bool _isCustomDuration = false;
+  bool _isCustomRest = false;
+  late final TextEditingController _customDurationController;
+  late final TextEditingController _customRestController;
 
   @override
   void initState() {
     super.initState();
+    _customDurationController = TextEditingController();
+    _customRestController = TextEditingController();
+    _selectedRestMinutes = widget.defaultRestMinutes > 0 ? widget.defaultRestMinutes : 10;
+
     if (widget.initialTask != null) {
       final t = widget.initialTask!;
       _nameController = TextEditingController(text: t.title);
@@ -80,6 +90,15 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
         );
       }
       _selectedDurationMinutes = t.durationMinutes;
+      if (!_durations.contains(t.durationMinutes)) {
+        _isCustomDuration = true;
+        _customDurationController.text = '${t.durationMinutes}';
+      }
+      _selectedRestMinutes = t.restMinutes;
+      if (!_restPresets.contains(t.restMinutes)) {
+        _isCustomRest = true;
+        _customRestController.text = '${t.restMinutes}';
+      }
       _selectedFocusType = t.focusType;
       _dateDisplay = t.dateDisplay;
       _startHourDisplay = t.startHourDisplay;
@@ -100,6 +119,8 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
   @override
   void dispose() {
     _nameController.dispose();
+    _customDurationController.dispose();
+    _customRestController.dispose();
     super.dispose();
   }
 
@@ -197,7 +218,7 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
       startHourDisplay: effectiveHour,
       isBacklog: _isBacklog,
       needsRestAfter: _needsRestAfter,
-      restMinutes: widget.defaultRestMinutes,
+      restMinutes: _needsRestAfter ? _selectedRestMinutes : 0,
     );
 
     widget.onTaskCreated?.call(task);
@@ -401,14 +422,61 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
               scrollDirection: Axis.horizontal,
               clipBehavior: Clip.none,
               child: Row(
-                children: _durations.map((duration) {
-                  final isSelected = _selectedDurationMinutes == duration;
-                  return Padding(
+                children: [
+                  ..._durations.map((duration) {
+                    final isSelected = !_isCustomDuration && _selectedDurationMinutes == duration;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () {
+                          setState(() {
+                            _isCustomDuration = false;
+                            _selectedDurationMinutes = duration;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFF2563EB)
+                                : const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFF2563EB)
+                                  : const Color(0xFFBFDBFE),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            '$duration Minute',
+                            style: TextStyle(
+                              fontFamily: FocientTypographyTokens.fontFamily,
+                              fontSize: 13,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                              color: isSelected ? Colors.white : const Color(0xFF2563EB),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                  Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(20),
                       onTap: () {
-                        setState(() => _selectedDurationMinutes = duration);
+                        setState(() {
+                          _isCustomDuration = true;
+                          if (_customDurationController.text.isNotEmpty) {
+                            final parsed = int.tryParse(_customDurationController.text);
+                            if (parsed != null && parsed > 0) _selectedDurationMinutes = parsed;
+                          }
+                        });
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -416,32 +484,69 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: isSelected
+                          color: _isCustomDuration
                               ? const Color(0xFF2563EB)
                               : const Color(0xFFEFF6FF),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isSelected
+                            color: _isCustomDuration
                                 ? const Color(0xFF2563EB)
                                 : const Color(0xFFBFDBFE),
                             width: 1,
                           ),
                         ),
                         child: Text(
-                          '$duration Minute',
+                          'Custom',
                           style: TextStyle(
                             fontFamily: FocientTypographyTokens.fontFamily,
                             fontSize: 13,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                            color: isSelected ? Colors.white : const Color(0xFF2563EB),
+                            fontWeight: _isCustomDuration ? FontWeight.w600 : FontWeight.w500,
+                            color: _isCustomDuration ? Colors.white : const Color(0xFF2563EB),
                           ),
                         ),
                       ),
                     ),
-                  );
-                }).toList(),
+                  ),
+                ],
               ),
             ),
+            if (_isCustomDuration) ...[
+              const SizedBox(height: 8),
+              TextField(
+                controller: _customDurationController,
+                keyboardType: TextInputType.number,
+                style: TextStyle(
+                  fontFamily: FocientTypographyTokens.fontFamily,
+                  fontSize: 13,
+                  color: titleColor,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Enter duration in minutes',
+                  hintStyle: TextStyle(
+                    fontFamily: FocientTypographyTokens.fontFamily,
+                    fontSize: 12,
+                    color: subtitleColor,
+                  ),
+                  filled: true,
+                  fillColor: fieldBg,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: fieldBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: fieldBorder),
+                  ),
+                ),
+                onChanged: (val) {
+                  final parsed = int.tryParse(val);
+                  if (parsed != null && parsed > 0) {
+                    setState(() => _selectedDurationMinutes = parsed);
+                  }
+                },
+              ),
+            ],
             const SizedBox(height: 18),
 
             // 4. Focus Type (Horizontally scrollable with complete text visibility)
@@ -656,11 +761,147 @@ class _CreateTaskBottomSheetState extends State<CreateTaskBottomSheet> {
                   value: _needsRestAfter,
                   activeTrackColor: const Color(0xFF2563EB),
                   onChanged: (val) {
-                    setState(() => _needsRestAfter = val);
+                    setState(() {
+                      _needsRestAfter = val;
+                      if (val && _selectedRestMinutes == 0) {
+                        _selectedRestMinutes = 10;
+                      }
+                    });
                   },
                 ),
               ],
             ),
+
+            if (_needsRestAfter) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Rest Buffer Duration',
+                style: TextStyle(
+                  fontFamily: FocientTypographyTokens.fontFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: titleColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                clipBehavior: Clip.none,
+                child: Row(
+                  children: [
+                    ..._restPresets.map((r) {
+                      final isSelected = !_isCustomRest && _selectedRestMinutes == r;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            setState(() {
+                              _isCustomRest = false;
+                              _selectedRestMinutes = r;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFF0D9488)
+                                  : const Color(0xFFCCFBF1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              '${r}m',
+                              style: TextStyle(
+                                fontFamily: FocientTypographyTokens.fontFamily,
+                                fontSize: 13,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                color: isSelected ? Colors.white : const Color(0xFF0F766E),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () {
+                          setState(() {
+                            _isCustomRest = true;
+                            if (_customRestController.text.isNotEmpty) {
+                              final parsed = int.tryParse(_customRestController.text);
+                              if (parsed != null && parsed >= 0) _selectedRestMinutes = parsed;
+                            }
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _isCustomRest
+                                ? const Color(0xFF0D9488)
+                                : const Color(0xFFCCFBF1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            'Custom',
+                            style: TextStyle(
+                              fontFamily: FocientTypographyTokens.fontFamily,
+                              fontSize: 13,
+                              fontWeight: _isCustomRest ? FontWeight.w600 : FontWeight.w500,
+                              color: _isCustomRest ? Colors.white : const Color(0xFF0F766E),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_isCustomRest) ...[
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _customRestController,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(
+                    fontFamily: FocientTypographyTokens.fontFamily,
+                    fontSize: 13,
+                    color: titleColor,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Enter rest buffer in minutes',
+                    hintStyle: TextStyle(
+                      fontFamily: FocientTypographyTokens.fontFamily,
+                      fontSize: 12,
+                      color: subtitleColor,
+                    ),
+                    filled: true,
+                    fillColor: fieldBg,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: fieldBorder),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: fieldBorder),
+                    ),
+                  ),
+                  onChanged: (val) {
+                    final parsed = int.tryParse(val);
+                    if (parsed != null && parsed >= 0) {
+                      setState(() => _selectedRestMinutes = parsed);
+                    }
+                  },
+                ),
+              ],
+            ],
             const SizedBox(height: 24),
 
             // Action Buttons (Cancel Red & Confirm Green)

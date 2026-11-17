@@ -61,7 +61,13 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
     'Personal': Color(0xFF059669),
   };
 
-  final List<int> _durations = const [10, 15, 20, 25, 30, 45, 60];
+  final List<int> _durations = const [10, 15, 30, 45, 50, 60];
+  final List<int> _restPresets = const [0, 5, 10, 15, 30, 45];
+  int _selectedRestMinutes = 10;
+  bool _isCustomDuration = false;
+  bool _isCustomRest = false;
+  late final TextEditingController _customDurationController;
+  late final TextEditingController _customRestController;
 
   final List<(String, Color, Color, Color)> _focusTypes = const [
     ('Light', Color(0xFFD1FAE5), Color(0xFFA7F3D0), Color(0xFF065F46)),
@@ -76,12 +82,25 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
     _nameController = TextEditingController(text: task?.title ?? '');
     _dateController = TextEditingController(text: task?.dateDisplay ?? 'October, 3rd 2026');
     _startHourController = TextEditingController(text: task?.startHourDisplay ?? '11:40');
+    _customDurationController = TextEditingController();
+    _customRestController = TextEditingController();
 
     _selectedCategory = task?.categoryName ?? 'Meeting';
     _selectedDurationMinutes = task?.durationMinutes ?? 60;
+    if (!_durations.contains(_selectedDurationMinutes)) {
+      _isCustomDuration = true;
+      _customDurationController.text = '$_selectedDurationMinutes';
+    }
+
+    _selectedRestMinutes = task?.restMinutes ?? 10;
+    if (!_restPresets.contains(_selectedRestMinutes)) {
+      _isCustomRest = true;
+      _customRestController.text = '$_selectedRestMinutes';
+    }
+
     _selectedFocusType = task?.focusType ?? 'Deep Focus';
     _isBacklog = task?.isBacklog ?? false;
-    _needRestAfter = task?.needRestAfter ?? true;
+    _needRestAfter = task?.needRestAfter ?? false;
   }
 
   @override
@@ -89,6 +108,8 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
     _nameController.dispose();
     _dateController.dispose();
     _startHourController.dispose();
+    _customDurationController.dispose();
+    _customRestController.dispose();
     super.dispose();
   }
 
@@ -125,7 +146,7 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
       status: widget.taskToEdit?.status ?? TaskStatusEnum.todo,
       categoryName: _selectedCategory,
       categoryColor: categoryColor,
-      restMinutes: _needRestAfter ? 10 : 0,
+      restMinutes: _needRestAfter ? _selectedRestMinutes : 0,
       dateDisplay: _dateController.text.trim().isEmpty ? 'October, 3rd 2026' : _dateController.text.trim(),
       startHourDisplay: _startHourController.text.trim().isEmpty ? '11:40' : _startHourController.text.trim(),
       focusType: _selectedFocusType,
@@ -318,17 +339,27 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
                       height: 38,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
-                        itemCount: _durations.length,
+                        itemCount: _durations.length + 1,
                         separatorBuilder: (_, __) => const SizedBox(width: 8),
                         itemBuilder: (context, index) {
-                          final dur = _durations[index];
-                          final isSelected = _selectedDurationMinutes == dur;
+                          final isCustom = index == _durations.length;
+                          final dur = isCustom ? 0 : _durations[index];
+                          final isSelected = isCustom ? _isCustomDuration : (!_isCustomDuration && _selectedDurationMinutes == dur);
 
                           return InkWell(
                             borderRadius: BorderRadius.circular(16),
                             onTap: () {
                               setState(() {
-                                _selectedDurationMinutes = dur;
+                                if (isCustom) {
+                                  _isCustomDuration = true;
+                                  if (_customDurationController.text.isNotEmpty) {
+                                    final parsed = int.tryParse(_customDurationController.text);
+                                    if (parsed != null && parsed > 0) _selectedDurationMinutes = parsed;
+                                  }
+                                } else {
+                                  _isCustomDuration = false;
+                                  _selectedDurationMinutes = dur;
+                                }
                               });
                             },
                             child: Container(
@@ -340,7 +371,7 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
-                                '$dur Minute',
+                                isCustom ? 'Custom' : '$dur Minute',
                                 style: TextStyle(
                                   fontFamily: FocientTypographyTokens.fontFamily,
                                   fontSize: 13,
@@ -353,6 +384,43 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
                         },
                       ),
                     ),
+                    if (_isCustomDuration) ...[
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _customDurationController,
+                        keyboardType: TextInputType.number,
+                        style: TextStyle(
+                          fontFamily: FocientTypographyTokens.fontFamily,
+                          fontSize: 13,
+                          color: titleColor,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Enter duration in minutes',
+                          hintStyle: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 12,
+                            color: subtitleColor,
+                          ),
+                          filled: true,
+                          fillColor: cardBg,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                        ),
+                        onChanged: (val) {
+                          final parsed = int.tryParse(val);
+                          if (parsed != null && parsed > 0) {
+                            setState(() => _selectedDurationMinutes = parsed);
+                          }
+                        },
+                      ),
+                    ],
 
                     const SizedBox(height: 20),
 
@@ -582,11 +650,106 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
                           onChanged: (val) {
                             setState(() {
                               _needRestAfter = val;
+                              if (val && _selectedRestMinutes == 0) {
+                                _selectedRestMinutes = 10;
+                              }
                             });
                           },
                         ),
                       ],
                     ),
+
+                    if (_needRestAfter) ...[
+                      const SizedBox(height: 12),
+                      _buildSectionHeader('Rest Buffer Duration', titleColor),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 38,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _restPresets.length + 1,
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          itemBuilder: (context, index) {
+                            final isCustom = index == _restPresets.length;
+                            final r = isCustom ? 0 : _restPresets[index];
+                            final isSelected = isCustom ? _isCustomRest : (!_isCustomRest && _selectedRestMinutes == r);
+
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () {
+                                setState(() {
+                                  if (isCustom) {
+                                    _isCustomRest = true;
+                                    if (_customRestController.text.isNotEmpty) {
+                                      final parsed = int.tryParse(_customRestController.text);
+                                      if (parsed != null && parsed >= 0) _selectedRestMinutes = parsed;
+                                    }
+                                  } else {
+                                    _isCustomRest = false;
+                                    _selectedRestMinutes = r;
+                                  }
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFF0D9488)
+                                      : const Color(0xFFCCFBF1),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Text(
+                                  isCustom ? 'Custom' : '${r}m',
+                                  style: TextStyle(
+                                    fontFamily: FocientTypographyTokens.fontFamily,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: isSelected ? Colors.white : const Color(0xFF0F766E),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      if (_isCustomRest) ...[
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _customRestController,
+                          keyboardType: TextInputType.number,
+                          style: TextStyle(
+                            fontFamily: FocientTypographyTokens.fontFamily,
+                            fontSize: 13,
+                            color: titleColor,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Enter rest buffer in minutes',
+                            hintStyle: TextStyle(
+                              fontFamily: FocientTypographyTokens.fontFamily,
+                              fontSize: 12,
+                              color: subtitleColor,
+                            ),
+                            filled: true,
+                            fillColor: cardBg,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: borderColor),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: borderColor),
+                            ),
+                          ),
+                          onChanged: (val) {
+                            final parsed = int.tryParse(val);
+                            if (parsed != null && parsed >= 0) {
+                              setState(() => _selectedRestMinutes = parsed);
+                            }
+                          },
+                        ),
+                      ],
+                    ],
 
                     const SizedBox(height: 36),
 

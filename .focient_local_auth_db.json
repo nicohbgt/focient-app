@@ -1,0 +1,151 @@
+{
+  "users": [
+    {
+      "id": "usr_nicohbgt512_gmail_com_mwhw9l1g",
+      "email": "nicohbgt512@gmail.com",
+      "name": "Nico Wiranata",
+      "username": "Nico Wiranata",
+      "passwordHash": "e6704b00353dd6bf6d0da31ef930f6da6b8d31cbd2fdbd624e4c5cf46f9af80d8c904d3bbf3851f5fc8c0d3b91eec788eb99dfeb3fe7d4c22355ac259202b8cd",
+      "roleArchetype": "General",
+      "occupancy": "General",
+      "workingRhythm": "Early Bird",
+      "schedulingStyle": "Structured",
+      "workHourStart": "08:00",
+      "workHourEnd": "18:00",
+      "startWorkTime": "08:00",
+      "endWorkTime": "18:00",
+      "dailyCapacityMinutes": 600,
+      "restTimePerTask": 30,
+      "isOnboardingCompleted": true,
+      "createdAt": "2026-11-15T13:52:44.740Z",
+      "quietHourStart": "20:00",
+      "quietHourEnd": "04:00",
+      "quietHourEnabled": true
+    }
+  ],
+  "sessions": [
+    {
+      "token": "cb179a61a6126379b6a5abc100d57e39d3b33f33b09b7fe281713ee5fcaf1830",
+      "tokenHash": "fe2fb01d87dfadd5a42b83b85b9fecfb01d54a1d303d5826ab07daf74f5479f5",
+      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
+      "expiresAt": "2026-12-15T13:52:44.744Z",
+      "revokedAt": null
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-1794750957159",
+      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
+      "title": "Coding",
+      "durationMinutes": 60,
+      "categoryName": "Deep Focus & Core Work",
+      "categoryColor": "#2563EB",
+      "priority": "TOP_3",
+      "energyLevel": "HIGH",
+      "focusType": "High",
+      "restMinutes": 5,
+      "needRestAfter": true,
+      "isBacklog": false,
+      "isRecurring": false,
+      "recurrencePattern": "daily",
+      "recurrenceDays": null,
+      "startHourDisplay": "09:15",
+      "dateDisplay": "2026-11-16",
+      "status": "TODO",
+      "createdAt": "2026-11-15T13:55:57.197Z"
+    },
+    {
+      "id": "task-1794750844090",
+      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
+      "title": "Make to-do list",
+      "durationMinutes": 15,
+      "categoryName": "Deep Focus & Core Work",
+      "categoryColor": "#2563EB",
+      "priority": "TOP_3",
+      "energyLevel": "HIGH",
+      "focusType": "High",
+      "restMinutes": 0,
+      "needRestAfter": false,
+      "isBacklog": false,
+      "isRecurring": true,
+      "recurrencePattern": "weekdays",
+      "recurrenceDays": null,
+      "startHourDisplay": "09:00",
+      "dateDisplay": "2026-11-16",
+      "status": "TODO",
+      "createdAt": "2026-11-15T13:54:04.128Z"
+    },
+    {
+      "id": "task-1794750808334",
+      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
+      "title": "Arrange Meeting",
+      "durationMinutes": 45,
+      "categoryName": "Team Communication & Sync",
+      "categoryColor": "#0284C7",
+      "priority": "TOP_3",
+      "energyLevel": "HIGH",
+      "focusType": "High",
+      "restMinutes": 0,
+      "needRestAfter": false,
+      "isBacklog": false,
+      "isRecurring": true,
+      "recurrencePattern": "weekly",
+      "recurrenceDays": null,
+      "startHourDisplay": "08:15",
+      "dateDisplay": "2026-11-16",
+      "status": "TODO",
+      "createdAt": "2026-11-15T13:53:28.368Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat_1794750852890_2kaby",
+      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
+      "name": "Deep Focus & Core Work",
+      "colorHex": "#059669",
+      "focusType": "High",
+      "isDefault": true,
+      "createdAt": "2026-11-15T13:54:12.890Z"
+    },
+    {
+      "id": "cat_1794750852891_67z56",
+      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
+      "name": "Team Communication & Sync",
+      "colorHex": "#0284C7",
+      "focusType": "High",
+      "isDefault": true,
+      "createdAt": "2026-11-15T13:54:12.890Z"
+    },
+    {
+      "id": "cat_1794750852891_52y18",
+      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
+      "name": "Administrative & Daily Planning",
+      "colorHex": "#64748B",
+      "focusType": "High",
+      "isDefault": true,
+      "createdAt": "2026-11-15T13:54:12.890Z"
+    },
+    {
+      "id": "cat_1794750852891_fiw4t",
+      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
+      "name": "Personal Errands & Recovery",
+      "colorHex": "#059669",
+      "focusType": "High",
+      "isDefault": true,
+      "createdAt": "2026-11-15T13:54:12.890Z"
+    }
+  ],
+  "webPushSubscriptions": [
+    {
+      "id": "sub_1794751249444",
+      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
+      "endpoint": "https://updates.push.services.mozilla.com/wpush/v2/gAAAAABq-bpgisxAuP9O_Kr2FrMnwleIJUd08s28U3hmBUSUyvBtPe7wWexWUcj_6GfoP5xIYQqczRq0V0uvN_SY0iWWIPmdpIvRsgyf6MhHErwmBenmiIoWAV8YUMnhw-L9ykYFJduuveMOgT-on_Rc3bTv8mkFyHatiOEEv9qweg44YcZBYQ4",
+      "keys": {
+        "auth": "uRO5sb7UxPJ0cCRgmsGn1Q",
+        "p256dh": "BPykCKwHaV3fQ-ciXwt8tI3xave9mSfQRy1IafH4S6QHvQ7QT-eaKTj6vr1c6jStF2fPFYnvBJ5NjlNgAp7mj6Q"
+      },
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:160.0) Gecko/20100101 Firefox/160.0",
+      "createdAt": "2026-11-15T14:00:49.444Z"
+    }
+  ]
+}

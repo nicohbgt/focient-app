@@ -588,8 +588,8 @@ taskRouter.delete('/:id', async (req: AuthenticatedRequest, res: Response, next)
       throw new NotFoundError('Tugas tidak ditemukan');
     }
 
-    await prisma.scheduleBlock.deleteMany({ where: { taskId: req.params.id } });
-    await prisma.task.delete({ where: { id: req.params.id } });
+    await prisma.scheduleBlock.deleteMany({ where: { taskId: req.params.id, userId } });
+    await prisma.task.deleteMany({ where: { id: req.params.id, userId } });
     res.status(200).json({
       success: true,
       message: 'Tugas berhasil dihapus tanpa rasa bersalah',

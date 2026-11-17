@@ -8,6 +8,8 @@ export 'primitive/focient_icon.dart';
 export 'primitive/focient_input_field.dart';
 export 'primitive/focient_keyboard.dart';
 export 'primitive/focient_otp_input.dart';
+export 'primitive/focient_logo.dart';
+export 'primitive/focient_wordmark.dart';
 export 'primitive/google_logo.dart';
 export 'primitive/focient_rest_time_slider.dart';
 

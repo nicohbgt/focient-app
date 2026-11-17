@@ -47,3 +47,6 @@ export const RouteIcon: React.FC<NamedIconProps> = (props) => <Icon name="route"
 export const CalendarPlusIcon: React.FC<NamedIconProps> = (props) => <Icon name="calendar-plus" {...props} />;
 export const HourglassIcon: React.FC<NamedIconProps> = (props) => <Icon name="hourglass" {...props} />;
 export const ActivityIcon: React.FC<NamedIconProps> = (props) => <Icon name="activity" {...props} />;
+export const RepeatIcon: React.FC<NamedIconProps> = (props) => <Icon name="repeat" {...props} />;
+export const EyeIcon: React.FC<NamedIconProps> = (props) => <Icon name="eye" {...props} />;
+export const EyeOffIcon: React.FC<NamedIconProps> = (props) => <Icon name="eye-off" {...props} />;

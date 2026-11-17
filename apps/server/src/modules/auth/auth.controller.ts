@@ -69,7 +69,8 @@ authRouter.post('/reset-password', validateBody(ResetPasswordSchema), async (req
 
 authRouter.post('/register', validateBody(RegisterSchema), async (req, res: Response, next) => {
   try {
-    const result = await authService.register(req.body);
+    const overwrite = req.body?.overwrite || req.query?.overwrite === 'true';
+    const result = await authService.register({ ...req.body, overwrite });
     res.status(201).json(result);
   } catch (error) {
     next(error);
@@ -110,7 +111,8 @@ authRouter.post('/logout', validateBody(RevokeSessionSchema), async (req: Authen
 authRouter.post('/google', async (req, res: Response, next) => {
   try {
     const token = req.body.token || req.body.idToken;
-    const result = await authService.googleSignIn(token);
+    const googleUser = req.body.googleUser;
+    const result = await authService.googleSignIn(token, googleUser);
     res.json(result);
   } catch (error) {
     next(error);
@@ -129,7 +131,22 @@ authRouter.post(['/demo', '/guest'], async (_req, res: Response, next) => {
 
 // Proses 1.0: Complete Onboarding & Save Work Capacity Preferences
 authRouter.post(
-  '/onboarding',
+  ['/onboarding', '/onboarding/complete'],
+  authenticate,
+  validateBody(CompleteOnboardingSchema),
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const profile = await authService.completeOnboarding(req.user!.id, req.body);
+      res.json(profile);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+export const onboardingRouter = Router();
+onboardingRouter.post(
+  ['/', '/complete'],
   authenticate,
   validateBody(CompleteOnboardingSchema),
   async (req: AuthenticatedRequest, res: Response, next) => {

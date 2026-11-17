@@ -8,10 +8,14 @@ import {
   PlusIcon,
   ClockIcon,
   SparklesIcon,
-  SearchIcon,
+  TagIcon,
+  BellIcon,
 } from '../../components/icons/index.js';
 import { CommandPalette } from '../../components/organism/CommandPalette.js';
 import { ContextPreservationDialog } from '../../components/organism/ContextPreservationDialog.js';
+import { FoCientWordmark } from '../../components/brand/FoCientWordmark.js';
+import { NotificationCenterModal } from './NotificationCenterModal.js';
+import { getAvatarInitial } from '../../lib/utils.js';
 
 export const AppNavigation: React.FC = () => {
   const {
@@ -27,6 +31,8 @@ export const AppNavigation: React.FC = () => {
     navigateDate,
     toggleCommandPalette,
     isMobileKeyboardActive,
+    unreadNotificationCount,
+    openNotificationPanel,
   } = useFocient();
 
   const navItems = [
@@ -64,9 +70,52 @@ export const AppNavigation: React.FC = () => {
 
   return (
     <>
-      {/* Desktop Top Header Bar (Sticky Elevation & Zero Layout Shift) */}
+      {/* Mobile Top Header (Sticky Elevation for Phone Viewports) */}
       <header
-        className={`hidden md:flex items-center justify-between px-6 py-3 bg-white border-b sticky top-0 z-30 transition-all ${
+        className={`md:hidden flex items-center justify-between px-4 py-2.5 bg-white border-b sticky top-0 z-30 transition-all ${
+          isScrolled
+            ? 'border-slate-300 shadow-xs bg-white/95 backdrop-blur-md'
+            : 'border-slate-200 shadow-none'
+        }`}
+      >
+        <div
+          className="flex items-center cursor-pointer py-1"
+          onClick={() => safeNavigate('dashboard')}
+        >
+          <FoCientWordmark height={16} className="transition-opacity hover:opacity-85" />
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          {/* Notification Button */}
+          <button
+            type="button"
+            onClick={openNotificationPanel}
+            className="p-1 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors relative"
+            title={language === 'id' ? 'Pusat Pemberitahuan' : 'Notifications'}
+            aria-label="Notifications"
+          >
+            <BellIcon size="xs" />
+            {unreadNotificationCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 px-0.5 rounded-full bg-blue-600 text-white text-[8px] font-bold flex items-center justify-center">
+                {unreadNotificationCount}
+              </span>
+            )}
+          </button>
+
+          {/* Avatar */}
+          <div className="w-7 h-7 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center overflow-hidden">
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user?.name || 'User'} className="w-full h-full object-cover" />
+            ) : (
+              getAvatarInitial(user?.name)
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Desktop & Tablet Top Header Bar (Sticky Elevation & Zero Layout Shift) */}
+      <header
+        className={`hidden md:flex items-center justify-between px-4 lg:px-6 py-2.5 bg-white border-b sticky top-0 z-30 transition-all ${
           isScrolled
             ? 'border-slate-300 shadow-xs bg-white/95 backdrop-blur-md'
             : 'border-slate-200 shadow-none'
@@ -74,43 +123,10 @@ export const AppNavigation: React.FC = () => {
       >
         <div className="flex items-center gap-8">
           <div
-            className="flex items-center gap-2.5 cursor-pointer"
+            className="flex items-center cursor-pointer py-1"
             onClick={() => safeNavigate('dashboard')}
           >
-            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-extrabold text-sm shadow-sm">
-              F
-            </div>
-            <span className="font-extrabold text-lg text-slate-900 tracking-tight">FoCient</span>
-          </div>
-
-          {/* Date Navigator in Header */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
-            <button
-              type="button"
-              onClick={() => navigateDate('prev')}
-              className="w-6 h-6 flex items-center justify-center text-slate-500 hover:text-slate-800 rounded hover:bg-white text-xs"
-              title={language === 'id' ? 'Hari Sebelumnya' : 'Previous Day'}
-              aria-label="Previous day"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateDate('today')}
-              className="px-2 py-0.5 text-xs font-semibold text-slate-700 hover:text-blue-600"
-              title={language === 'id' ? 'Kembali ke Hari Ini' : 'Jump to Today'}
-            >
-              {activeCalendarDate}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateDate('next')}
-              className="w-6 h-6 flex items-center justify-center text-slate-500 hover:text-slate-800 rounded hover:bg-white text-xs"
-              title={language === 'id' ? 'Hari Berikutnya' : 'Next Day'}
-              aria-label="Next day"
-            >
-              ›
-            </button>
+            <FoCientWordmark height={17} className="transition-opacity hover:opacity-85" />
           </div>
 
           {/* Desktop Nav Items */}
@@ -146,20 +162,6 @@ export const AppNavigation: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Cmd+K Quick Search Palette Trigger */}
-          <button
-            type="button"
-            onClick={toggleCommandPalette}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300 text-xs font-medium bg-slate-50 transition-all"
-            aria-label="Open Command Palette (Cmd+K)"
-          >
-            <SearchIcon size="xs" />
-            <span>{language === 'id' ? 'Cari / Aksi' : 'Search / Actions'}</span>
-            <kbd className="text-[10px] font-mono px-1.5 py-0.5 bg-white border border-slate-200 rounded text-slate-600">
-              ⌘K
-            </kbd>
-          </button>
-
           <button
             type="button"
             onClick={() => openAddTaskModal()}
@@ -169,24 +171,35 @@ export const AppNavigation: React.FC = () => {
             <span>{language === 'id' ? 'Tambah Tugas' : 'Add Task'}</span>
           </button>
 
-          {/* Language Toggle */}
+          {/* Notification Button */}
           <button
             type="button"
-            onClick={() => setLanguage(language === 'en' ? 'id' : 'en')}
-            className="text-xs font-bold px-2 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 uppercase"
+            onClick={openNotificationPanel}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors relative"
+            title={language === 'id' ? 'Pusat Pemberitahuan' : 'Notifications'}
+            aria-label="Notifications"
           >
-            {language}
+            <BellIcon size="xs" />
+            {unreadNotificationCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">
+                {unreadNotificationCount}
+              </span>
+            )}
           </button>
 
-          <div className="w-8 h-8 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">
-            {user?.name?.slice(0, 2).toUpperCase() || 'AJ'}
+          <div className="w-8 h-8 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center overflow-hidden">
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user?.name || 'User'} className="w-full h-full object-cover" />
+            ) : (
+              getAvatarInitial(user?.name)
+            )}
           </div>
         </div>
       </header>
 
       {/* Mobile Fixed Bottom Navigation Bar (Hidden when mobile virtual keyboard is active) */}
       <nav
-        className={`md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-1.5 flex items-center justify-around z-40 shadow-lg transition-transform duration-200 ${
+        className={`md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-1.5 flex items-center justify-around z-40 shadow-xs transition-transform duration-200 ${
           isMobileKeyboardActive ? 'translate-y-full pointer-events-none' : 'translate-y-0'
         }`}
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}
@@ -234,7 +247,7 @@ export const AppNavigation: React.FC = () => {
         <button
           type="button"
           onClick={() => openAddTaskModal()}
-          className="w-12 h-12 -mt-5 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-90 text-white flex items-center justify-center shadow-lg transition-transform"
+          className="w-12 h-12 -mt-5 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-90 text-white flex items-center justify-center shadow-sm transition-transform"
           aria-label="Add Task"
         >
           <PlusIcon size="md" strokeWidth={2.5} />
@@ -280,9 +293,10 @@ export const AppNavigation: React.FC = () => {
         </button>
       </nav>
 
-      {/* Global Command Palette & Guilt-Free Context Preservation Dialog */}
+      {/* Global Command Palette, Notification Center & Context Preservation Dialog */}
       <CommandPalette />
       <ContextPreservationDialog />
+      <NotificationCenterModal />
     </>
   );
 };
