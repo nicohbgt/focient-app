@@ -392,10 +392,9 @@ taskRouter.post(
 
       res.status(200).json({
         success: true,
-        status: updatedTask.status, // Menjamin properti status = 'COMPLETED' langsung terbaca di root
         message: 'Tugas selesai dengan penuh apresiasi!',
-        ...formatted, // Menjamin seluruh atribut task ada di root
-        task: formatted, // Menjamin properti body.task juga ada
+        ...formatted, // Sudah menyertakan 'status' bernilai 'COMPLETED' di root
+        task: formatted,
         activityLog: {
           id: activityLog.id,
           actualDurationMinutes: activityLog.actualDurationMinutes,
@@ -554,8 +553,8 @@ export function formatTask(task: {
   categoryColor?: string | null;
   dateDisplay?: string | null;
   startHourDisplay?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }): TaskResponseDto {
   const start = task.startTime || task.scheduledStart;
   const end = task.scheduledEnd || (start ? new Date(new Date(start).getTime() + task.durationMinutes * 60000) : null);
@@ -585,7 +584,7 @@ export function formatTask(task: {
     categoryColor: task.categoryColor ?? '#7C3AED',
     dateDisplay: task.dateDisplay ?? (task.targetDate ? task.targetDate.toISOString().split('T')[0] : 'October, 3rd 2026'),
     startHourDisplay: task.startHourDisplay ?? (start ? start.toISOString().substring(11, 16) : '11:40'),
-    createdAt: task.createdAt.toISOString(),
-    updatedAt: task.updatedAt.toISOString(),
+    createdAt: task.createdAt ? task.createdAt.toISOString() : new Date().toISOString(),
+    updatedAt: task.updatedAt ? task.updatedAt.toISOString() : new Date().toISOString(),
   };
 }

@@ -3,6 +3,8 @@ import assert from 'node:assert';
 import { Server } from 'node:http';
 import { createApp } from '../src/app.js';
 import { prisma } from '@focient/database';
+import { cache } from '../src/common/redis.js';
+import { jobQueue } from '../src/common/queue.js';
 
 describe('FoCient PostgreSQL-Backed API Integration Test Suite (P1 Quality & CI)', () => {
   let server: Server;
@@ -56,7 +58,14 @@ describe('FoCient PostgreSQL-Backed API Integration Test Suite (P1 Quality & CI)
       }
     }
 
-    // 2. Disconnect prisma and close HTTP server
+    // 2. Disconnect prisma, redis, background queue, and close HTTP server
+    try {
+      await cache.disconnect();
+      await jobQueue.close();
+    } catch {
+      // Ignore
+    }
+
     if (isPostgresAvailable) {
       try {
         await prisma.$disconnect();
