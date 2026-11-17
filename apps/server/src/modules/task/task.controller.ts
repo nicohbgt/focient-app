@@ -104,13 +104,6 @@ taskRouter.get('/:id', async (req: AuthenticatedRequest, res: Response, next) =>
 
 /**
  * POST /api/tasks (Proses 2.0: Quick Add Task with Activity Diagram Decision Flow)
- *
- * 1. User inputs Quick Add Task
- * 2. Evaluates daily workload:
- *    - If <= 90%: SilentPlacementEngine places task into first-fit gap + 10m buffer.
- *    - If > 90% (Overload): AdaptiveRescheduleEngine prepares ripple shift proposal & amber banner.
- * 3. Enforces Top 3 Priorities Rule & optional swap.
- * 4. Persists to D3 (tasks) and updates D4 (user_capacities).
  */
 taskRouter.post('/', validateBody(CreateTaskSchema), async (req: AuthenticatedRequest, res: Response, next) => {
   try {
@@ -182,7 +175,6 @@ taskRouter.post('/', validateBody(CreateTaskSchema), async (req: AuthenticatedRe
 
     // Decision Diamond: [Kapasitas Overload? (> 90%)]
     if (!workload.isOverloaded) {
-      // Kondisi 1: Tidak Overload (<= 90%) -> Picu SilentPlacementEngine
       if (!finalStartTime) {
         const blocks = await prisma.scheduleBlock.findMany({
           where: {
@@ -221,9 +213,7 @@ taskRouter.post('/', validateBody(CreateTaskSchema), async (req: AuthenticatedRe
         finalEndTime = new Date(finalStartTime.getTime() + data.durationMinutes * 60000);
       }
     } else {
-      // Kondisi 2: Terdeteksi Overload (> 90%) -> Peringatan ramah tanpa status merah
       if (!finalStartTime) {
-        // Disimpan sebagai Unscheduled Task untuk perlindungan fokus
         finalStartTime = null;
         finalEndTime = null;
       } else {
@@ -231,7 +221,6 @@ taskRouter.post('/', validateBody(CreateTaskSchema), async (req: AuthenticatedRe
       }
     }
 
-    // Simpan Tugas ke D3: tasks
     const task = await prisma.task.create({
       data: {
         userId,
@@ -258,7 +247,6 @@ taskRouter.post('/', validateBody(CreateTaskSchema), async (req: AuthenticatedRe
       },
     });
 
-    // Buat ScheduleBlock jika memiliki startTime
     if (finalStartTime && finalEndTime) {
       await prisma.scheduleBlock.create({
         data: {
@@ -273,7 +261,6 @@ taskRouter.post('/', validateBody(CreateTaskSchema), async (req: AuthenticatedRe
       });
     }
 
-    // Perbarui D4: user_capacities
     await prisma.workloadDaily.upsert({
       where: { userId_date: { userId, date: targetDateStr } },
       update: {
@@ -309,25 +296,7 @@ taskRouter.post('/', validateBody(CreateTaskSchema), async (req: AuthenticatedRe
   }
 });
 
-// GET /api/tasks/:id
-taskRouter.get('/:id', async (req: AuthenticatedRequest, res: Response, next) => {
-  try {
-    const userId = req.user!.id;
-    const task = await prisma.task.findFirst({
-      where: { id: req.params.id, userId },
-    });
-
-    if (!task) {
-      throw new NotFoundError('Tugas tidak ditemukan');
-    }
-
-    res.json(formatTask(task));
-  } catch (error) {
-    next(error);
-  }
-});
-
-// POST /api/tasks/:id/complete (Proses 4.0: Centang Selesai & Activity Log)
+// POST /api/tasks/:id/complete (Proses 4.0: Centang Selesai & Activity Log - TUNGGAL & LENGKAP)
 taskRouter.post(
   '/:id/complete',
   validateBody(MarkTaskCompleteSchema),
@@ -419,8 +388,14 @@ taskRouter.post(
         },
       });
 
-      res.json({
-        task: formatTask(updatedTask),
+      const formatted = formatTask(updatedTask);
+
+      res.status(200).json({
+        success: true,
+        status: updatedTask.status, // Menjamin properti status = 'COMPLETED' langsung terbaca di root
+        message: 'Tugas selesai dengan penuh apresiasi!',
+        ...formatted, // Menjamin seluruh atribut task ada di root
+        task: formatted, // Menjamin properti body.task juga ada
         activityLog: {
           id: activityLog.id,
           actualDurationMinutes: activityLog.actualDurationMinutes,
@@ -448,7 +423,6 @@ taskRouter.patch('/:id', validateBody(UpdateTaskSchema), async (req: Authenticat
 
     const data = req.body;
 
-    // Enforce Top-3 Priorities Rule on status or priority update with optional swap
     const isTargetingTop3 =
       data.priority === 'TOP_3' || (data.priority === undefined && existing.priority === TaskPriority.TOP_3);
     const isTargetingActive =
@@ -511,7 +485,6 @@ taskRouter.patch('/:id', validateBody(UpdateTaskSchema), async (req: Authenticat
       },
     });
 
-    // Jika baru selesai, catat log aktivitas ke D5
     if (isNowCompleted) {
       await prisma.activityLog.create({
         data: {
@@ -527,50 +500,6 @@ taskRouter.patch('/:id', validateBody(UpdateTaskSchema), async (req: Authenticat
     }
 
     res.json(formatTask(updated));
-  } catch (error) {
-    next(error);
-  }
-});
-
-// POST /api/tasks/:id/complete
-taskRouter.post('/:id/complete', validateBody(MarkTaskCompleteSchema), async (req: AuthenticatedRequest, res: Response, next) => {
-  try {
-    const userId = req.user!.id;
-    const data = req.body;
-    const existing = await prisma.task.findFirst({
-      where: { id: req.params.id, userId },
-    });
-
-    if (!existing) {
-      throw new NotFoundError('Tugas tidak ditemukan');
-    }
-
-    const updated = await prisma.task.update({
-      where: { id: req.params.id },
-      data: {
-        status: TaskStatus.COMPLETED,
-        completedAt: new Date(),
-      },
-    });
-
-    // Record activity log to D5 for insights and reflection
-    await prisma.activityLog.create({
-      data: {
-        taskId: updated.id,
-        userId,
-        actualDurationMinutes: data.actualDurationMinutes ?? updated.durationMinutes,
-        energyLevel: (data.energyLevelAtCompletion as any) || updated.energyLevel || undefined,
-        moodRating: data.moodRating,
-        reflectionNotes: data.reflectionNotes,
-        completedAt: new Date(),
-      },
-    });
-
-    res.json({
-      success: true,
-      task: formatTask(updated),
-      message: 'Tugas selesai dengan penuh apresiasi!',
-    });
   } catch (error) {
     next(error);
   }
