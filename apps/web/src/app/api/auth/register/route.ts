@@ -45,8 +45,8 @@ export async function POST(request: Request) {
     const isOverwriteRequested = Boolean(body.overwrite) || url.searchParams.get('overwrite') === 'true';
     const isDev = process.env.NODE_ENV !== 'production';
 
-    // 2. Check if user already exists
-    let existingUser = null;
+    // 2. Check if user already exists (Gunakan union '| any | null' untuk mencegah inferensi never)
+    let existingUser: any = null;
     try {
       existingUser = await prisma.user.findUnique({
         where: { email: cleanEmail },
@@ -60,21 +60,22 @@ export async function POST(request: Request) {
       if (isDev && isOverwriteRequested) {
         // Dev Mode: Automatically overwrite & clean existing user
         try {
-          if (existingUser.id) {
+          const targetId = existingUser.id;
+          if (targetId) {
             await prisma.$transaction([
-              prisma.task.deleteMany({ where: { userId: existingUser.id } }),
-              prisma.category.deleteMany({ where: { userId: existingUser.id } }),
-              prisma.scheduleBlock.deleteMany({ where: { userId: existingUser.id } }),
-              prisma.workloadDaily.deleteMany({ where: { userId: existingUser.id } }),
-              prisma.activityLog.deleteMany({ where: { userId: existingUser.id } }),
-              prisma.rescheduleAuditLog.deleteMany({ where: { userId: existingUser.id } }),
-              prisma.rescheduleLog.deleteMany({ where: { userId: existingUser.id } }),
-              prisma.notification.deleteMany({ where: { userId: existingUser.id } }),
-              prisma.session.deleteMany({ where: { userId: existingUser.id } }),
-              prisma.deviceToken.deleteMany({ where: { userId: existingUser.id } }),
-              prisma.user.delete({ where: { id: existingUser.id } }),
+              prisma.task.deleteMany({ where: { userId: targetId } }),
+              prisma.category.deleteMany({ where: { userId: targetId } }),
+              prisma.scheduleBlock.deleteMany({ where: { userId: targetId } }),
+              prisma.workloadDaily.deleteMany({ where: { userId: targetId } }),
+              prisma.activityLog.deleteMany({ where: { userId: targetId } }),
+              prisma.rescheduleAuditLog.deleteMany({ where: { userId: targetId } }),
+              prisma.rescheduleLog.deleteMany({ where: { userId: targetId } }),
+              prisma.notification.deleteMany({ where: { userId: targetId } }),
+              prisma.session.deleteMany({ where: { userId: targetId } }),
+              prisma.deviceToken.deleteMany({ where: { userId: targetId } }),
+              prisma.user.delete({ where: { id: targetId } }),
             ]).catch(async () => {
-              await prisma.user.delete({ where: { id: existingUser.id } }).catch(() => {});
+              await prisma.user.delete({ where: { id: targetId } }).catch(() => {});
             });
           }
         } catch (_) {}
@@ -101,7 +102,7 @@ export async function POST(request: Request) {
       name: cleanName,
       username: cleanName,
       passwordHash: hashedPassword,
-      roleArchetype: '',
+      roleArchetype: roleArchetype || '',
       occupancy: '',
       workingRhythm: '',
       schedulingStyle: '',
@@ -126,7 +127,7 @@ export async function POST(request: Request) {
           name: cleanName,
           email: cleanEmail,
           passwordHash: hashedPassword,
-          roleArchetype: '',
+          roleArchetype: roleArchetype || '',
           workHourStart: '',
           workHourEnd: '',
           startWorkTime: '',
@@ -155,7 +156,7 @@ export async function POST(request: Request) {
       startWorkTime: '',
       endWorkTime: '',
       dailyCapacityMinutes: 480,
-      roleArchetype: '',
+      roleArchetype: roleArchetype || '',
       occupancy: '',
       workingRhythm: '',
       schedulingStyle: '',

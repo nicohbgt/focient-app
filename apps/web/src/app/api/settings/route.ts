@@ -204,8 +204,8 @@ export async function PUT(request: Request) {
       });
     } catch {}
 
-    // Upsert notification preferences if provided
-    let updatedPreferences = null;
+    // Upsert notification preferences if provided (FIXED: anotasikan ': any' untuk mencegah inferensi never/null)
+    let updatedPreferences: any = null;
     if (preferences) {
       try {
         updatedPreferences = await prisma.notificationPreference.upsert({
