@@ -136,7 +136,6 @@ export class NotificationService {
         await prisma.deviceToken.deleteMany({
           where: { userId, token },
         });
-        return true;
       } catch (err) {
         this.handleDbError(err);
       }
@@ -154,7 +153,9 @@ export class NotificationService {
           where: { userId },
           select: { token: true },
         });
-        return records.map((r) => r.token);
+        if (records.length > 0) {
+          return records.map((r) => r.token);
+        }
       } catch (err) {
         this.handleDbError(err);
       }

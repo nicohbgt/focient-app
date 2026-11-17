@@ -3,17 +3,13 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "target": "ES2022",
-    "paths": {
-      "@focient/contracts": ["../../packages/contracts/src/index.ts"],
-      "@focient/contracts/*": ["../../packages/contracts/src/*"],
-      "@focient/database": ["../../packages/database/src/index.ts"],
-      "@focient/database/*": ["../../packages/database/src/*"]
-    },
     "strict": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "noImplicitAny": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
   },
   "include": ["src/**/*"]
 }

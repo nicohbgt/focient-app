@@ -6,6 +6,24 @@ import { prisma } from '@focient/database';
 const SALT = process.env.AUTH_SALT || 'focient_secure_salt_2026';
 const TOKEN_EXPIRY_DAYS = 30;
 
+let dbConnectionFailed = false;
+
+export function isDbAvailable(): boolean {
+  return !!process.env.DATABASE_URL && !dbConnectionFailed;
+}
+
+export function handleDbError(err: unknown) {
+  const errorMsg = String(err);
+  if (
+    errorMsg.includes("Can't reach database server") ||
+    errorMsg.includes('P1001') ||
+    errorMsg.includes('ECONNREFUSED') ||
+    errorMsg.includes('timed out')
+  ) {
+    dbConnectionFailed = true;
+  }
+}
+
 function getDbFilePaths(): string[] {
   const paths = new Set<string>();
   paths.add(path.join(process.cwd(), '.focient_local_auth_db.json'));
@@ -205,19 +223,22 @@ export async function updateUserPasswordInAllStores(email: string, newPassword: 
 
   // 2. Update in Prisma PostgreSQL (if available)
   let prismaUpdated = false;
-  try {
-    const updated = await prisma.user.update({
-      where: { email: cleanEmail },
-      data: { passwordHash: newPasswordHash },
-    });
-    if (updated) {
-      prismaUpdated = true;
-      await prisma.session.deleteMany({
-        where: { userId: updated.id },
-      }).catch(() => {});
+  if (isDbAvailable()) {
+    try {
+      const updated = await prisma.user.update({
+        where: { email: cleanEmail },
+        data: { passwordHash: newPasswordHash },
+      });
+      if (updated) {
+        prismaUpdated = true;
+        await prisma.session.deleteMany({
+          where: { userId: updated.id },
+        }).catch(() => {});
+      }
+    } catch (err) {
+      handleDbError(err);
+      // PostgreSQL is offline or user not found in Prisma
     }
-  } catch {
-    // PostgreSQL is offline or user not found in Prisma
   }
 
   return localUpdated || prismaUpdated;
@@ -400,19 +421,22 @@ export async function createSession(userId: string, userAgent = 'Web Browser', i
     revokedAt: null,
   });
 
-  try {
-    await prisma.session.create({
-      data: {
-        userId,
-        tokenHash,
-        userAgent,
-        ipAddress,
-        expiresAt,
-      },
-    });
-  } catch (error) {
-    // Expected when PostgreSQL is offline in local dev mode
-    console.warn('Prisma session creation skipped (database might be offline):', error);
+  if (isDbAvailable()) {
+    try {
+      await prisma.session.create({
+        data: {
+          userId,
+          tokenHash,
+          userAgent,
+          ipAddress,
+          expiresAt,
+        },
+      });
+    } catch (error) {
+      handleDbError(error);
+      // Expected when PostgreSQL is offline in local dev mode
+      console.warn('Prisma session creation skipped (database might be offline):', error);
+    }
   }
 
   return { token, expiresAt };
@@ -427,38 +451,41 @@ export async function verifySession(token: string) {
   const tokenHash = hashToken(token);
 
   // 1. Try PostgreSQL if available
-  try {
-    const session = await prisma.session.findUnique({
-      where: { tokenHash },
-      include: { user: true },
-    });
+  if (isDbAvailable()) {
+    try {
+      const session = await prisma.session.findUnique({
+        where: { tokenHash },
+        include: { user: true },
+      });
 
-    if (session) {
-      if (session.revokedAt) return { valid: false, user: null, message: 'Sesi telah dicabut' };
-      if (new Date() > session.expiresAt) return { valid: false, user: null, message: 'Sesi telah kedaluwarsa' };
+      if (session) {
+        if (session.revokedAt) return { valid: false, user: null, message: 'Sesi telah dicabut' };
+        if (new Date() > session.expiresAt) return { valid: false, user: null, message: 'Sesi telah kedaluwarsa' };
 
-      return {
-        valid: true,
-        user: {
-          id: session.user.id,
-          name: session.user.name,
-          email: session.user.email,
-          roleArchetype: session.user.roleArchetype || '',
-          occupancy: session.user.occupancy || session.user.roleArchetype || '',
-          workingRhythm: session.user.workingRhythm || '',
-          schedulingStyle: session.user.schedulingStyle || '',
-          dailyCapacityMinutes: session.user.dailyCapacityMinutes,
-          workHourStart: session.user.workHourStart,
-          workHourEnd: session.user.workHourEnd,
-          startWorkTime: session.user.startWorkTime || session.user.workHourStart,
-          endWorkTime: session.user.endWorkTime || session.user.workHourEnd,
-          restTimePerTask: session.user.restTimePerTask ?? 10,
-          isOnboardingCompleted: session.user.isOnboardingCompleted,
-        },
-      };
+        return {
+          valid: true,
+          user: {
+            id: session.user.id,
+            name: session.user.name,
+            email: session.user.email,
+            roleArchetype: session.user.roleArchetype || '',
+            occupancy: session.user.occupancy || session.user.roleArchetype || '',
+            workingRhythm: session.user.workingRhythm || '',
+            schedulingStyle: session.user.schedulingStyle || '',
+            dailyCapacityMinutes: session.user.dailyCapacityMinutes,
+            workHourStart: session.user.workHourStart,
+            workHourEnd: session.user.workHourEnd,
+            startWorkTime: session.user.startWorkTime || session.user.workHourStart,
+            endWorkTime: session.user.endWorkTime || session.user.workHourEnd,
+            restTimePerTask: session.user.restTimePerTask ?? 10,
+            isOnboardingCompleted: session.user.isOnboardingCompleted,
+          },
+        };
+      }
+    } catch (err) {
+      handleDbError(err);
+      // PostgreSQL is unreachable; fall through to local storage
     }
-  } catch {
-    // PostgreSQL is unreachable; fall through to local storage
   }
 
   // 2. Check local persistent store
@@ -507,15 +534,20 @@ export async function revokeSession(token: string): Promise<boolean> {
     saveSessionToLocalDb(localSession);
   }
 
-  try {
-    await prisma.session.update({
-      where: { tokenHash },
-      data: { revokedAt: new Date() },
-    });
-    return true;
-  } catch {
-    return Boolean(localSession);
+  if (isDbAvailable()) {
+    try {
+      await prisma.session.update({
+        where: { tokenHash },
+        data: { revokedAt: new Date() },
+      });
+      return true;
+    } catch (err) {
+      handleDbError(err);
+      return Boolean(localSession);
+    }
   }
+
+  return Boolean(localSession);
 }
 
 /**

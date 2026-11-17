@@ -1,4 +1,4 @@
-import { describe, it, after } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import { prisma } from '@focient/database';
 import {
@@ -204,6 +204,34 @@ describe('FoCient DTO, Contract & Mobile Compatibility Specification (P1 Data & 
   describe('4. Device Token Storage & Notification Preferences', () => {
     const testUserId = 'test-user-compatibility-01';
 
+    before(async () => {
+      try {
+        await prisma.user.upsert({
+          where: { id: testUserId },
+          update: {},
+          create: {
+            id: testUserId,
+            email: `dto_compat_${Date.now()}@focient.app`,
+            name: 'DTO Compatibility Tester',
+            passwordHash: 'dummy_hash_for_testing',
+            timezone: 'Asia/Jakarta',
+          },
+        });
+      } catch {
+        // Fallback to memory if DB is offline or unreachable
+      }
+    });
+
+    after(async () => {
+      try {
+        await prisma.deviceToken.deleteMany({ where: { userId: testUserId } });
+        await prisma.notificationPreference.deleteMany({ where: { userId: testUserId } });
+        await prisma.user.deleteMany({ where: { id: testUserId } });
+      } catch {
+        // Ignore
+      }
+    });
+
     it('validates RegisterDeviceTokenSchema with valid inputs', () => {
       const validTokenData = {
         token: 'fcm_device_token_sample_abc123xyz789',
@@ -296,8 +324,11 @@ describe('FoCient DTO, Contract & Mobile Compatibility Specification (P1 Data & 
       const jobId = await jobQueue.add('test:ping', { ping: 'pong' });
       assert.ok(jobId);
 
-      // Allow brief async event loop cycle
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      // Resilient polling loop for background processing
+      for (let i = 0; i < 40; i++) {
+        if (processed) break;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
       assert.strictEqual(processed, true);
       assert.deepStrictEqual(receivedData, { ping: 'pong' });
     });

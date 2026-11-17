@@ -10,6 +10,24 @@ interface MemoryOtpRecord {
 // In-memory fallback for local dev/mock or when PostgreSQL is unavailable
 const memoryOtpStore = new Map<string, MemoryOtpRecord>();
 
+let dbConnectionFailed = false;
+
+function isDbAvailable(): boolean {
+  return !!process.env.DATABASE_URL && !dbConnectionFailed;
+}
+
+function handleDbError(err: unknown) {
+  const errorMsg = String(err);
+  if (
+    errorMsg.includes("Can't reach database server") ||
+    errorMsg.includes('P1001') ||
+    errorMsg.includes('ECONNREFUSED') ||
+    errorMsg.includes('timed out')
+  ) {
+    dbConnectionFailed = true;
+  }
+}
+
 function hashOtpCode(email: string, code: string): string {
   const secret = process.env.OTP_SECRET || process.env.AUTH_SALT || 'focient_otp_secret_2026';
   return crypto.createHmac('sha256', secret).update(`${email.toLowerCase()}:${code.trim()}`).digest('hex');
@@ -31,7 +49,7 @@ export async function saveOtp(email: string, code: string, type: 'REGISTRATION' 
   });
 
   // Persist to PostgreSQL if available
-  if (process.env.DATABASE_URL) {
+  if (isDbAvailable()) {
     try {
       // Invalidate existing unused OTPs of the same type for this email
       await prisma.otp.updateMany({
@@ -50,6 +68,7 @@ export async function saveOtp(email: string, code: string, type: 'REGISTRATION' 
         },
       });
     } catch (err) {
+      handleDbError(err);
       // Graceful fallback to memory store if DB is offline
       console.warn('Prisma saveOtp fallback to in-memory store:', err);
     }
@@ -64,7 +83,7 @@ export async function verifyAndConsumeOtp(email: string, candidateCode: string, 
   const trimmedCode = candidateCode.trim();
 
   // 1. Check DB first if available
-  if (process.env.DATABASE_URL) {
+  if (isDbAvailable()) {
     try {
       const record = await prisma.otp.findFirst({
         where: {
@@ -104,7 +123,8 @@ export async function verifyAndConsumeOtp(email: string, candidateCode: string, 
         memoryOtpStore.delete(`${type}:${cleanEmail}`);
         return { valid: true };
       }
-    } catch {
+    } catch (err) {
+      handleDbError(err);
       // Fall back to memory store below
     }
   }

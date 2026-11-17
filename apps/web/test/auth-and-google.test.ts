@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { prisma } from '@focient/database';
 import {
   hashPassword,
   verifyPassword,
@@ -177,5 +178,13 @@ test('FoCient Authentication & Authorization Suite (Web Version & Google OAuth)'
     resetLocalDb();
     const testUser = findLocalUserByEmail('reset.test@focient.dev');
     assert.equal(testUser, null, 'Resetting local DB must completely remove all stored test accounts');
+  });
+
+  t.after(async () => {
+    try {
+      await prisma.$disconnect();
+    } catch {
+      // Ignore
+    }
   });
 });
