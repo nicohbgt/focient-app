@@ -1070,8 +1070,8 @@ scheduleRouter.post(
       const affectedDates = new Set<string>();
 
       const transactionResults = await prisma.$transaction(async (tx) => {
-        const updatedTasks = [];
-        const auditLogs = [];
+        const updatedTasks: any[] = [];
+        const auditLogs: any[] = [];
 
         for (const shift of shifts) {
           const task = taskMap.get(shift.taskId);
