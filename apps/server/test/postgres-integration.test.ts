@@ -59,22 +59,7 @@ describe('FoCient PostgreSQL-Backed API Integration Test Suite (P1 Quality & CI)
       }
     }
 
-    // 2. Disconnect prisma, redis, background queue, and close HTTP server
-    try {
-      await cache.disconnect();
-      await jobQueue.close();
-    } catch {
-      // Ignore
-    }
-
-    if (isPostgresAvailable) {
-      try {
-        await prisma.$disconnect();
-      } catch {
-        // Ignore
-      }
-    }
-
+    // 2. Close HTTP test server
     if (server) {
       try {
         if (typeof (server as any).closeAllConnections === 'function') {

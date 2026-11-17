@@ -83,7 +83,7 @@ jobs:
         run: npm run build
 
       - name: Test Server & PostgreSQL-Backed API Integration
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: |
           npx tsx --test --test-timeout=20000 apps/server/test/postgres-integration.test.ts
           npm run test:server

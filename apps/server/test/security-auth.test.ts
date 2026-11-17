@@ -1,7 +1,6 @@
-import { describe, it, beforeEach, after } from 'node:test';
+import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import jwt from 'jsonwebtoken';
-import { prisma } from '@focient/database';
 import { getJwtSecret, getJwtRefreshSecret, getOtpSecret } from '../src/common/config.js';
 import { GoogleOidcService } from '../src/modules/auth/google-oidc.service.js';
 import { OtpRepository } from '../src/modules/auth/otp.repository.js';
@@ -395,13 +394,5 @@ describe('FoCient Security & Authentication Specification (P0 Security)', () => 
       assert(authLimiter !== undefined);
       assert(otpVerifyLimiter !== undefined);
     });
-  });
-
-  after(async () => {
-    try {
-      await prisma.$disconnect();
-    } catch {
-      // Ignore
-    }
   });
 });
