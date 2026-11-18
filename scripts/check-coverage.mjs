@@ -8,29 +8,30 @@ console.log('📊 FoCient Test Coverage Verification & Threshold Enforcer...\n')
 
 // 1. Run Server Tests with Coverage
 console.log('🔬 Testing Server Core Algorithms & Modules with Coverage:');
-const serverResult = spawnSync(
-  process.platform === 'win32' ? 'npx.cmd' : 'npx',
-  ['tsx', '--test', '--test-concurrency=1', '--test-timeout=20000', '--experimental-test-coverage', 'test/workload-engine.test.ts', 'test/top-3-priority.test.ts', 'test/placement-engine.test.ts', 'test/reschedule-engine.test.ts', 'test/dto-compatibility.test.ts', 'test/security-auth.test.ts'],
-  {
-    cwd: 'apps/server',
-    encoding: 'utf-8',
-    shell: true,
-    env: { ...process.env },
-  }
-);
 
-if (serverResult.stdout) {
-  console.log(serverResult.stdout);
+const coverageCmd = 'npx tsx --test --test-concurrency=1 --test-timeout=20000 --experimental-test-coverage test/workload-engine.test.ts test/top-3-priority.test.ts test/placement-engine.test.ts test/reschedule-engine.test.ts test/dto-compatibility.test.ts test/security-auth.test.ts';
+
+const serverResult = spawnSync(coverageCmd, {
+  cwd: 'apps/server',
+  encoding: 'utf-8',
+  shell: true,
+  env: { ...process.env },
+});
+
+const stdout = serverResult.stdout || '';
+const stderr = serverResult.stderr || '';
+
+if (stdout) {
+  console.log(stdout);
+}
+if (stderr) {
+  console.error(stderr);
 }
 
 if (serverResult.status !== 0) {
-  console.error(`❌ Server tests failed during coverage check (exit code: ${serverResult.status}):`);
-  if (serverResult.error) console.error('Error detail:', serverResult.error);
-  if (serverResult.stderr) console.error('Stderr detail:\n', serverResult.stderr);
+  console.error(`❌ Server tests failed during coverage check (exit code: ${serverResult.status})`);
   process.exit(1);
 }
-
-const stdout = serverResult.stdout || '';
 
 // Check engine-level coverage
 const engineMatches = [
@@ -57,7 +58,7 @@ if (match) {
   const branchCoverage = parseFloat(match[2]);
 
   console.log(`\n  ✓ Total Overall Line Coverage:   ${lineCoverage}% (Threshold: >= ${MIN_OVERALL_LINE_COVERAGE}%)`);
-  console.log(`  ✓ Total Overall Branch Coverage: ${branchCoverage}% (Threshold: >= ${MIN_OVERALL_BRANCH_COVERAGE}%)`);
+  console.log(`\n  ✓ Total Overall Branch Coverage: ${branchCoverage}% (Threshold: >= ${MIN_OVERALL_BRANCH_COVERAGE}%)`);
 
   if (lineCoverage < MIN_OVERALL_LINE_COVERAGE) {
     console.error(`❌ Total line coverage (${lineCoverage}%) fell below required threshold (${MIN_OVERALL_LINE_COVERAGE}%).`);
