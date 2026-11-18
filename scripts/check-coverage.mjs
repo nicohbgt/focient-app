@@ -9,10 +9,8 @@ console.log('📊 FoCient Test Coverage Verification & Threshold Enforcer...\n')
 // 1. Run Server Tests with Coverage
 console.log('🔬 Testing Server Core Algorithms & Modules with Coverage:');
 
-const coverageCmd = 'npx tsx --test --test-concurrency=1 --test-timeout=20000 --experimental-test-coverage test/workload-engine.test.ts test/top-3-priority.test.ts test/placement-engine.test.ts test/reschedule-engine.test.ts test/dto-compatibility.test.ts test/security-auth.test.ts';
-
-const serverResult = spawnSync(coverageCmd, {
-  cwd: 'apps/server',
+const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const serverResult = spawnSync(npmCmd, ['run', 'test:coverage', '--prefix', 'apps/server'], {
   encoding: 'utf-8',
   shell: true,
   env: { ...process.env },
@@ -29,7 +27,7 @@ if (stderr) {
 }
 
 if (serverResult.status !== 0) {
-  console.error(`❌ Server tests failed during coverage check (exit code: ${serverResult.status})`);
+  console.error(`❌ Server tests failed during coverage check (exit code: ${serverResult.status}):`, serverResult.error || '');
   process.exit(1);
 }
 

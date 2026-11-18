@@ -8,6 +8,7 @@
     "start": "node dist/main.js",
     "dev": "tsx watch src/main.ts",
     "test": "tsx --test --test-concurrency=1 --test-timeout=20000 test/*.test.ts",
+    "test:coverage": "tsx --test --experimental-test-coverage test/workload-engine.test.ts test/top-3-priority.test.ts test/placement-engine.test.ts test/reschedule-engine.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
