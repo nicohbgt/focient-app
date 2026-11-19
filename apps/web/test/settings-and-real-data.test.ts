@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 
 describe('FoCient Settings Feature & Real Data-Driven State Suite', () => {
   it('1. Anti-Burnout capacity enforcement: max daily limit cannot exceed 8.0 hours', () => {
@@ -146,8 +147,7 @@ describe('FoCient Settings Feature & Real Data-Driven State Suite', () => {
 
   it('7. Week Start Day setting is strictly located in Rhythm & Capacity without duplicate in Account & Language', async () => {
     const fs = await import('node:fs');
-    const path = await import('node:path');
-    const settingsPath = path.resolve(process.cwd(), 'apps/web/src/screens/settings/SettingsScreen.tsx');
+    const settingsPath = fileURLToPath(new URL('../src/screens/settings/SettingsScreen.tsx', import.meta.url));
     const content = fs.readFileSync(settingsPath, 'utf8');
 
     // Must be in Rhythm section
@@ -173,8 +173,7 @@ describe('FoCient Settings Feature & Real Data-Driven State Suite', () => {
 
   it('8. Settings screen initial render strictly skips autosave when values have not changed', async () => {
     const fs = await import('node:fs');
-    const path = await import('node:path');
-    const settingsPath = path.resolve(process.cwd(), 'apps/web/src/screens/settings/SettingsScreen.tsx');
+    const settingsPath = fileURLToPath(new URL('../src/screens/settings/SettingsScreen.tsx', import.meta.url));
     const content = fs.readFileSync(settingsPath, 'utf8');
 
     // 1. Must maintain lastSavedSnapshotRef and getSettingsSnapshot
@@ -197,8 +196,7 @@ describe('FoCient Settings Feature & Real Data-Driven State Suite', () => {
 
   it('9. Today Plan screen uses max-w-6xl mx-auto w-full matching Dashboard, Tasks, Insights & Settings', async () => {
     const fs = await import('node:fs');
-    const path = await import('node:path');
-    const planPath = path.resolve(process.cwd(), 'apps/web/src/screens/plan/TodayPlanScreen.tsx');
+    const planPath = fileURLToPath(new URL('../src/screens/plan/TodayPlanScreen.tsx', import.meta.url));
     const content = fs.readFileSync(planPath, 'utf8');
 
     assert.ok(
