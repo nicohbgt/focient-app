@@ -7,6 +7,9 @@ import {
   saveUserToLocalDb,
   saveCategoriesToLocalDb,
   getCategoriesFromLocalDb,
+  isDbAvailable,
+  withDbTimeout,
+  handleDbError,
 } from '../../../../lib/auth-server';
 
 export const dynamic = 'force-dynamic';
@@ -56,68 +59,82 @@ export async function POST(request: Request) {
 
     // 1. Update user profile in PostgreSQL database
     let updatedDbUser: any = null;
-    try {
-      updatedDbUser = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          roleArchetype,
-          occupancy,
-          workingRhythm,
-          schedulingStyle,
-          workHoursLimit: Number(workHoursLimit),
-          startWorkTime,
-          endWorkTime,
-          workHourStart: startWorkTime,
-          workHourEnd: endWorkTime,
-          dailyCapacityMinutes,
-          restTimePerTask: Number(restTimeMinutesPerTask),
-          isOnboardingCompleted: true,
-        },
-      });
+    if (isDbAvailable()) {
+      try {
+        updatedDbUser = await withDbTimeout(
+          prisma.user.update({
+            where: { id: user.id },
+            data: {
+              roleArchetype,
+              occupancy,
+              workingRhythm,
+              schedulingStyle,
+              workHoursLimit: Number(workHoursLimit),
+              startWorkTime,
+              endWorkTime,
+              workHourStart: startWorkTime,
+              workHourEnd: endWorkTime,
+              dailyCapacityMinutes,
+              restTimePerTask: Number(restTimeMinutesPerTask),
+              isOnboardingCompleted: true,
+            },
+          }),
+          350
+        );
 
-      // 2. Persist initial user categories scoped strictly to user.id
-      if (Array.isArray(selectedCategories) && selectedCategories.length > 0) {
-        for (const catName of selectedCategories) {
-          const existing = await prisma.category.findFirst({
-            where: { userId: user.id, name: catName },
-          });
-          if (!existing) {
-            await prisma.category.create({
-              data: {
-                userId: user.id,
-                name: catName,
-                colorToken:
-                  catName.toLowerCase().includes('strategic') || catName.toLowerCase().includes('fokus')
-                    ? '#7C3AED'
-                    : '#0284C7',
-                isDefault: true,
-              },
-            });
+        // 2. Persist initial user categories scoped strictly to user.id
+        if (Array.isArray(selectedCategories) && selectedCategories.length > 0) {
+          for (const catName of selectedCategories) {
+            const existing = await withDbTimeout(
+              prisma.category.findFirst({
+                where: { userId: user.id, name: catName },
+              }),
+              350
+            );
+            if (!existing) {
+              await withDbTimeout(
+                prisma.category.create({
+                  data: {
+                    userId: user.id,
+                    name: catName,
+                    colorToken:
+                      catName.toLowerCase().includes('strategic') || catName.toLowerCase().includes('fokus')
+                        ? '#7C3AED'
+                        : '#0284C7',
+                    isDefault: true,
+                  },
+                }),
+                350
+              );
+            }
           }
         }
-      }
 
-      // 3. Upsert user capacity for today
-      const today = new Date().toISOString().split('T')[0];
-      await prisma.workloadDaily.upsert({
-        where: { userId_date: { userId: user.id, date: today } },
-        update: {
-          maxDailyMinutes: dailyCapacityMinutes,
-          capacityMinutes: dailyCapacityMinutes,
-        },
-        create: {
-          userId: user.id,
-          date: today,
-          targetDate: new Date(`${today}T00:00:00.000Z`),
-          maxDailyMinutes: dailyCapacityMinutes,
-          capacityMinutes: dailyCapacityMinutes,
-          allocatedMinutes: 0,
-          capacityPercentage: 0,
-          status: 'LIGHT',
-        },
-      });
-    } catch (dbErr) {
-      console.warn('PostgreSQL write skipped in complete onboarding (using resilient file fallback):', dbErr);
+        // 3. Upsert user capacity for today
+        const today = new Date().toISOString().split('T')[0];
+        await withDbTimeout(
+          prisma.workloadDaily.upsert({
+            where: { userId_date: { userId: user.id, date: today } },
+            update: {
+              maxDailyMinutes: dailyCapacityMinutes,
+              capacityMinutes: dailyCapacityMinutes,
+            },
+            create: {
+              userId: user.id,
+              date: today,
+              targetDate: new Date(`${today}T00:00:00.000Z`),
+              maxDailyMinutes: dailyCapacityMinutes,
+              capacityMinutes: dailyCapacityMinutes,
+              allocatedMinutes: 0,
+              capacityPercentage: 0,
+              status: 'LIGHT',
+            },
+          }),
+          350
+        );
+      } catch (dbErr) {
+        handleDbError(dbErr);
+      }
     }
 
     // 4. Update file-backed persistent local user store & categories

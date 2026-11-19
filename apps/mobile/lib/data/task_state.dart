@@ -22,6 +22,9 @@ class MobileTask {
   final String focusType;
   final bool isBacklog;
   final bool needRestAfter;
+  final bool isRecurring;
+  final String recurrencePattern; // 'daily', 'weekdays', 'weekly'
+  final List<int> recurrenceDays; // 1 = Mon, ..., 7 = Sun (or 0..6)
 
   MobileTask({
     required this.id,
@@ -40,6 +43,9 @@ class MobileTask {
     this.focusType = 'Deep Focus',
     this.isBacklog = false,
     this.needRestAfter = true,
+    this.isRecurring = false,
+    this.recurrencePattern = 'daily',
+    this.recurrenceDays = const [1, 2, 3, 4, 5],
   });
 
   bool get isCompleted => status == TaskStatusEnum.completed;
@@ -60,6 +66,9 @@ class MobileTask {
     String? focusType,
     bool? isBacklog,
     bool? needRestAfter,
+    bool? isRecurring,
+    String? recurrencePattern,
+    List<int>? recurrenceDays,
   }) {
     return MobileTask(
       id: id,
@@ -78,6 +87,9 @@ class MobileTask {
       focusType: focusType ?? this.focusType,
       isBacklog: isBacklog ?? this.isBacklog,
       needRestAfter: needRestAfter ?? this.needRestAfter,
+      isRecurring: isRecurring ?? this.isRecurring,
+      recurrencePattern: recurrencePattern ?? this.recurrencePattern,
+      recurrenceDays: recurrenceDays ?? this.recurrenceDays,
     );
   }
 }

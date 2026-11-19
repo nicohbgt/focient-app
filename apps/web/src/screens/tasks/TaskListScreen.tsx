@@ -28,6 +28,7 @@ export const TaskListScreen: React.FC = () => {
     toggleTaskComplete,
     openAddTaskModal,
     language,
+    weekStartDay,
   } = useFocient();
 
   const [viewDate, setViewDate] = useState(() => new Date());
@@ -36,11 +37,20 @@ export const TaskListScreen: React.FC = () => {
   const currentMonth = getCurrentMonthYear(viewDate, language);
   const daysInMonth = getDaysInMonth(year, month);
   const startDayOfWeek = getFirstDayOfWeek(year, month);
+  const emptyOffset =
+    weekStartDay === 'sunday' ? startDayOfWeek : startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
 
   const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
 
-  const weekdays = language === 'id' ? ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const weekdays =
+    weekStartDay === 'sunday'
+      ? language === 'id'
+        ? ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
+        : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+      : language === 'id'
+      ? ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   // Current selected full date for the active month view
   const validSelectedDay = Math.min(Math.max(1, selectedCalendarDay), daysInMonth);
@@ -133,7 +143,7 @@ export const TaskListScreen: React.FC = () => {
         {/* Calendar Day Cells - Spacious Large Design */}
         <div className="grid grid-cols-7 gap-1.5 text-center">
           {/* Empty prefix cells before 1st of month */}
-          {Array.from({ length: startDayOfWeek }).map((_, i) => (
+          {Array.from({ length: emptyOffset }).map((_, i) => (
             <div key={`empty-${i}`} className="min-h-[48px] sm:min-h-[54px]" />
           ))}
 
@@ -234,7 +244,10 @@ export const TaskListScreen: React.FC = () => {
                     <div className="flex items-start gap-3">
                       <button
                         type="button"
-                        onClick={() => toggleTaskComplete(t.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTaskComplete(t.id);
+                        }}
                         className={`w-5 h-5 rounded-md border flex items-center justify-center mt-0.5 transition-all shrink-0 ${
                           isCompleted
                             ? 'bg-emerald-600 border-emerald-600 text-white'

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useFocient } from '../../state/focient-store.js';
 import {
   CheckIcon,
@@ -14,7 +14,7 @@ import {
   SunIcon,
   MoonIcon,
 } from '../../components/icons/index.js';
-import { calculateCapacityMinutes } from '../../lib/date-utils.js';
+import { calculateCapacityMinutes, WeekStartDay } from '../../lib/date-utils.js';
 import { TimePicker24 } from '../../components/primitive/TimePicker24.js';
 import { getAvatarInitial } from '../../lib/utils.js';
 
@@ -43,6 +43,8 @@ export const SettingsScreen: React.FC = () => {
     quietHourEnd,
     quietHourEnabled,
     setQuietHours,
+    weekStartDay,
+    setWeekStartDay,
   } = useFocient();
 
   // Active sub-navigation section inside settings
@@ -62,6 +64,7 @@ export const SettingsScreen: React.FC = () => {
   const [customRestInput, setCustomRestInput] = useState('');
   const [workingRhythm, setWorkingRhythm] = useState<string>(() => user?.workingRhythm || selectedRhythm || 'Steady Pacer');
   const [schedulingStyle, setSchedulingStyle] = useState<string>(() => user?.schedulingStyle || selectedStyle || 'Structured');
+  const [selectedWeekStart, setSelectedWeekStart] = useState<WeekStartDay>(() => (user?.weekStartDay || weekStartDay || 'monday') as WeekStartDay);
 
   // Notification Preferences
   const [focusReminders, setFocusReminders] = useState(true);
@@ -81,97 +84,45 @@ export const SettingsScreen: React.FC = () => {
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [isSyncing, setIsSyncing] = useState(false);
   const isLoadedRef = React.useRef(false);
-  const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const initialUserIdRef = React.useRef<string | null>(null);
 
-  // Sync state on load
-  useEffect(() => {
-    if (user) {
-      setName(user.name);
-      if (user.roleArchetype || user.occupancy) {
-        setRoleArchetype(user.roleArchetype || user.occupancy || 'General');
-      }
-      if (user.workHourStart) setStartWorkTime(user.workHourStart);
-      if (user.workHourEnd) setEndWorkTime(user.workHourEnd);
-      if (user.dailyCapacityMinutes) setDailyCapacityMinutes(user.dailyCapacityMinutes);
-      if (user.restTimePerTask) {
-        setRestTimePerTask(user.restTimePerTask);
-      } else if (restMinutesPerTask) {
-        setRestTimePerTask(restMinutesPerTask);
-      }
-      if (user.workingRhythm) {
-        setWorkingRhythm(user.workingRhythm);
-      } else if (selectedRhythm) {
-        setWorkingRhythm(selectedRhythm);
-      }
-      if (user.schedulingStyle) {
-        setSchedulingStyle(user.schedulingStyle);
-      } else if (selectedStyle) {
-        setSchedulingStyle(selectedStyle);
-      }
-      if (user.quietHourStart || quietHourStart) {
-        setQuietHoursStart(user.quietHourStart || quietHourStart);
-      }
-      if (user.quietHourEnd || quietHourEnd) {
-        setQuietHoursEnd(user.quietHourEnd || quietHourEnd);
-      }
-      const t = setTimeout(() => {
-        isLoadedRef.current = true;
-      }, 150);
-      return () => clearTimeout(t);
-    }
-  }, [user]);
+  // Synchronization ref: always mirrors the latest user inputs synchronously
+  const settingsStateRef = React.useRef({
+    name,
+    roleArchetype,
+    startWorkTime,
+    endWorkTime,
+    restTimePerTask,
+    workingRhythm,
+    schedulingStyle,
+    selectedWeekStart,
+    quietHoursStart,
+    quietHoursEnd,
+    focusReminders,
+    capacityAlerts,
+    rippleSuggestions,
+    dailySummary,
+  });
 
-  // Autosave for every setting modification
-  useEffect(() => {
-    if (!isLoadedRef.current) return;
+  const lastSavedSnapshotRef = React.useRef<string | null>(null);
 
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    setAutoSaveStatus('saving');
-
-    saveTimeoutRef.current = setTimeout(async () => {
-      try {
-        setQuietHours(quietHoursStart, quietHoursEnd, true);
-        await updateSettings(
-          {
-            name,
-            roleArchetype,
-            occupancy: roleArchetype,
-            workingRhythm,
-            schedulingStyle,
-            startWorkTime,
-            endWorkTime,
-            dailyCapacityMinutes: calculateCapacityMinutes(startWorkTime, endWorkTime),
-            restTimePerTask,
-            quietHourStart: quietHoursStart,
-            quietHourEnd: quietHoursEnd,
-            preferences: {
-              focusReminders,
-              capacityAlerts,
-              rippleSuggestions,
-              dailySummary,
-              quietHoursStart,
-              quietHoursEnd,
-            },
-          },
-          { silent: true }
-        );
-        setAutoSaveStatus('saved');
-        setTimeout(() => {
-          setAutoSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr));
-        }, 2000);
-      } catch {
-        setAutoSaveStatus('error');
-      }
-    }, 400);
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
+  const getSettingsSnapshot = useCallback(() => {
+    return JSON.stringify({
+      name,
+      roleArchetype,
+      startWorkTime,
+      endWorkTime,
+      restTimePerTask,
+      workingRhythm,
+      schedulingStyle,
+      selectedWeekStart,
+      quietHoursStart,
+      quietHoursEnd,
+      focusReminders,
+      capacityAlerts,
+      rippleSuggestions,
+      dailySummary,
+    });
   }, [
     name,
     roleArchetype,
@@ -180,6 +131,7 @@ export const SettingsScreen: React.FC = () => {
     restTimePerTask,
     workingRhythm,
     schedulingStyle,
+    selectedWeekStart,
     quietHoursStart,
     quietHoursEnd,
     focusReminders,
@@ -188,46 +140,194 @@ export const SettingsScreen: React.FC = () => {
     dailySummary,
   ]);
 
-  // Immediate save handler for Daily Energy Rhythm
-  const handleSelectRhythm = async (rhythmId: string) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
+  // Keep settingsStateRef in sync with React state
+  settingsStateRef.current = {
+    name,
+    roleArchetype,
+    startWorkTime,
+    endWorkTime,
+    restTimePerTask,
+    workingRhythm,
+    schedulingStyle,
+    selectedWeekStart,
+    quietHoursStart,
+    quietHoursEnd,
+    focusReminders,
+    capacityAlerts,
+    rippleSuggestions,
+    dailySummary,
+  };
+
+  // Sync state ONLY on initial load or if authenticated user changes (prevents autosave store updates from reverting inputs)
+  useEffect(() => {
+    if (user && (!isLoadedRef.current || initialUserIdRef.current !== user.id)) {
+      initialUserIdRef.current = user.id;
+      const loadedName = user.name || '';
+      const loadedRole = user.roleArchetype || user.occupancy || 'General';
+      const loadedStart = user.workHourStart || '09:00';
+      const loadedEnd = user.workHourEnd || '17:00';
+      const loadedCapacity = user.dailyCapacityMinutes || 480;
+      const loadedRest = user.restTimePerTask || restMinutesPerTask || 10;
+      const loadedRhythm = user.workingRhythm || selectedRhythm || 'Steady Pacer';
+      const loadedStyle = user.schedulingStyle || selectedStyle || 'Structured';
+      const loadedQuietStart = user.quietHourStart || quietHourStart || '22:00';
+      const loadedQuietEnd = user.quietHourEnd || quietHourEnd || '07:00';
+      const loadedWeekStart = (user.weekStartDay === 'sunday' || user.weekStartDay === 'monday') ? user.weekStartDay : (weekStartDay || 'monday');
+
+      setName(loadedName);
+      setRoleArchetype(loadedRole);
+      setStartWorkTime(loadedStart);
+      setEndWorkTime(loadedEnd);
+      setDailyCapacityMinutes(loadedCapacity);
+      setRestTimePerTask(loadedRest);
+      setWorkingRhythm(loadedRhythm);
+      setSchedulingStyle(loadedStyle);
+      setQuietHoursStart(loadedQuietStart);
+      setQuietHoursEnd(loadedQuietEnd);
+      setSelectedWeekStart(loadedWeekStart);
+
+      // Snapshot initialized to strictly match initial state: prevents any automatic PUT on page load!
+      lastSavedSnapshotRef.current = JSON.stringify({
+        name: loadedName,
+        roleArchetype: loadedRole,
+        startWorkTime: loadedStart,
+        endWorkTime: loadedEnd,
+        restTimePerTask: loadedRest,
+        workingRhythm: loadedRhythm,
+        schedulingStyle: loadedStyle,
+        selectedWeekStart: loadedWeekStart,
+        quietHoursStart: loadedQuietStart,
+        quietHoursEnd: loadedQuietEnd,
+        focusReminders: true,
+        capacityAlerts: true,
+        rippleSuggestions: true,
+        dailySummary: true,
+      });
+
+      isLoadedRef.current = true;
     }
-    setWorkingRhythm(rhythmId);
-    setSelectedRhythm(rhythmId);
+  }, [user?.id]);
+
+  // Resilient Coalescing Autosave Controller
+  const isSavingRef = React.useRef(false);
+  const hasQueuedChangeRef = React.useRef(false);
+  const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const executeSave = useCallback(async () => {
+    if (!isLoadedRef.current) return;
+    if (isSavingRef.current) {
+      hasQueuedChangeRef.current = true;
+      return;
+    }
+
+    isSavingRef.current = true;
+    hasQueuedChangeRef.current = false;
     setAutoSaveStatus('saving');
+
+    const snap = settingsStateRef.current;
     try {
+      setQuietHours(snap.quietHoursStart, snap.quietHoursEnd, true);
       await updateSettings(
         {
-          name,
-          roleArchetype,
-          occupancy: roleArchetype,
-          workingRhythm: rhythmId,
-          schedulingStyle,
-          startWorkTime,
-          endWorkTime,
-          dailyCapacityMinutes: calculateCapacityMinutes(startWorkTime, endWorkTime),
-          restTimePerTask,
-          quietHourStart: quietHoursStart,
-          quietHourEnd: quietHoursEnd,
+          name: snap.name,
+          roleArchetype: snap.roleArchetype,
+          occupancy: snap.roleArchetype,
+          workingRhythm: snap.workingRhythm,
+          schedulingStyle: snap.schedulingStyle,
+          startWorkTime: snap.startWorkTime,
+          endWorkTime: snap.endWorkTime,
+          dailyCapacityMinutes: calculateCapacityMinutes(snap.startWorkTime, snap.endWorkTime),
+          restTimePerTask: snap.restTimePerTask,
+          weekStartDay: snap.selectedWeekStart,
+          quietHourStart: snap.quietHoursStart,
+          quietHourEnd: snap.quietHoursEnd,
           preferences: {
-            focusReminders,
-            capacityAlerts,
-            rippleSuggestions,
-            dailySummary,
-            quietHoursStart,
-            quietHoursEnd,
+            focusReminders: snap.focusReminders,
+            capacityAlerts: snap.capacityAlerts,
+            rippleSuggestions: snap.rippleSuggestions,
+            dailySummary: snap.dailySummary,
+            quietHoursStart: snap.quietHoursStart,
+            quietHoursEnd: snap.quietHoursEnd,
           },
         },
         { silent: true }
       );
+      // Update saved snapshot on successful sync
+      lastSavedSnapshotRef.current = JSON.stringify({
+        name: snap.name,
+        roleArchetype: snap.roleArchetype,
+        startWorkTime: snap.startWorkTime,
+        endWorkTime: snap.endWorkTime,
+        restTimePerTask: snap.restTimePerTask,
+        workingRhythm: snap.workingRhythm,
+        schedulingStyle: snap.schedulingStyle,
+        selectedWeekStart: snap.selectedWeekStart,
+        quietHoursStart: snap.quietHoursStart,
+        quietHoursEnd: snap.quietHoursEnd,
+        focusReminders: snap.focusReminders,
+        capacityAlerts: snap.capacityAlerts,
+        rippleSuggestions: snap.rippleSuggestions,
+        dailySummary: snap.dailySummary,
+      });
+
       setAutoSaveStatus('saved');
       setTimeout(() => {
         setAutoSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr));
-      }, 2000);
+      }, 1200);
     } catch {
       setAutoSaveStatus('error');
+    } finally {
+      isSavingRef.current = false;
+      // If user modified settings while save was in-flight, flush immediately!
+      if (hasQueuedChangeRef.current) {
+        hasQueuedChangeRef.current = false;
+        executeSave();
+      }
     }
+  }, [updateSettings, setQuietHours]);
+
+  const scheduleAutoSave = useCallback((immediate = false) => {
+    if (!isLoadedRef.current) return;
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+
+    if (immediate) {
+      executeSave();
+    } else {
+      debounceTimerRef.current = setTimeout(executeSave, 200);
+    }
+  }, [executeSave]);
+
+  // Autosave trigger for changes across all settings fields (strictly skips if values did not change)
+  useEffect(() => {
+    if (!isLoadedRef.current) return;
+    const currentSnapshot = getSettingsSnapshot();
+    if (lastSavedSnapshotRef.current === null) {
+      lastSavedSnapshotRef.current = currentSnapshot;
+      return;
+    }
+    // Strict guard: DO NOT trigger autosave if current fields match last saved snapshot
+    if (currentSnapshot === lastSavedSnapshotRef.current) {
+      return;
+    }
+    scheduleAutoSave(false);
+  }, [getSettingsSnapshot, scheduleAutoSave]);
+
+  // Immediate save handlers for direct click actions (Week Start Day & Rhythm)
+  const handleSelectWeekStart = (day: WeekStartDay) => {
+    setSelectedWeekStart(day);
+    setWeekStartDay(day);
+    settingsStateRef.current.selectedWeekStart = day;
+    scheduleAutoSave(true);
+  };
+
+  const handleSelectRhythm = (rhythmId: string) => {
+    setWorkingRhythm(rhythmId);
+    setSelectedRhythm(rhythmId);
+    settingsStateRef.current.workingRhythm = rhythmId;
+    scheduleAutoSave(true);
   };
 
   // Add Category Handler
@@ -831,6 +931,62 @@ export const SettingsScreen: React.FC = () => {
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+
+                {/* Week Start Day Setting (Awal Pekan) */}
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-800">
+                      {language === 'id' ? 'Hari Awal Pekan' : 'Week Start Day'}
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      {language === 'id'
+                        ? 'Tentukan hari pertama dalam sepekan untuk pemantauan kapasitas dan kalender.'
+                        : 'Choose whether your 7-day schedule cycle begins on Monday or Sunday.'}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectWeekStart('monday')}
+                      className={`p-3.5 rounded-xl border text-left transition-all flex items-start justify-between ${
+                        selectedWeekStart === 'monday'
+                          ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
+                          : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div>
+                        <div className="text-xs font-bold text-slate-900 mb-0.5">
+                          {language === 'id' ? 'Senin (Sen - Min)' : 'Monday (Mon - Sun)'}
+                        </div>
+                        <p className="text-[11px] text-slate-500">
+                          {language === 'id' ? 'Pekan kerja standar (ISO)' : 'Standard work week cycle'}
+                        </p>
+                      </div>
+                      {selectedWeekStart === 'monday' && <CheckCircleIcon size="xs" className="text-blue-600 shrink-0 ml-2 mt-0.5" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSelectWeekStart('sunday')}
+                      className={`p-3.5 rounded-xl border text-left transition-all flex items-start justify-between ${
+                        selectedWeekStart === 'sunday'
+                          ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
+                          : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div>
+                        <div className="text-xs font-bold text-slate-900 mb-0.5">
+                          {language === 'id' ? 'Minggu (Min - Sab)' : 'Sunday (Sun - Sat)'}
+                        </div>
+                        <p className="text-[11px] text-slate-500">
+                          {language === 'id' ? 'Pekan kalender tradisional' : 'Traditional calendar cycle'}
+                        </p>
+                      </div>
+                      {selectedWeekStart === 'sunday' && <CheckCircleIcon size="xs" className="text-blue-600 shrink-0 ml-2 mt-0.5" />}
+                    </button>
                   </div>
                 </div>
               </div>

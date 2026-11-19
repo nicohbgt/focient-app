@@ -7,6 +7,7 @@ import {
   saveUserToLocalDb,
   getCategoriesFromLocalDb,
   LocalUserRecord,
+  safePrismaQuery,
 } from '../../../lib/auth-server';
 
 export const dynamic = 'force-dynamic';
@@ -29,16 +30,16 @@ export async function GET(request: Request) {
       );
     }
 
-    // 1. Try PostgreSQL first
-    let dbUser: any = null;
-    try {
-      dbUser = await prisma.user.findUnique({
-        where: { id: user.id },
-        include: { notificationPreference: true, categories: true },
-      });
-    } catch {
-      // PostgreSQL is offline
-    }
+    // 1. Try PostgreSQL first with safe timeout
+    let dbUser: any = await safePrismaQuery(
+      () =>
+        prisma.user.findUnique({
+          where: { id: user.id },
+          include: { notificationPreference: true, categories: true },
+        }),
+      () => null,
+      350
+    );
 
     // 2. Fall back to local store
     if (!dbUser) {
@@ -77,6 +78,7 @@ export async function GET(request: Request) {
         workHourEnd: end,
         dailyCapacityMinutes: dbUser.dailyCapacityMinutes || 480,
         restTimePerTask: dbUser.restTimePerTask ?? 10,
+        weekStartDay: dbUser.weekStartDay || (user as any).weekStartDay || 'monday',
         isOnboardingCompleted: Boolean(dbUser.isOnboardingCompleted),
       },
       preferences: dbUser.notificationPreference || {
@@ -128,6 +130,7 @@ export async function PUT(request: Request) {
       endWorkTime,
       dailyCapacityMinutes,
       restTimePerTask,
+      weekStartDay,
       preferences,
     } = body;
 
@@ -150,6 +153,9 @@ export async function PUT(request: Request) {
       }
       if (dailyCapacityMinutes) localUser.dailyCapacityMinutes = Number(dailyCapacityMinutes);
       if (restTimePerTask !== undefined) localUser.restTimePerTask = Number(restTimePerTask);
+      if (weekStartDay === 'sunday' || weekStartDay === 'monday') {
+        localUser.weekStartDay = weekStartDay;
+      }
       if (body.quietHourStart || preferences?.quietHoursStart) {
         localUser.quietHourStart = body.quietHourStart || preferences?.quietHoursStart;
       }
@@ -177,6 +183,7 @@ export async function PUT(request: Request) {
         quietHourStart: body.quietHourStart || preferences?.quietHoursStart || (user as any).quietHourStart || '21:00',
         quietHourEnd: body.quietHourEnd || preferences?.quietHoursEnd || (user as any).quietHourEnd || '07:00',
         quietHourEnabled: (user as any).quietHourEnabled ?? true,
+        weekStartDay: weekStartDay || (user as any).weekStartDay || 'monday',
         isOnboardingCompleted: true,
         createdAt: new Date().toISOString(),
       };
@@ -184,51 +191,56 @@ export async function PUT(request: Request) {
       localUser = createdRecord;
     }
 
-    // Update user profile in PostgreSQL
-    let updatedUser: any = null;
-    try {
-      updatedUser = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          ...(name && { name: name.trim() }),
-          ...(username && { username: username.trim() }),
-          ...(roleArchetype && { roleArchetype }),
-          ...(occupancy && { occupancy }),
-          ...(workingRhythm && { workingRhythm }),
-          ...(schedulingStyle && { schedulingStyle }),
-          ...(startWorkTime && { startWorkTime, workHourStart: startWorkTime }),
-          ...(endWorkTime && { endWorkTime, workHourEnd: endWorkTime }),
-          ...(dailyCapacityMinutes && { dailyCapacityMinutes: Number(dailyCapacityMinutes) }),
-          ...(restTimePerTask !== undefined && { restTimePerTask: Number(restTimePerTask) }),
-        },
-      });
-    } catch {}
+    // Update user profile in PostgreSQL with safe timeout
+    const updatedUser: any = await safePrismaQuery(
+      () =>
+        prisma.user.update({
+          where: { id: user.id },
+          data: {
+            ...(name && { name: name.trim() }),
+            ...(username && { username: username.trim() }),
+            ...(roleArchetype && { roleArchetype }),
+            ...(occupancy && { occupancy }),
+            ...(workingRhythm && { workingRhythm }),
+            ...(schedulingStyle && { schedulingStyle }),
+            ...(startWorkTime && { startWorkTime, workHourStart: startWorkTime }),
+            ...(endWorkTime && { endWorkTime, workHourEnd: endWorkTime }),
+            ...(dailyCapacityMinutes && { dailyCapacityMinutes: Number(dailyCapacityMinutes) }),
+            ...(restTimePerTask !== undefined && { restTimePerTask: Number(restTimePerTask) }),
+          },
+        }),
+      () => null,
+      350
+    );
 
-    // Upsert notification preferences if provided (FIXED: anotasikan ': any' untuk mencegah inferensi never/null)
+    // Upsert notification preferences if provided with safe timeout
     let updatedPreferences: any = null;
     if (preferences) {
-      try {
-        updatedPreferences = await prisma.notificationPreference.upsert({
-          where: { userId: user.id },
-          update: {
-            ...(typeof preferences.focusReminders === 'boolean' && { focusReminders: preferences.focusReminders }),
-            ...(typeof preferences.capacityAlerts === 'boolean' && { capacityAlerts: preferences.capacityAlerts }),
-            ...(typeof preferences.rippleSuggestions === 'boolean' && { rippleSuggestions: preferences.rippleSuggestions }),
-            ...(typeof preferences.dailySummary === 'boolean' && { dailySummary: preferences.dailySummary }),
-            ...(preferences.quietHoursStart && { quietHoursStart: preferences.quietHoursStart }),
-            ...(preferences.quietHoursEnd && { quietHoursEnd: preferences.quietHoursEnd }),
-          },
-          create: {
-            userId: user.id,
-            focusReminders: preferences.focusReminders ?? true,
-            capacityAlerts: preferences.capacityAlerts ?? true,
-            rippleSuggestions: preferences.rippleSuggestions ?? true,
-            dailySummary: preferences.dailySummary ?? true,
-            quietHoursStart: preferences.quietHoursStart || '21:00',
-            quietHoursEnd: preferences.quietHoursEnd || '07:00',
-          },
-        });
-      } catch {}
+      updatedPreferences = await safePrismaQuery(
+        () =>
+          prisma.notificationPreference.upsert({
+            where: { userId: user.id },
+            update: {
+              ...(typeof preferences.focusReminders === 'boolean' && { focusReminders: preferences.focusReminders }),
+              ...(typeof preferences.capacityAlerts === 'boolean' && { capacityAlerts: preferences.capacityAlerts }),
+              ...(typeof preferences.rippleSuggestions === 'boolean' && { rippleSuggestions: preferences.rippleSuggestions }),
+              ...(typeof preferences.dailySummary === 'boolean' && { dailySummary: preferences.dailySummary }),
+              ...(preferences.quietHoursStart && { quietHoursStart: preferences.quietHoursStart }),
+              ...(preferences.quietHoursEnd && { quietHoursEnd: preferences.quietHoursEnd }),
+            },
+            create: {
+              userId: user.id,
+              focusReminders: preferences.focusReminders ?? true,
+              capacityAlerts: preferences.capacityAlerts ?? true,
+              rippleSuggestions: preferences.rippleSuggestions ?? true,
+              dailySummary: preferences.dailySummary ?? true,
+              quietHoursStart: preferences.quietHoursStart || '21:00',
+              quietHoursEnd: preferences.quietHoursEnd || '07:00',
+            },
+          }),
+        () => null,
+        350
+      );
     }
 
     const finalUser = updatedUser || localUser || user;
@@ -251,6 +263,7 @@ export async function PUT(request: Request) {
         workHourEnd: finalUser.endWorkTime || finalUser.workHourEnd,
         dailyCapacityMinutes: finalUser.dailyCapacityMinutes,
         restTimePerTask: finalUser.restTimePerTask,
+        weekStartDay: localUser?.weekStartDay || weekStartDay || finalUser.weekStartDay || 'monday',
         isOnboardingCompleted: Boolean(finalUser.isOnboardingCompleted),
       },
       preferences: updatedPreferences,

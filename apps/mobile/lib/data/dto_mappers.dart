@@ -65,6 +65,12 @@ class TaskDtoMapper {
           (energyLevel == EnergyLevelEnum.high ? 'Deep Focus' : energyLevel == EnergyLevelEnum.low ? 'Light' : 'Medium'),
       isBacklog: json['isBacklog'] as bool? ?? false,
       needRestAfter: json['needRestAfter'] as bool? ?? true,
+      isRecurring: json['isRecurring'] as bool? ?? false,
+      recurrencePattern: json['recurrencePattern'] as String? ?? 'daily',
+      recurrenceDays: (json['recurrenceDays'] as List<dynamic>?)
+              ?.map((e) => (e as num).toInt())
+              .toList() ??
+          const [1, 2, 3, 4, 5],
     );
   }
 
@@ -93,6 +99,9 @@ class TaskDtoMapper {
       'focusType': task.focusType,
       'isBacklog': task.isBacklog,
       'needRestAfter': task.needRestAfter,
+      'isRecurring': task.isRecurring,
+      'recurrencePattern': task.recurrencePattern,
+      'recurrenceDays': task.recurrenceDays,
     };
   }
 }

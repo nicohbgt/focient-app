@@ -25,6 +25,7 @@ export interface UserSession {
   quietHourStart?: string;
   quietHourEnd?: string;
   quietHourEnabled?: boolean;
+  weekStartDay?: 'monday' | 'sunday';
   rescheduleTimeSavedMinutes?: number;
   isOnboardingCompleted?: boolean;
 }
@@ -154,6 +155,9 @@ export const authClient = {
     }
     if (data.token && data.user) {
       this.setSession(data.token, data.user);
+      if (password) {
+        this.saveLocalAccount(email, password, data.user);
+      }
       this.clearPendingRegistration();
     }
     return data;
@@ -271,14 +275,8 @@ export const authClient = {
         this.saveLocalAccount(cleanEmail, password, data.user);
         return data;
       }
-      if (res.status === 401) {
-        throw new Error(data.message || 'Email atau kata sandi tidak cocok.');
-      }
     } catch (err: unknown) {
-      if (err instanceof Error && err.message.includes('tidak cocok')) {
-        throw err;
-      }
-      console.warn('Backend login endpoint unreachable, checking local accounts:', err);
+      console.warn('Backend login endpoint check error, checking local store:', err);
     }
 
     const localUser = this.verifyLocalAccount(cleanEmail, password);
@@ -290,6 +288,19 @@ export const authClient = {
       const token = `focient_token_${Date.now()}_${Math.random().toString(36).substring(2)}`;
       this.setSession(token, userObj);
       this.saveLocalAccount(cleanEmail, password, userObj);
+
+      // Self-heal: re-sync user to server in background so server also knows about this user
+      fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: userObj.name || cleanEmail.split('@')[0],
+          email: cleanEmail,
+          password,
+          overwrite: true,
+        }),
+      }).catch(() => {});
+
       return {
         success: true,
         message: 'Berhasil masuk.',

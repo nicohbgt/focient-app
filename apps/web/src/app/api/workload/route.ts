@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@focient/database';
-import { getDayOfWeekIndex, getDayOfWeekName } from '@/lib/date-utils';
+import {
+  getDayOfWeekName,
+  getWeekDayDate,
+  getWeekDayKeys,
+  isTaskOnDate,
+  WeekStartDay,
+} from '@/lib/date-utils';
 import { extractTokenFromRequest, verifySession } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
@@ -34,26 +40,20 @@ export async function GET(request: Request) {
     const capacityMinutes = user.dailyCapacityMinutes || 480;
     const percentage = Math.min(100, Math.round((totalMinutes / capacityMinutes) * 100));
 
-    const dayKeys = [
-      { dayKey: 'Mon', index: 0 },
-      { dayKey: 'Tue', index: 1 },
-      { dayKey: 'Wed', index: 2 },
-      { dayKey: 'Thu', index: 3 },
-      { dayKey: 'Fri', index: 4 },
-      { dayKey: 'Sat', index: 5 },
-      { dayKey: 'Sun', index: 6 },
-    ];
+    const weekStart: WeekStartDay = ((user as any).weekStartDay === 'sunday' ? 'sunday' : 'monday');
+    const dayKeyList = getWeekDayKeys(weekStart);
+    const dayKeys = dayKeyList.map((dayKey, index) => ({ dayKey, index }));
 
     const weeklyWorkloads = dayKeys.map((d) => {
+      const weekDayDate = getWeekDayDate(d.index, undefined, weekStart);
       const dayTasks = tasks.filter((t) => {
-        const taskDay = getDayOfWeekIndex(t.dateDisplay);
-        return taskDay === d.index;
+        return isTaskOnDate(t.dateDisplay, weekDayDate, t as any);
       });
       const dayMinutes = dayTasks.reduce((sum, t) => sum + t.durationMinutes + (t.restMinutes || 0), 0);
       const dayPct = Math.min(100, Math.round((dayMinutes / capacityMinutes) * 100));
       return {
         dayKey: d.dayKey,
-        fullDayName: getDayOfWeekName(d.index, 'en'),
+        fullDayName: getDayOfWeekName(d.index, 'en', weekStart),
         percentage: dayPct,
       };
     });

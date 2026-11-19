@@ -8,6 +8,7 @@ import {
   hashToken,
   saveUserToLocalDb,
   findLocalUserByEmail,
+  deleteLocalUserByEmail,
   updateLocalUserPassword,
   updateUserPasswordInAllStores,
   resetLocalDb,
@@ -178,5 +179,48 @@ test('FoCient Authentication & Authorization Suite (Web Version & Google OAuth)'
     resetLocalDb();
     const testUser = findLocalUserByEmail('reset.test@focient.dev');
     assert.equal(testUser, null, 'Resetting local DB must completely remove all stored test accounts');
+  });
+
+  await t.test('11. Registered & Onboarded User Can Log In Reliably With Exact Same Credentials', () => {
+    const userEmail = 'nico.wiranata@focient.dev';
+    const userPass = 'SecurePass123!';
+    const userName = 'Nico Wiranata';
+
+    // 1. Simulate registration persistence
+    saveUserToLocalDb({
+      id: 'usr_nico_wiranata_1',
+      email: userEmail,
+      name: userName,
+      username: 'nicowiranata',
+      passwordHash: hashPassword(userPass),
+      roleArchetype: 'Software Engineer',
+      occupancy: 'Engineer',
+      workingRhythm: 'Early Bird',
+      schedulingStyle: 'Structured',
+      workHourStart: '09:00',
+      workHourEnd: '17:00',
+      startWorkTime: '09:00',
+      endWorkTime: '17:00',
+      dailyCapacityMinutes: 480,
+      restTimePerTask: 10,
+      isOnboardingCompleted: true,
+      createdAt: new Date().toISOString(),
+    });
+
+    // 2. Query user by email (as in /api/auth/login)
+    const storedUser = findLocalUserByEmail(userEmail);
+    assert.ok(storedUser, 'User must be found by email in local database');
+    assert.equal(storedUser.email, userEmail);
+
+    // 3. Password verification matches exact password
+    const passwordValid = verifyPassword(userPass, storedUser.passwordHash);
+    assert.equal(passwordValid, true, 'User must authenticate successfully with correct password');
+
+    // 4. Incorrect password is rejected
+    const wrongPasswordValid = verifyPassword('WrongPassword999', storedUser.passwordHash);
+    assert.equal(wrongPasswordValid, false, 'Invalid password must be rejected');
+
+    // Cleanup test user
+    deleteLocalUserByEmail(userEmail);
   });
 });

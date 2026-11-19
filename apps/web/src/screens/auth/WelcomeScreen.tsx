@@ -95,10 +95,9 @@ export const WelcomeScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => setAuthView('register')}
-          className="w-full py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold text-base shadow-sm transition-all flex items-center justify-center gap-2"
+          className="w-full py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold text-base shadow-sm transition-all text-center"
         >
           <span>{language === 'id' ? 'Mulai Sekarang' : 'Get Started'}</span>
-          <ArrowRightIcon size="sm" />
         </button>
 
         <button

@@ -4,6 +4,7 @@ import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../../data/focient_repository.dart';
 import '../../../data/task_state.dart';
 import '../../riverpod_providers.dart';
+import '../../organism/focient_notification_sheet.dart';
 import '../settings/focient_settings_screen.dart';
 
 /// FoCient Add / Edit Task Screen
@@ -101,7 +102,12 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
     _selectedFocusType = task?.focusType ?? 'Deep Focus';
     _isBacklog = task?.isBacklog ?? false;
     _needRestAfter = task?.needRestAfter ?? false;
+    _isRecurring = task?.isRecurring ?? false;
+    _recurrencePattern = task?.recurrencePattern ?? 'daily';
   }
+
+  bool _isRecurring = false;
+  String _recurrencePattern = 'daily';
 
   @override
   void dispose() {
@@ -152,6 +158,8 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
       focusType: _selectedFocusType,
       isBacklog: _isBacklog,
       needRestAfter: _needRestAfter,
+      isRecurring: _isRecurring,
+      recurrencePattern: _recurrencePattern,
     );
 
     if (isEdit) {
@@ -751,6 +759,90 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
                       ],
                     ],
 
+                    const SizedBox(height: 16),
+
+                    // Repeat Schedule Switch
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Repeat Schedule',
+                                style: TextStyle(
+                                  fontFamily: FocientTypographyTokens.fontFamily,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: titleColor,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                'Automatically repeat this focus block',
+                                style: TextStyle(
+                                  fontFamily: FocientTypographyTokens.fontFamily,
+                                  fontSize: 12,
+                                  color: subtitleColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: _isRecurring,
+                          activeTrackColor: const Color(0xFF2563EB),
+                          onChanged: (val) {
+                            setState(() => _isRecurring = val);
+                          },
+                        ),
+                      ],
+                    ),
+
+                    if (_isRecurring) ...[
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          _buildRecurrenceChip('daily', 'Daily', cardBg, borderColor, titleColor),
+                          const SizedBox(width: 8),
+                          _buildRecurrenceChip('weekdays', 'Weekdays', cardBg, borderColor, titleColor),
+                          const SizedBox(width: 8),
+                          _buildRecurrenceChip('weekly', 'Weekly', cardBg, borderColor, titleColor),
+                        ],
+                      ),
+                    ],
+
+                    // Quiet Hours check
+                    if (!_isBacklog && _checkQuietHours(_startHourController.text)) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFFDE68A)),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.bedtime_outlined, size: 18, color: Color(0xFFD97706)),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Scheduled during quiet hours (21:00 - 07:00). Prioritize your restorative sleep!',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF92400E),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: 36),
 
                     // 7. Action Buttons (Cancel & Add New Task)
@@ -900,7 +992,10 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
             splashRadius: 20,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () {},
+            onPressed: () {
+              NotificationCenterBottomSheet.show(context);
+            },
+            tooltip: 'Notifications',
           ),
           const SizedBox(width: 6),
           IconButton(
@@ -923,5 +1018,46 @@ class _FocientAddTaskScreenState extends ConsumerState<FocientAddTaskScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildRecurrenceChip(
+    String key,
+    String label,
+    Color cardBg,
+    Color borderColor,
+    Color titleColor,
+  ) {
+    final isSelected = _recurrencePattern == key;
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => setState(() => _recurrencePattern = key),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF2563EB) : cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF2563EB) : borderColor,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: FocientTypographyTokens.fontFamily,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? Colors.white : titleColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool _checkQuietHours(String timeStr) {
+    if (!timeStr.contains(':')) return false;
+    final parts = timeStr.trim().split(':');
+    final h = int.tryParse(parts[0]);
+    if (h == null) return false;
+    return h >= 21 || h < 7;
   }
 }

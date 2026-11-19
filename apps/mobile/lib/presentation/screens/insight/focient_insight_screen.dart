@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
+import '../../../data/notification_state.dart';
 import '../../../data/task_state.dart';
+import '../../organism/focient_notification_sheet.dart';
 import '../../riverpod_providers.dart';
 import '../settings/focient_settings_screen.dart';
 
@@ -185,6 +187,22 @@ class _FocientInsightScreenState extends ConsumerState<FocientInsightScreen> {
 
     final allTasks = ref.watch(taskListProvider);
     final data = _computeDynamicMetrics(allTasks, _periodData);
+
+    // Dynamic metrics aligned with Web Reflection Screen
+    final totalFocusMinutes = allTasks.fold<int>(0, (sum, t) => sum + t.durationMinutes);
+    final totalRestMinutes = allTasks.fold<int>(0, (sum, t) => sum + (t.restMinutes > 0 ? t.restMinutes : 10));
+    final completedCount = allTasks.where((t) => t.isCompleted).length;
+    final totalCount = allTasks.length;
+    final timeSavedMinutes = completedCount > 0 ? completedCount * 15 : 30;
+
+    // Task Intensity breakdown (Low, Medium, High)
+    final lowTasks = allTasks.where((t) => t.focusType == 'Low' || t.focusType == 'Light').length;
+    final medTasks = allTasks.where((t) => t.focusType == 'Medium' || (t.focusType.isEmpty && t.priority != TaskPriorityEnum.top3)).length;
+    final highTasks = allTasks.where((t) => t.focusType == 'High' || t.focusType == 'Deep Focus' || t.priority == TaskPriorityEnum.top3).length;
+    final totalCategorized = (lowTasks + medTasks + highTasks).clamp(1, 9999);
+    final lowPct = ((lowTasks / totalCategorized) * 100).round();
+    final medPct = ((medTasks / totalCategorized) * 100).round();
+    final highPct = (100 - lowPct - medPct).clamp(0, 100);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -550,6 +568,207 @@ class _FocientInsightScreenState extends ConsumerState<FocientInsightScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
+
+                    // Section 4: Focus & Rest Rhythm (Web Parity)
+                    Text(
+                      'Focus & Rest Rhythm',
+                      style: TextStyle(
+                        fontFamily: FocientTypographyTokens.fontFamily,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: titleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // 4 Primary Metric Cards
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildWebMetricCard(
+                            title: 'Focus Hours',
+                            value: totalFocusMinutes > 0 ? '${(totalFocusMinutes / 60).toStringAsFixed(1)}h' : '0h',
+                            subtitle: 'Comfortable pace',
+                            icon: Icons.timer_outlined,
+                            cardBg: cardBg,
+                            borderColor: borderColor,
+                            titleColor: titleColor,
+                            subtitleColor: const Color(0xFF059669),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildWebMetricCard(
+                            title: 'Rest Buffers',
+                            value: '${totalRestMinutes}m',
+                            subtitle: 'Rest time protected',
+                            icon: Icons.spa_outlined,
+                            cardBg: cardBg,
+                            borderColor: borderColor,
+                            titleColor: titleColor,
+                            subtitleColor: const Color(0xFF2563EB),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildWebMetricCard(
+                            title: 'Completed',
+                            value: '$completedCount / $totalCount',
+                            subtitle: 'Done for today',
+                            icon: Icons.check_circle_outline_rounded,
+                            cardBg: cardBg,
+                            borderColor: borderColor,
+                            titleColor: titleColor,
+                            subtitleColor: subtitleColor,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildWebMetricCard(
+                            title: 'Time Saved',
+                            value: '${timeSavedMinutes}m',
+                            subtitle: 'Saved from reschedules',
+                            icon: Icons.auto_awesome_outlined,
+                            cardBg: cardBg,
+                            borderColor: borderColor,
+                            titleColor: titleColor,
+                            subtitleColor: const Color(0xFF7C3AED),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Section 5: Task Intensity Breakdown (Web Parity)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: borderColor),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Task Intensity Breakdown',
+                                    style: TextStyle(
+                                      fontFamily: FocientTypographyTokens.fontFamily,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: titleColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Cognitive load distribution',
+                                    style: TextStyle(
+                                      fontFamily: FocientTypographyTokens.fontFamily,
+                                      fontSize: 12,
+                                      color: subtitleColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '$totalCount Tasks',
+                                  style: const TextStyle(
+                                    fontFamily: FocientTypographyTokens.fontFamily,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF475569),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: SizedBox(
+                              height: 12,
+                              child: Row(
+                                children: [
+                                  if (lowPct > 0)
+                                    Expanded(
+                                      flex: lowPct,
+                                      child: Container(color: const Color(0xFF10B981)),
+                                    ),
+                                  if (medPct > 0)
+                                    Expanded(
+                                      flex: medPct,
+                                      child: Container(color: const Color(0xFF0284C7)),
+                                    ),
+                                  if (highPct > 0)
+                                    Expanded(
+                                      flex: highPct,
+                                      child: Container(color: const Color(0xFFF43F5E)),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildIntensityPill(
+                                  dotColor: const Color(0xFF10B981),
+                                  label: 'Low Focus',
+                                  percent: '$lowPct% mix',
+                                  count: '$lowTasks tasks',
+                                  isDark: isDark,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildIntensityPill(
+                                  dotColor: const Color(0xFF0284C7),
+                                  label: 'Medium Focus',
+                                  percent: '$medPct% mix',
+                                  count: '$medTasks tasks',
+                                  isDark: isDark,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildIntensityPill(
+                                  dotColor: const Color(0xFFF43F5E),
+                                  label: 'High Focus',
+                                  percent: '$highPct% mix',
+                                  count: '$highTasks tasks',
+                                  isDark: isDark,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -624,18 +843,39 @@ class _FocientInsightScreenState extends ConsumerState<FocientInsightScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, size: 22),
-            color: subtitleColor,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('All systems calm. No notifications pending.'),
-                  behavior: SnackBarBehavior.floating,
+          Builder(
+            builder: (ctx) {
+              final unreadCount = ref.watch(unreadNotificationCountProvider);
+              return IconButton(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.notifications_outlined, size: 22),
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: -1,
+                        top: -1,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFEF4444),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
+                color: subtitleColor,
+                onPressed: () {
+                  NotificationCenterBottomSheet.show(
+                    context,
+                    onNavigateTab: widget.onNavigateTab,
+                  );
+                },
+                tooltip: 'Notifications',
               );
             },
-            tooltip: 'Notifications',
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined, size: 22),
@@ -751,6 +991,126 @@ class _FocientInsightScreenState extends ConsumerState<FocientInsightScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildWebMetricCard({
+    required String title,
+    required String value,
+    required String subtitle,
+    required IconData icon,
+    required Color cardBg,
+    required Color borderColor,
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title.toUpperCase(),
+                style: const TextStyle(
+                  fontFamily: FocientTypographyTokens.fontFamily,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+              Icon(icon, size: 16, color: const Color(0xFF64748B)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: subtitleColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIntensityPill({
+    required Color dotColor,
+    required String label,
+    required String percent,
+    required String count,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: dotColor.withValues(alpha: isDark ? 0.15 : 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: dotColor.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(width: 6, height: 6, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: FocientTypographyTokens.fontFamily,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: dotColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            percent,
+            style: TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: dotColor,
+            ),
+          ),
+          Text(
+            count,
+            style: const TextStyle(
+              fontFamily: FocientTypographyTokens.fontFamily,
+              fontSize: 10,
+              color: Color(0xFF64748B),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

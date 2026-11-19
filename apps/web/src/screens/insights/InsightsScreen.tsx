@@ -10,8 +10,11 @@ import {
 } from '../../components/icons';
 import {
   calculateCapacityMinutes,
-  getDayOfWeekIndex,
+  getWeekDayDate,
+  getWeekDayKeys,
   getDayOfWeekName,
+  getWeekRangeBadge,
+  isTaskOnDate,
 } from '../../lib/date-utils';
 
 const formatCardDuration = (minutes: number, lang: 'id' | 'en') => {
@@ -76,21 +79,40 @@ const formatCompactTime = (minutes: number, lang: 'id' | 'en'): string => {
 };
 
 export const InsightsScreen: React.FC = () => {
-  const { language, user, tasks } = useFocient();
+  const { language, user, tasks, weekStartDay } = useFocient();
   const [selectedRange, setSelectedRange] = useState<'thisWeek' | 'lastWeek'>('thisWeek');
 
   // Real user capacity baseline
   const capacityMinutes = calculateCapacityMinutes(user?.workHourStart, user?.workHourEnd);
   const dailyLimitFormatted = formatDurationText(capacityMinutes, language);
 
-  // Range-driven user tasks
-  const currentRangeTasks = useMemo(() => {
-    if (selectedRange === 'thisWeek') {
-      return tasks;
+  // Reference date for range ('thisWeek' or 'lastWeek')
+  const referenceDate = useMemo(() => {
+    const today = new Date();
+    if (selectedRange === 'lastWeek') {
+      const past = new Date(today);
+      past.setDate(today.getDate() - 7);
+      return past;
     }
-    // 'lastWeek': filter completed tasks or past scheduled items
-    return tasks.filter((t) => t.status === 'completed');
-  }, [tasks, selectedRange]);
+    return today;
+  }, [selectedRange]);
+
+  // 7 calendar dates for the active week cycle (respecting user's weekStartDay)
+  const weekDates = useMemo(() => {
+    return [0, 1, 2, 3, 4, 5, 6].map((i) => getWeekDayDate(i, referenceDate, weekStartDay));
+  }, [referenceDate, weekStartDay]);
+
+  // Range-driven user tasks: filter tasks that fall within the 7 calendar days of the selected week
+  const currentRangeTasks = useMemo(() => {
+    const matching = tasks.filter((t) => {
+      if (t.isBacklog) return false;
+      return weekDates.some((dayDate) => isTaskOnDate(t.dateDisplay, dayDate, t));
+    });
+    if (selectedRange === 'lastWeek') {
+      return matching.filter((t) => t.status === 'completed');
+    }
+    return matching;
+  }, [tasks, weekDates, selectedRange]);
 
   const completedTasks = currentRangeTasks.filter((t) => t.status === 'completed');
   const totalAllocatedMinutes = currentRangeTasks.reduce((sum, t) => sum + (t.durationMinutes || 0), 0);
@@ -103,23 +125,16 @@ export const InsightsScreen: React.FC = () => {
     (completedTasks.length > 0 ? completedTasks.length * 15 : 0);
   const savedTimeDisplay = formatCardDuration(timeSavedMinutes, language);
 
-  // Dynamic 7-day metrics from real tasks
-  const dayKeys: Array<{ key: string; index: number }> = [
-    { key: 'Mon', index: 0 },
-    { key: 'Tue', index: 1 },
-    { key: 'Wed', index: 2 },
-    { key: 'Thu', index: 3 },
-    { key: 'Fri', index: 4 },
-    { key: 'Sat', index: 5 },
-    { key: 'Sun', index: 6 },
-  ];
+  // Dynamic 7-day keys respecting user's chosen weekStartDay
+  const dayKeyList = useMemo(() => getWeekDayKeys(weekStartDay, language), [weekStartDay, language]);
+  const dayKeys = useMemo(() => dayKeyList.map((key, index) => ({ key, index })), [dayKeyList]);
 
   const dailyMetrics = useMemo(() => {
     return dayKeys.map((d) => {
+      const weekDayDate = getWeekDayDate(d.index, referenceDate, weekStartDay);
       const dayTasks = currentRangeTasks.filter((t) => {
         if (t.isBacklog) return false;
-        const tIdx = getDayOfWeekIndex(t.dateDisplay);
-        return tIdx === d.index;
+        return isTaskOnDate(t.dateDisplay, weekDayDate, t);
       });
 
       const dayMinutes = dayTasks.reduce((sum, t) => sum + (t.durationMinutes || 0), 0);
@@ -138,14 +153,14 @@ export const InsightsScreen: React.FC = () => {
 
       return {
         day: d.key,
-        fullDayName: getDayOfWeekName(d.index, language),
+        fullDayName: getDayOfWeekName(d.index, language, weekStartDay),
         percentage,
         timeDisplay,
         tasksCount: dayTasks.length,
         status,
       };
     });
-  }, [currentRangeTasks, capacityMinutes, language]);
+  }, [dayKeys, currentRangeTasks, referenceDate, weekStartDay, capacityMinutes, language]);
 
   // Intensity Distribution (Low=Green, Medium=Blue, High=Red)
   const lowTasks = currentRangeTasks.filter((t) => t.focusType === 'Low' || t.focusType === 'Light');
@@ -295,9 +310,14 @@ export const InsightsScreen: React.FC = () => {
                     : 'Daily workload compared to your target hours'}
                 </p>
               </div>
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                {language === 'id' ? 'Beban Seimbang' : 'Balanced'}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                  {getWeekRangeBadge(weekStartDay, language)}
+                </span>
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  {language === 'id' ? 'Beban Seimbang' : 'Balanced'}
+                </span>
+              </div>
             </div>
 
             {/* Bar Visualization */}

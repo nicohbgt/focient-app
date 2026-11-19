@@ -1,151 +1,221 @@
 {
   "users": [
     {
-      "id": "usr_nicohbgt512_gmail_com_mwhw9l1g",
+      "id": "usr_nicohbgt512_gmail_com_mwn2kxpi",
       "email": "nicohbgt512@gmail.com",
       "name": "Nico Wiranata",
       "username": "Nico Wiranata",
-      "passwordHash": "e6704b00353dd6bf6d0da31ef930f6da6b8d31cbd2fdbd624e4c5cf46f9af80d8c904d3bbf3851f5fc8c0d3b91eec788eb99dfeb3fe7d4c22355ac259202b8cd",
+      "passwordHash": "faa7deedaa05d3e985bd1e1acc3b9d01addb8de34b19fd7f9d6619f522764521906bd66a83fbab5212cddc2f865a52042356c6bf846022e44dea3106b6d97bde",
       "roleArchetype": "General",
       "occupancy": "General",
-      "workingRhythm": "Early Bird",
+      "workingRhythm": "Steady Pacer",
       "schedulingStyle": "Structured",
-      "workHourStart": "08:00",
+      "workHourStart": "09:00",
       "workHourEnd": "18:00",
-      "startWorkTime": "08:00",
+      "startWorkTime": "09:00",
       "endWorkTime": "18:00",
-      "dailyCapacityMinutes": 600,
-      "restTimePerTask": 30,
+      "dailyCapacityMinutes": 540,
+      "restTimePerTask": 15,
       "isOnboardingCompleted": true,
-      "createdAt": "2026-11-15T13:52:44.740Z",
-      "quietHourStart": "20:00",
-      "quietHourEnd": "04:00",
-      "quietHourEnabled": true
+      "createdAt": "2026-11-19T04:48:22.950Z",
+      "quietHourStart": "22:00",
+      "quietHourEnd": "07:00",
+      "quietHourEnabled": false,
+      "weekStartDay": "sunday"
     }
   ],
   "sessions": [
     {
-      "token": "cb179a61a6126379b6a5abc100d57e39d3b33f33b09b7fe281713ee5fcaf1830",
-      "tokenHash": "fe2fb01d87dfadd5a42b83b85b9fecfb01d54a1d303d5826ab07daf74f5479f5",
-      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
-      "expiresAt": "2026-12-15T13:52:44.744Z",
+      "token": "c316e099ebda1857e7daa90a406d672d16bcd3e6cc6b2527ad5d104133bc4cb2",
+      "tokenHash": "b375ed3a124b65f5e584227e35cd5cbc225f2bc5884c86dc400726729576095c",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "expiresAt": "2026-12-19T07:40:42.098Z",
+      "revokedAt": "2026-11-19T07:40:53.072Z"
+    },
+    {
+      "token": "ac78cf0cb09ba1b327f057a141f8f7c4929f7f987e7e9253ab6337086f56a401",
+      "tokenHash": "368957b59c1223843ce0b73c5bfedfbc181feb8bcfb9ac35153e4ea14774f9dd",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "expiresAt": "2026-12-19T07:41:03.309Z",
+      "revokedAt": "2026-11-19T07:45:47.158Z"
+    },
+    {
+      "token": "dba94cd654f8a9f5a81afa90be76873d978287d0293bb3321622507d8790014c",
+      "tokenHash": "7eb4f6b0c7320aee39e3fdbf4450ce8d98ae6483b9f1924cc065ec4024a3c95d",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "expiresAt": "2026-12-19T07:45:53.562Z",
       "revokedAt": null
     }
   ],
   "tasks": [
     {
-      "id": "task-1794750957159",
-      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
-      "title": "Coding",
-      "durationMinutes": 60,
-      "categoryName": "Deep Focus & Core Work",
-      "categoryColor": "#2563EB",
-      "priority": "TOP_3",
-      "energyLevel": "HIGH",
-      "focusType": "High",
-      "restMinutes": 5,
-      "needRestAfter": true,
+      "id": "task-1795063737790",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Arrange Meeting",
+      "durationMinutes": 45,
+      "categoryName": "Sync",
+      "categoryColor": "#0284C7",
+      "priority": "REGULAR",
+      "energyLevel": "MEDIUM",
+      "focusType": "Medium",
+      "restMinutes": 0,
+      "needRestAfter": false,
       "isBacklog": false,
       "isRecurring": false,
       "recurrencePattern": "daily",
       "recurrenceDays": null,
-      "startHourDisplay": "09:15",
-      "dateDisplay": "2026-11-16",
-      "status": "TODO",
-      "createdAt": "2026-11-15T13:55:57.197Z"
-    },
-    {
-      "id": "task-1794750844090",
-      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
-      "title": "Make to-do list",
-      "durationMinutes": 15,
-      "categoryName": "Deep Focus & Core Work",
-      "categoryColor": "#2563EB",
-      "priority": "TOP_3",
-      "energyLevel": "HIGH",
-      "focusType": "High",
-      "restMinutes": 0,
-      "needRestAfter": false,
-      "isBacklog": false,
-      "isRecurring": true,
-      "recurrencePattern": "weekdays",
-      "recurrenceDays": null,
-      "startHourDisplay": "09:00",
-      "dateDisplay": "2026-11-16",
-      "status": "TODO",
-      "createdAt": "2026-11-15T13:54:04.128Z"
-    },
-    {
-      "id": "task-1794750808334",
-      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
-      "title": "Arrange Meeting",
-      "durationMinutes": 45,
-      "categoryName": "Team Communication & Sync",
-      "categoryColor": "#0284C7",
-      "priority": "TOP_3",
-      "energyLevel": "HIGH",
-      "focusType": "High",
-      "restMinutes": 0,
-      "needRestAfter": false,
-      "isBacklog": false,
-      "isRecurring": true,
-      "recurrencePattern": "weekly",
-      "recurrenceDays": null,
-      "startHourDisplay": "08:15",
-      "dateDisplay": "2026-11-16",
-      "status": "TODO",
-      "createdAt": "2026-11-15T13:53:28.368Z"
+      "startHourDisplay": "10:00",
+      "dateDisplay": "2026-11-19",
+      "status": "COMPLETED",
+      "createdAt": "2026-11-19T04:48:58.232Z"
     }
   ],
   "categories": [
     {
-      "id": "cat_1794750852890_2kaby",
-      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
-      "name": "Deep Focus & Core Work",
+      "id": "cat_1795063741115_25qyw",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "name": "Focus",
       "colorHex": "#059669",
       "focusType": "High",
       "isDefault": true,
-      "createdAt": "2026-11-15T13:54:12.890Z"
+      "createdAt": "2026-11-19T04:49:01.115Z"
     },
     {
-      "id": "cat_1794750852891_67z56",
-      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
-      "name": "Team Communication & Sync",
-      "colorHex": "#0284C7",
+      "id": "cat_1795063741115_6vmft",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "name": "Sync",
+      "colorHex": "#059669",
       "focusType": "High",
       "isDefault": true,
-      "createdAt": "2026-11-15T13:54:12.890Z"
+      "createdAt": "2026-11-19T04:49:01.115Z"
     },
     {
-      "id": "cat_1794750852891_52y18",
-      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
-      "name": "Administrative & Daily Planning",
+      "id": "cat_1795063741115_w6b93",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "name": "Admin",
       "colorHex": "#64748B",
       "focusType": "High",
       "isDefault": true,
-      "createdAt": "2026-11-15T13:54:12.890Z"
+      "createdAt": "2026-11-19T04:49:01.115Z"
     },
     {
-      "id": "cat_1794750852891_fiw4t",
-      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
-      "name": "Personal Errands & Recovery",
+      "id": "cat_1795063741115_0t0xe",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "name": "Personal",
       "colorHex": "#059669",
       "focusType": "High",
       "isDefault": true,
-      "createdAt": "2026-11-15T13:54:12.890Z"
+      "createdAt": "2026-11-19T04:49:01.115Z"
     }
   ],
-  "webPushSubscriptions": [
+  "notifications": [
     {
-      "id": "sub_1794751249444",
-      "userId": "usr_nicohbgt512_gmail_com_mwhw9l1g",
-      "endpoint": "https://updates.push.services.mozilla.com/wpush/v2/gAAAAABq-bpgisxAuP9O_Kr2FrMnwleIJUd08s28U3hmBUSUyvBtPe7wWexWUcj_6GfoP5xIYQqczRq0V0uvN_SY0iWWIPmdpIvRsgyf6MhHErwmBenmiIoWAV8YUMnhw-L9ykYFJduuveMOgT-on_Rc3bTv8mkFyHatiOEEv9qweg44YcZBYQ4",
-      "keys": {
-        "auth": "uRO5sb7UxPJ0cCRgmsGn1Q",
-        "p256dh": "BPykCKwHaV3fQ-ciXwt8tI3xave9mSfQRy1IafH4S6QHvQ7QT-eaKTj6vr1c6jStF2fPFYnvBJ5NjlNgAp7mj6Q"
-      },
-      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:160.0) Gecko/20100101 Firefox/160.0",
-      "createdAt": "2026-11-15T14:00:49.444Z"
+      "id": "notif_1795074337781_4hpyi",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Time for a Break",
+      "message": "Task complete! Take a 10m breather to recharge your mind.",
+      "type": "RIPPLE_SUGGESTION",
+      "isRead": true,
+      "createdAt": "2026-11-19T07:45:37.781Z"
+    },
+    {
+      "id": "notif_1795074336327_sgnfl",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Schedule Tip",
+      "message": "Nicely balanced schedule (360m). Finish your key tasks earlier in the day.",
+      "type": "CAPACITY_WARNING",
+      "isRead": true,
+      "createdAt": "2026-11-19T07:45:36.327Z"
+    },
+    {
+      "id": "notif_1795074333721_cuz2n",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Light Schedule Today",
+      "message": "Only at 20% (95/540m). You can relax or pick tasks from your task list.",
+      "type": "CAPACITY_WARNING",
+      "isRead": true,
+      "createdAt": "2026-11-19T07:45:33.721Z"
+    },
+    {
+      "id": "notif_1795074331345_o1pmv",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Busy Schedule Today",
+      "message": "Workload is at 95% (460/540m). Feel free to move some tasks to tomorrow without guilt.",
+      "type": "CAPACITY_WARNING",
+      "isRead": true,
+      "createdAt": "2026-11-19T07:45:31.345Z"
+    },
+    {
+      "id": "notif_1795074329991_e4wi4",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Today's Recap",
+      "message": "4 tasks completed today with 30m of rest. Quiet hours (22:00) have started, enjoy your rest!",
+      "type": "DAILY_SUMMARY",
+      "isRead": true,
+      "createdAt": "2026-11-19T07:45:29.991Z"
+    },
+    {
+      "id": "notif_1795074329555_ywz04",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Today's Top 3 Tasks",
+      "message": "You have 3 key tasks today (\"Arrange Meeting\", \"API Integration\", \"Security Audit\"). Take them one step at a time.",
+      "type": "FOCUS_REMINDER",
+      "isRead": true,
+      "createdAt": "2026-11-19T07:45:29.555Z"
+    },
+    {
+      "id": "notif_1795074327458_o8pjq",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Sprint Retrospective",
+      "message": "Task coming up at 19:00 (in 6 hours). Plenty of time to prepare comfortably.",
+      "type": "FOCUS_REMINDER",
+      "isRead": true,
+      "createdAt": "2026-11-19T07:45:27.458Z"
+    },
+    {
+      "id": "notif_1795074325918_jphky",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Design System Review",
+      "message": "Task coming up at 16:00 (in 3 hours). Ready whatever you need ahead of time.",
+      "type": "FOCUS_REMINDER",
+      "isRead": true,
+      "createdAt": "2026-11-19T07:45:25.918Z"
+    },
+    {
+      "id": "notif_1795074324049_1d8fy",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Arrange Meeting",
+      "message": "Task starts in 1 hour (at 14:00). Wrap up what you're doing and get ready.",
+      "type": "FOCUS_REMINDER",
+      "isRead": true,
+      "createdAt": "2026-11-19T07:45:24.049Z"
+    },
+    {
+      "id": "notif_1795074313373_jzmz5",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Task Done!",
+      "message": "Well done! \"Arrange Meeting\" is finished. Take a quick breather before moving on.",
+      "type": "FOCUS_REMINDER",
+      "isRead": true,
+      "createdAt": "2026-11-19T07:45:13.373Z"
+    },
+    {
+      "id": "notif_1795074093904_ruq0n",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Schedule Tip",
+      "message": "A light day ahead (45m). Focus on 1 key task or enjoy some relaxing downtime.",
+      "type": "CAPACITY_WARNING",
+      "isRead": true,
+      "createdAt": "2026-11-19T07:41:33.904Z"
+    },
+    {
+      "id": "notif_1795074093888_e6s9r",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Light Schedule Today",
+      "message": "Only at 8% (45/540m). You can relax or pick tasks from your task list.",
+      "type": "CAPACITY_WARNING",
+      "isRead": true,
+      "createdAt": "2026-11-19T07:41:33.888Z"
     }
   ]
 }

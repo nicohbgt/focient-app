@@ -157,10 +157,9 @@ export const Step5ReviewScreen: React.FC = () => {
         <button
           type="button"
           onClick={completeOnboarding}
-          className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2"
+          className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold text-sm shadow-sm transition-all text-center"
         >
-          <CheckCircleIcon size="sm" />
-          <span>{language === 'id' ? 'Mulai Rencana Hari Ini' : 'Start Your Plan'}</span>
+          <span>{language === 'id' ? 'Mulai' : 'Start Plan'}</span>
         </button>
       </div>
     </div>

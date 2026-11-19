@@ -383,7 +383,10 @@ export const DashboardScreen: React.FC = () => {
                   <div className="flex items-start gap-3">
                     <button
                       type="button"
-                      onClick={() => toggleTaskComplete(t.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskComplete(t.id);
+                      }}
                       className={`w-5 h-5 rounded-md border flex items-center justify-center mt-0.5 transition-all ${
                         isCompleted
                           ? 'bg-emerald-600 border-emerald-600 text-white'
@@ -700,10 +703,9 @@ export const DashboardScreen: React.FC = () => {
             <div className="flex justify-end pt-1">
               <button
                 type="submit"
-                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all text-center"
               >
-                <PlusIcon size="xs" />
-                <span>{language === 'id' ? 'Konfirmasi Tugas Baru' : 'Confirm New Task'}</span>
+                <span>{language === 'id' ? 'Tambah Tugas' : 'Add Task'}</span>
               </button>
             </div>
           </form>

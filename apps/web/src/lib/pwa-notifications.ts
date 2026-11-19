@@ -247,15 +247,182 @@ export function buildTaskReminderCopy(
   durationMinutes: number,
   locale: 'id' | 'en' = 'en'
 ): { title: string; body: string } {
+  const title = taskTitle.trim();
   if (locale === 'id') {
     return {
-      title: `Sesi Fokus: ${taskTitle}`,
-      body: `Dimulai pukul ${startHour} (${durationMinutes} menit). Ambil napas tenang dan fokus pada satu tugas.`,
+      title,
+      body: `Mulai jam ${startHour} (${durationMinutes} menit). Yuk fokus ke tugas ini dulu.`,
     };
   }
   return {
-    title: `Focus Session: ${taskTitle}`,
-    body: `Starting at ${startHour} (${durationMinutes} min). Take a breath and focus on this single priority.`,
+    title,
+    body: `Starts at ${startHour} (${durationMinutes} min). Time to focus on this task.`,
+  };
+}
+
+/**
+ * Builds copy for advance task reminders (1 hour, 3 hours, or 6 hours before)
+ */
+export function buildTaskLeadReminderCopy(
+  taskTitle: string,
+  startHour: string,
+  leadHours: 1 | 3 | 6,
+  locale: 'id' | 'en' = 'en'
+): { title: string; body: string } {
+  const title = taskTitle.trim();
+  if (locale === 'id') {
+    let body = '';
+    if (leadHours === 6) {
+      body = `Ada tugas jam ${startHour} (6 jam lagi). Masih banyak waktu santai buat persiapan.`;
+    } else if (leadHours === 3) {
+      body = `Ada tugas jam ${startHour} (3 jam lagi). Siapkan hal yang kamu butuhkan ya.`;
+    } else {
+      body = `Tugas dimulai 1 jam lagi (jam ${startHour}). Selesaikan dulu kegiatanmu sekarang ya.`;
+    }
+    return { title, body };
+  }
+
+  let body = '';
+  if (leadHours === 6) {
+    body = `Task coming up at ${startHour} (in 6 hours). Plenty of time to prepare comfortably.`;
+  } else if (leadHours === 3) {
+    body = `Task coming up at ${startHour} (in 3 hours). Ready whatever you need ahead of time.`;
+  } else {
+    body = `Task starts in 1 hour (at ${startHour}). Wrap up what you're doing and get ready.`;
+  }
+  return { title, body };
+}
+
+/**
+ * Builds copy for daily morning Top 3 priority tasks
+ */
+export function buildTop3DailyReminderCopy(
+  top3Tasks: Array<{ title: string }>,
+  locale: 'id' | 'en' = 'en'
+): { title: string; body: string } {
+  const count = top3Tasks.length;
+  const titles = top3Tasks
+    .map((t) => `"${t.title}"`)
+    .slice(0, 3)
+    .join(', ');
+
+  if (locale === 'id') {
+    return {
+      title: '3 Tugas Utama Hari Ini',
+      body: `Hari ini ada ${count} tugas penting (${titles}). Kerjakan pelan-pelan satu per satu ya.`,
+    };
+  }
+  return {
+    title: "Today's Top 3 Tasks",
+    body: `You have ${count} key tasks today (${titles}). Take them one step at a time.`,
+  };
+}
+
+/**
+ * Builds copy for daily evening summary at quiet time (or 23:59 fallback)
+ */
+export function buildDailyQuietTimeSummaryCopy(
+  completedCount: number,
+  restMinutes: number,
+  quietHourStart?: string,
+  locale: 'id' | 'en' = 'en'
+): { title: string; body: string } {
+  if (locale === 'id') {
+    return {
+      title: 'Rekap Hari Ini',
+      body: quietHourStart
+        ? `${completedCount} tugas selesai hari ini dan kamu sempat istirahat ${restMinutes} menit. Jam istirahat (${quietHourStart}) sudah tiba, selamat beristirahat!`
+        : `${completedCount} tugas selesai hari ini dan kamu sempat istirahat ${restMinutes} menit. Sudah jam 23:59, selamat beristirahat!`,
+    };
+  }
+  return {
+    title: "Today's Recap",
+    body: quietHourStart
+      ? `${completedCount} tasks completed today with ${restMinutes}m of rest. Quiet hours (${quietHourStart}) have started, enjoy your rest!`
+      : `${completedCount} tasks completed today with ${restMinutes}m of rest. It's 23:59, enjoy your rest!`,
+  };
+}
+
+/**
+ * Builds copy for workload calibration alerts (both overload and low workload)
+ */
+export function buildWorkloadAlertCopy(
+  workloadPercent: number,
+  allocatedMinutes: number,
+  capacityMinutes: number,
+  type: 'high' | 'low' = 'high',
+  locale: 'id' | 'en' = 'en'
+): { title: string; body: string } {
+  if (type === 'high') {
+    if (locale === 'id') {
+      return {
+        title: 'Jadwal Hari Ini Cukup Padat',
+        body: `Waktu kerja sudah terisi ${workloadPercent}% (${allocatedMinutes}/${capacityMinutes} menit). Kalau terasa berat, geser saja sebagian tugas ke besok tanpa rasa bersalah ya.`,
+      };
+    }
+    return {
+      title: 'Busy Schedule Today',
+      body: `Workload is at ${workloadPercent}% (${allocatedMinutes}/${capacityMinutes}m). Feel free to move some tasks to tomorrow without guilt.`,
+    };
+  }
+
+  // type === 'low'
+  if (locale === 'id') {
+    return {
+      title: 'Jadwal Hari Ini Masih Longgar',
+      body: `Baru terisi ${workloadPercent}% (${allocatedMinutes}/${capacityMinutes} menit). Kamu bisa santai atau pilih tugas lain dari daftar tugas.`,
+    };
+  }
+  return {
+    title: 'Light Schedule Today',
+    body: `Only at ${workloadPercent}% (${allocatedMinutes}/${capacityMinutes}m). You can relax or pick tasks from your task list.`,
+  };
+}
+
+/**
+ * Builds simple schedule allocation recommendations according to daily workload
+ */
+export function buildScheduleRecommendationCopy(
+  workloadPercent: number,
+  allocatedMinutes: number,
+  capacityMinutes: number,
+  locale: 'id' | 'en' = 'en'
+): { title: string; body: string } {
+  if (locale === 'id') {
+    if (workloadPercent > 85) {
+      return {
+        title: 'Saran Jadwal Hari Ini',
+        body: `Hari ini cukup padat (${allocatedMinutes} menit). Sempatkan istirahat sebentar di sela tugas dan hindari menambah tugas baru ya.`,
+      };
+    }
+    if (workloadPercent >= 45) {
+      return {
+        title: 'Saran Jadwal Hari Ini',
+        body: `Jadwal hari ini pas dan seimbang (${allocatedMinutes} menit). Selesaikan tugas utamamu lebih awal ya.`,
+      };
+    }
+    return {
+      title: 'Saran Jadwal Hari Ini',
+      body: `Jadwal hari ini cukup santai (${allocatedMinutes} menit). Fokus ke 1 hal penting atau manfaatkan buat istirahat.`,
+    };
+  }
+
+  // English
+  if (workloadPercent > 85) {
+    return {
+      title: 'Schedule Tip',
+      body: `Today is quite busy (${allocatedMinutes}m). Take short breathers between tasks and avoid adding new tasks.`,
+    };
+  }
+  if (workloadPercent >= 45) {
+    return {
+      title: 'Schedule Tip',
+      body: `Nicely balanced schedule (${allocatedMinutes}m). Finish your key tasks earlier in the day.`,
+    };
+  }
+  return {
+    title: 'Schedule Tip',
+    body: `A light day ahead (${allocatedMinutes}m). Focus on 1 key task or enjoy some relaxing downtime.`,
   };
 }
 
@@ -265,16 +432,7 @@ export function buildWorkloadWarningCopy(
   capacityMinutes: number,
   locale: 'id' | 'en' = 'en'
 ): { title: string; body: string } {
-  if (locale === 'id') {
-    return {
-      title: 'Kalibrasi Ritme Beban Kerja',
-      body: `Beban kerja hari ini mencapai ${workloadPercent}% (${allocatedMinutes}/${capacityMinutes}m). Jangan ragu geser tugas tanpa rasa bersalah.`,
-    };
-  }
-  return {
-    title: 'Workload Rhythm Calibration',
-    body: `Today's load is at ${workloadPercent}% (${allocatedMinutes}/${capacityMinutes}m). Feel free to shift non-essential tasks without guilt.`,
-  };
+  return buildWorkloadAlertCopy(workloadPercent, allocatedMinutes, capacityMinutes, 'high', locale);
 }
 
 export function buildDailySummaryCopy(
@@ -282,16 +440,7 @@ export function buildDailySummaryCopy(
   restMinutes: number,
   locale: 'id' | 'en' = 'en'
 ): { title: string; body: string } {
-  if (locale === 'id') {
-    return {
-      title: 'Rangkuman Ketenangan Hari Ini',
-      body: `${completedCount} tugas fokus selesai dengan ${restMinutes} menit jeda pemulihan. Istirahatlah dengan tenang malam ini.`,
-    };
-  }
-  return {
-    title: 'Daily Calm Summary',
-    body: `${completedCount} focus tasks completed with ${restMinutes}m mindful rest buffers protected. Rest peacefully tonight.`,
-  };
+  return buildDailyQuietTimeSummaryCopy(completedCount, restMinutes, undefined, locale);
 }
 
 export function buildRestBufferCopy(
@@ -300,13 +449,13 @@ export function buildRestBufferCopy(
 ): { title: string; body: string } {
   if (locale === 'id') {
     return {
-      title: 'Waktunya Jeda Pemulihan',
-      body: `Sesi fokus selesai. Nikmati jeda istirahat ${restMinutes} menit untuk menjaga stamina kognitif Anda.`,
+      title: 'Waktunya Istirahat',
+      body: `Tugas selesai! Yuk istirahat dulu ${restMinutes} menit biar pikiran segar kembali.`,
     };
   }
   return {
-    title: 'Time for a Recovery Buffer',
-    body: `Focus session complete. Enjoy a ${restMinutes}m restorative buffer to sustain your mental energy.`,
+    title: 'Time for a Break',
+    body: `Task complete! Take a ${restMinutes}m breather to recharge your mind.`,
   };
 }
 
@@ -320,17 +469,17 @@ export function buildUrgentTaskReminderCopy(
 ): { title: string; body: string } {
   if (locale === 'id') {
     return {
-      title: 'Pengingat Tugas Genting',
+      title: 'Pengingat Tugas Penting',
       body: startHour
-        ? `Tugas prioritas utama "${taskTitle}" dijadwalkan pukul ${startHour}. Selesaikan dengan fokus penuh dan tenang.`
-        : `Tugas prioritas utama "${taskTitle}" perlu diselesaikan hari ini. Selesaikan secara bertahap tanpa cemas.`,
+        ? `Tugas "${taskTitle}" dijadwalkan jam ${startHour}. Yuk kerjakan sekarang!`
+        : `Tugas "${taskTitle}" perlu diselesaikan hari ini. Kerjakan pelan-pelan ya.`,
     };
   }
   return {
-    title: 'Urgent Task Reminder',
+    title: 'Important Task Reminder',
     body: startHour
-      ? `High-priority focus task "${taskTitle}" is scheduled at ${startHour}. Complete it with calm, steady focus.`
-      : `High-priority focus task "${taskTitle}" needs completion today. Work through it steadily without stress.`,
+      ? `Task "${taskTitle}" is scheduled at ${startHour}. Let's work on it now!`
+      : `Task "${taskTitle}" is due today. Take it step by step.`,
   };
 }
 
@@ -344,17 +493,17 @@ export function buildTaskAddedCopy(
 ): { title: string; body: string } {
   if (locale === 'id') {
     return {
-      title: 'Tugas Ditambahkan ke Sistem',
+      title: 'Tugas Ditambahkan',
       body: dateOrTime
-        ? `Tugas "${taskTitle}" berhasil dijadwalkan (${dateOrTime}).`
-        : `Tugas "${taskTitle}" berhasil ditambahkan ke rencana kerja Anda.`,
+        ? `Tugas "${taskTitle}" dijadwalkan untuk ${dateOrTime}.`
+        : `Tugas "${taskTitle}" sudah masuk ke daftar tugasmu.`,
     };
   }
   return {
-    title: 'Task Added to System',
+    title: 'Task Added',
     body: dateOrTime
-      ? `Task "${taskTitle}" has been scheduled (${dateOrTime}).`
-      : `Task "${taskTitle}" has been added to your workspace plan.`,
+      ? `Task "${taskTitle}" scheduled for ${dateOrTime}.`
+      : `Task "${taskTitle}" added to your task list.`,
   };
 }
 
@@ -367,12 +516,12 @@ export function buildTaskCompletedCopy(
 ): { title: string; body: string } {
   if (locale === 'id') {
     return {
-      title: 'Tugas Selesai Dikerjakan',
-      body: `Hebat! Tugas "${taskTitle}" telah selesai. Berikan diri Anda jeda istirahat sebelum lanjut ke tugas berikutnya.`,
+      title: 'Tugas Selesai!',
+      body: `Mantap! "${taskTitle}" sudah beres. Tarik napas dulu sebelum lanjut ya.`,
     };
   }
   return {
-    title: 'Task Completed',
-    body: `Well done! Task "${taskTitle}" is complete. Take a short pause before moving to the next session.`,
+    title: 'Task Done!',
+    body: `Well done! "${taskTitle}" is finished. Take a quick breather before moving on.`,
   };
 }

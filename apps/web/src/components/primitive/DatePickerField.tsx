@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, XIcon, CheckIcon } from '../icons/index.js';
-import { normalizeToISODate, formatToDisplayDate } from '../../lib/date-utils.js';
+import { normalizeToISODate, formatToDisplayDate, getDefaultWeekStartDay, WeekStartDay } from '../../lib/date-utils.js';
 
 export interface DatePickerFieldProps {
   id?: string;
@@ -18,6 +18,7 @@ export interface DatePickerFieldProps {
   required?: boolean;
   language?: 'id' | 'en';
   size?: 'sm' | 'md' | 'lg';
+  weekStartDay?: WeekStartDay;
 }
 
 const MONTH_NAMES_ID = [
@@ -52,6 +53,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
   required = false,
   language = 'id',
   size = 'lg',
+  weekStartDay,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -94,6 +96,8 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
 
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
+  const effectiveWeekStart = weekStartDay || getDefaultWeekStartDay();
+  const emptyOffset = effectiveWeekStart === 'sunday' ? firstDayOfWeek : firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
 
   const prevMonth = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -139,7 +143,9 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
   };
 
   const monthNames = language === 'id' ? MONTH_NAMES_ID : MONTH_NAMES_EN;
-  const weekdays = language === 'id' ? WEEKDAY_NAMES_ID : WEEKDAY_NAMES_EN;
+  const weekdays = effectiveWeekStart === 'sunday'
+    ? (language === 'id' ? ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])
+    : (language === 'id' ? ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
 
   const currentDisplay = formatToDisplayDate(value);
   const defaultPlaceholder = placeholder || 'DD/MM/YYYY';
@@ -250,7 +256,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
           {/* Day Cells (Large touch target) */}
           <div className="grid grid-cols-7 gap-1 text-center text-xs">
             {/* Empty slots before first day */}
-            {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+            {Array.from({ length: emptyOffset }).map((_, i) => (
               <div key={`empty-${i}`} className="h-9 sm:h-10" />
             ))}
 

@@ -246,10 +246,9 @@ export const LandingPageScreen: React.FC = () => {
             <button
               type="button"
               onClick={() => setAuthView('register')}
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-xs shadow-sm transition-all"
             >
               <span>{language === 'id' ? 'Daftar' : 'Sign Up'}</span>
-              <ArrowRightIcon size="xs" />
             </button>
 
             {/* Mobile Hamburger Button */}
@@ -332,10 +331,9 @@ export const LandingPageScreen: React.FC = () => {
                   setIsMobileMenuOpen(false);
                   setAuthView('register');
                 }}
-                className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-center font-bold text-xs flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-center font-bold text-xs"
               >
-                <span>{language === 'id' ? 'Daftar Akun Baru' : 'Sign Up'}</span>
-                <ArrowRightIcon size="xs" />
+                <span>{language === 'id' ? 'Daftar' : 'Sign Up'}</span>
               </button>
             </div>
           </div>
@@ -375,10 +373,9 @@ export const LandingPageScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={startOnboarding}
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-sm shadow-xs hover:shadow-sm transition-all flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-sm shadow-xs hover:shadow-sm transition-all text-center"
                 >
-                  <span>{language === 'id' ? 'Mulai Sekarang — Gratis' : 'Get Started Free'}</span>
-                  <ArrowRightIcon size="xs" />
+                  <span>{language === 'id' ? 'Mulai Sekarang' : 'Get Started'}</span>
                 </button>
               </div>
             </div>
@@ -1143,10 +1140,9 @@ export const LandingPageScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={startOnboarding}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-sm shadow-focient-3 transition-all flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-sm shadow-focient-3 transition-all text-center"
                 >
-                  <span>{language === 'id' ? 'Mulai Sekarang — Gratis' : 'Get Started Free'}</span>
-                  <ArrowRightIcon size="xs" />
+                  <span>{language === 'id' ? 'Mulai Sekarang' : 'Get Started'}</span>
                 </button>
               </div>
             </div>

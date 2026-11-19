@@ -7,6 +7,9 @@ import {
   findLocalUserById,
   saveUserToLocalDb,
   getCategoriesFromLocalDb,
+  isDbAvailable,
+  withDbTimeout,
+  handleDbError,
 } from '../../../../lib/auth-server';
 
 export const dynamic = 'force-dynamic';
@@ -34,13 +37,18 @@ export async function POST(request: Request) {
 
     // 1. Query User from Database or Local Store
     let user: any = null;
-    try {
-      user = await prisma.user.findUnique({
-        where: { email: cleanEmail },
-        include: { categories: true },
-      });
-    } catch {
-      // PostgreSQL is offline
+    if (isDbAvailable()) {
+      try {
+        user = await withDbTimeout(
+          prisma.user.findUnique({
+            where: { email: cleanEmail },
+            include: { categories: true },
+          }),
+          350
+        );
+      } catch (err) {
+        handleDbError(err);
+      }
     }
 
     if (!user) {
@@ -88,6 +96,7 @@ export async function POST(request: Request) {
       workingRhythm: user.workingRhythm || '',
       schedulingStyle: user.schedulingStyle || '',
       restTimePerTask: user.restTimePerTask ?? 10,
+      weekStartDay: (user as any).weekStartDay || 'monday',
       isOnboardingCompleted,
       categories: userCategories,
       provider: 'credentials' as const,

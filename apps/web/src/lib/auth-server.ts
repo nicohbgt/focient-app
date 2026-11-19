@@ -7,38 +7,97 @@ const SALT = process.env.AUTH_SALT || 'focient_secure_salt_2026';
 const TOKEN_EXPIRY_DAYS = 30;
 
 let dbConnectionFailed = false;
+let lastDbCheckTime = 0;
+const DB_RECHECK_INTERVAL_MS = 30000;
 
 export function isDbAvailable(): boolean {
-  return !!process.env.DATABASE_URL && !dbConnectionFailed;
+  if (!process.env.DATABASE_URL) return false;
+  if (dbConnectionFailed) {
+    // Retry probing every 30 seconds
+    if (Date.now() - lastDbCheckTime > DB_RECHECK_INTERVAL_MS) {
+      dbConnectionFailed = false;
+      lastDbCheckTime = Date.now();
+      return true;
+    }
+    return false;
+  }
+  return true;
 }
 
 export function handleDbError(err: unknown) {
-  const errorMsg = String(err);
-  if (
-    errorMsg.includes("Can't reach database server") ||
-    errorMsg.includes('P1001') ||
-    errorMsg.includes('ECONNREFUSED') ||
-    errorMsg.includes('timed out')
-  ) {
-    dbConnectionFailed = true;
+  dbConnectionFailed = true;
+  lastDbCheckTime = Date.now();
+}
+
+/**
+ * Ensures Prisma queries execute within strict timeout (default 350ms).
+ * If the database hangs or connection stalls, immediately fails fast
+ * and routes to the local persistent store, guaranteeing <2s response times.
+ */
+export async function withDbTimeout<T>(promise: Promise<T>, timeoutMs = 350): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      handleDbError(new Error('DATABASE_CONNECTION_TIMEOUT'));
+      reject(new Error('DATABASE_CONNECTION_TIMEOUT'));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 
+/**
+ * Runs a database operation safely with fast timeout and fallback.
+ */
+export async function safePrismaQuery<T>(
+  queryFn: () => Promise<T>,
+  fallbackFn?: () => T | Promise<T>,
+  timeoutMs = 350
+): Promise<T | null> {
+  if (!isDbAvailable()) {
+    return fallbackFn ? await fallbackFn() : null;
+  }
+  try {
+    return await withDbTimeout(queryFn(), timeoutMs);
+  } catch (err) {
+    handleDbError(err);
+    return fallbackFn ? await fallbackFn() : null;
+  }
+}
+
+function findRepoRoot(): string {
+  let dir = process.cwd();
+  for (let i = 0; i < 5; i++) {
+    const pkgPath = path.join(dir, 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      try {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+        if (pkg.workspaces) return dir;
+      } catch {}
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return process.cwd();
+}
+
 function getDbFilePaths(): string[] {
+  const root = findRepoRoot();
   const paths = new Set<string>();
+  paths.add(path.join(root, '.focient_local_auth_db.json'));
+  paths.add(path.join(root, 'apps', 'web', '.focient_local_auth_db.json'));
   paths.add(path.join(process.cwd(), '.focient_local_auth_db.json'));
-  paths.add(path.join(process.cwd(), 'apps', 'web', '.focient_local_auth_db.json'));
-  const parentPath = path.resolve(process.cwd(), '..', '.focient_local_auth_db.json');
-  if (fs.existsSync(parentPath)) paths.add(parentPath);
   return Array.from(paths);
 }
 
 function getPrimaryDbPath(): string {
-  const candidates = getDbFilePaths();
-  for (const p of candidates) {
-    if (fs.existsSync(p)) return p;
-  }
-  return path.join(process.cwd(), '.focient_local_auth_db.json');
+  const root = findRepoRoot();
+  return path.join(root, '.focient_local_auth_db.json');
 }
 
 export interface LocalUserRecord {
@@ -60,6 +119,7 @@ export interface LocalUserRecord {
   quietHourStart?: string;
   quietHourEnd?: string;
   quietHourEnabled?: boolean;
+  weekStartDay?: string;
   isOnboardingCompleted: boolean;
   createdAt: string;
 }
@@ -126,23 +186,54 @@ export interface LocalDbSchema {
  * File-backed persistent fallback database for local dev / offline resilience
  */
 export function readLocalDb(): LocalDbSchema {
-  const primary = getPrimaryDbPath();
-  try {
-    if (fs.existsSync(primary)) {
-      const data = fs.readFileSync(primary, 'utf-8');
-      const parsed = JSON.parse(data);
-      return {
-        users: Array.isArray(parsed.users) ? parsed.users : [],
-        sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
-        tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
-        categories: Array.isArray(parsed.categories) ? parsed.categories : [],
-        notifications: Array.isArray(parsed.notifications) ? parsed.notifications : [],
-      };
+  const candidates = getDbFilePaths();
+  const userMap = new Map<string, LocalUserRecord>();
+  const sessionMap = new Map<string, LocalSessionRecord>();
+  let tasks: LocalTaskRecord[] = [];
+  let categories: LocalCategoryRecord[] = [];
+  let notifications: LocalNotificationRecord[] = [];
+
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate)) {
+        const data = fs.readFileSync(candidate, 'utf-8');
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed.users)) {
+          for (const u of parsed.users) {
+            if (u && u.email && !userMap.has(u.email.toLowerCase())) {
+              userMap.set(u.email.toLowerCase(), u);
+            }
+          }
+        }
+        if (Array.isArray(parsed.sessions)) {
+          for (const s of parsed.sessions) {
+            if (s && s.tokenHash && !sessionMap.has(s.tokenHash)) {
+              sessionMap.set(s.tokenHash, s);
+            }
+          }
+        }
+        if (Array.isArray(parsed.tasks) && parsed.tasks.length > tasks.length) {
+          tasks = parsed.tasks;
+        }
+        if (Array.isArray(parsed.categories) && parsed.categories.length > categories.length) {
+          categories = parsed.categories;
+        }
+        if (Array.isArray(parsed.notifications) && parsed.notifications.length > notifications.length) {
+          notifications = parsed.notifications;
+        }
+      }
+    } catch {
+      // ignore
     }
-  } catch (err) {
-    console.warn('Failed to read local DB file:', err);
   }
-  return { users: [], sessions: [], tasks: [], categories: [], notifications: [] };
+
+  return {
+    users: Array.from(userMap.values()),
+    sessions: Array.from(sessionMap.values()),
+    tasks,
+    categories,
+    notifications,
+  };
 }
 
 export function writeLocalDb(db: LocalDbSchema): void {
@@ -196,8 +287,16 @@ export function deleteLocalUserByEmail(email: string): boolean {
   return true;
 }
 
-export function resetLocalDb(): void {
-  writeLocalDb({ users: [], sessions: [], tasks: [], categories: [], notifications: [] });
+export function resetLocalDb(clearAll = false): void {
+  if (clearAll) {
+    writeLocalDb({ users: [], sessions: [], tasks: [], categories: [], notifications: [] });
+    return;
+  }
+  // Soft reset: preserves real non-test registered user accounts
+  const db = readLocalDb();
+  db.users = db.users.filter((u) => !u.email.includes('test') && !u.email.includes('example') && !u.email.includes('reset.test'));
+  db.sessions = [];
+  writeLocalDb(db);
 }
 
 export function updateLocalUserPassword(email: string, newPasswordHash: string): boolean {
@@ -456,10 +555,13 @@ export async function verifySession(token: string) {
   // 1. Try PostgreSQL if available
   if (isDbAvailable()) {
     try {
-      const session = await prisma.session.findUnique({
-        where: { tokenHash },
-        include: { user: true },
-      });
+      const session = await withDbTimeout(
+        prisma.session.findUnique({
+          where: { tokenHash },
+          include: { user: true },
+        }),
+        350
+      );
 
       if (session) {
         if (session.revokedAt) return { valid: false, user: null, message: 'Sesi telah dicabut' };
@@ -481,6 +583,7 @@ export async function verifySession(token: string) {
             startWorkTime: session.user.startWorkTime || session.user.workHourStart,
             endWorkTime: session.user.endWorkTime || session.user.workHourEnd,
             restTimePerTask: session.user.restTimePerTask ?? 10,
+            weekStartDay: (session.user as any).weekStartDay || 'monday',
             isOnboardingCompleted: session.user.isOnboardingCompleted,
           },
         };
@@ -515,6 +618,7 @@ export async function verifySession(token: string) {
           startWorkTime: localUser.startWorkTime || localUser.workHourStart,
           endWorkTime: localUser.endWorkTime || localUser.workHourEnd,
           restTimePerTask: localUser.restTimePerTask ?? 10,
+          weekStartDay: localUser.weekStartDay || 'monday',
           isOnboardingCompleted: localUser.isOnboardingCompleted,
         },
       };
@@ -573,6 +677,16 @@ export function extractTokenFromRequest(req: Request): string | null {
 
 export function saveNotificationToLocalDb(notification: LocalNotificationRecord): void {
   const db = readLocalDb();
+  // Prevent duplicate insertion if an identical title and message exists within 4 seconds for the same user
+  const isDuplicate = db.notifications.some(
+    (n) =>
+      n.userId === notification.userId &&
+      n.title === notification.title &&
+      n.message === notification.message &&
+      Math.abs(new Date(n.createdAt).getTime() - new Date(notification.createdAt).getTime()) < 4000
+  );
+  if (isDuplicate) return;
+
   const existingIdx = db.notifications.findIndex((n) => n.id === notification.id);
   if (existingIdx >= 0) {
     db.notifications[existingIdx] = { ...db.notifications[existingIdx], ...notification };

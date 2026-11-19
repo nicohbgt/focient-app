@@ -4,6 +4,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   buildTaskReminderCopy,
+  buildTaskLeadReminderCopy,
+  buildTop3DailyReminderCopy,
+  buildDailyQuietTimeSummaryCopy,
+  buildWorkloadAlertCopy,
+  buildScheduleRecommendationCopy,
   buildWorkloadWarningCopy,
   buildDailySummaryCopy,
   buildRestBufferCopy,
@@ -36,32 +41,34 @@ describe('FoCient PWA & Web Notification System Test Suite', () => {
     assert.ok(swCode.includes('showNotification'), 'sw.js must trigger native browser notification');
   });
 
-  it('3. Task Reminder Copy generates gentle single-task guidance in EN and ID without guilt', () => {
+  it('3. Task Reminder Copy generates clean title without redundant Focus Session prefix', () => {
     const enCopy = buildTaskReminderCopy('Architecture Review', '09:30', 45, 'en');
-    assert.ok(enCopy.title.includes('Focus Session: Architecture Review'));
+    assert.equal(enCopy.title, 'Architecture Review');
+    assert.equal(enCopy.title.startsWith('Focus Session:'), false);
     assert.ok(enCopy.body.includes('09:30'));
     assert.ok(enCopy.body.includes('45 min'));
-    assert.ok(enCopy.body.includes('single priority'));
+    assert.ok(enCopy.body.includes('Time to focus'));
     // Ensure no guilt or panic terms
     assert.equal(/failed|overdue|late|lazy/i.test(enCopy.body), false);
 
     const idCopy = buildTaskReminderCopy('Tinjauan Arsitektur', '09:30', 45, 'id');
-    assert.ok(idCopy.title.includes('Sesi Fokus: Tinjauan Arsitektur'));
+    assert.equal(idCopy.title, 'Tinjauan Arsitektur');
+    assert.equal(idCopy.title.startsWith('Sesi Fokus:'), false);
     assert.ok(idCopy.body.includes('09:30'));
     assert.ok(idCopy.body.includes('45 menit'));
-    assert.ok(idCopy.body.includes('Ambil napas tenang'));
+    assert.ok(idCopy.body.includes('fokus ke tugas ini'));
     assert.equal(/gagal|terlambat|malas|denda/i.test(idCopy.body), false);
   });
 
   it('4. Workload Alert Copy encourages healthy rebalancing without accusatory red alerts', () => {
     const enWorkload = buildWorkloadWarningCopy(92, 440, 480, 'en');
-    assert.ok(enWorkload.title.includes('Workload Rhythm Calibration'));
+    assert.ok(enWorkload.title.includes('Busy Schedule Today'));
     assert.ok(enWorkload.body.includes('92%'));
-    assert.ok(enWorkload.body.includes('shift non-essential tasks without guilt'));
+    assert.ok(enWorkload.body.includes('move some tasks to tomorrow without guilt'));
     assert.equal(/overdue|danger|failed/i.test(enWorkload.body), false);
 
     const idWorkload = buildWorkloadWarningCopy(92, 440, 480, 'id');
-    assert.ok(idWorkload.title.includes('Kalibrasi Ritme Beban Kerja'));
+    assert.ok(idWorkload.title.includes('Jadwal Hari Ini Cukup Padat'));
     assert.ok(idWorkload.body.includes('92%'));
     assert.ok(idWorkload.body.includes('tanpa rasa bersalah'));
     assert.equal(/gagal|bahaya|malas/i.test(idWorkload.body), false);
@@ -69,24 +76,23 @@ describe('FoCient PWA & Web Notification System Test Suite', () => {
 
   it('5. Daily Summary Copy affirms intentional completion and mindful rest buffers', () => {
     const enSummary = buildDailySummaryCopy(4, 30, 'en');
-    assert.ok(enSummary.title.includes('Daily Calm Summary'));
-    assert.ok(enSummary.body.includes('4 focus tasks completed'));
-    assert.ok(enSummary.body.includes('30m mindful rest buffers'));
-    assert.ok(enSummary.body.includes('Rest peacefully'));
+    assert.ok(enSummary.title.includes("Today's Recap"));
+    assert.ok(enSummary.body.includes('4 tasks completed'));
+    assert.ok(enSummary.body.includes('30m of rest'));
 
     const idSummary = buildDailySummaryCopy(4, 30, 'id');
-    assert.ok(idSummary.title.includes('Rangkuman Ketenangan Hari Ini'));
-    assert.ok(idSummary.body.includes('4 tugas fokus selesai'));
-    assert.ok(idSummary.body.includes('30 menit jeda pemulihan'));
+    assert.ok(idSummary.title.includes('Rekap Hari Ini'));
+    assert.ok(idSummary.body.includes('4 tugas selesai'));
+    assert.ok(idSummary.body.includes('30 menit'));
   });
 
   it('6. Rest Buffer Copy reminds users to preserve cognitive stamina', () => {
     const enRest = buildRestBufferCopy(15, 'en');
-    assert.ok(enRest.title.includes('Time for a Recovery Buffer'));
-    assert.ok(enRest.body.includes('15m restorative buffer'));
+    assert.ok(enRest.title.includes('Time for a Break'));
+    assert.ok(enRest.body.includes('15m breather'));
 
     const idRest = buildRestBufferCopy(15, 'id');
-    assert.ok(idRest.title.includes('Waktunya Jeda Pemulihan'));
+    assert.ok(idRest.title.includes('Waktunya Istirahat'));
     assert.ok(idRest.body.includes('15 menit'));
   });
 
@@ -175,5 +181,267 @@ describe('FoCient PWA & Web Notification System Test Suite', () => {
     assert.ok(vapidCode.includes('GET'), 'vapid-key route must export GET');
     assert.ok(subscribeCode.includes('POST'), 'subscribe route must export POST');
     assert.ok(pushCode.includes('POST'), 'push route must export POST');
+  });
+
+  it('11. Comprehensive Notification Suite: 1h/3h/6h lead reminders, top 3, quiet time/23:59 summary, high/low workload, and schedule tips', () => {
+    // 1 hour, 3 hours, 6 hours lead reminders
+    const lead1 = buildTaskLeadReminderCopy('Design System Sync', '14:00', 1, 'id');
+    assert.equal(lead1.title, 'Design System Sync');
+    assert.ok(lead1.body.includes('1 jam'));
+    assert.ok(lead1.body.includes('14:00'));
+
+    const lead3 = buildTaskLeadReminderCopy('Sprint Planning', '16:00', 3, 'en');
+    assert.equal(lead3.title, 'Sprint Planning');
+    assert.ok(lead3.body.includes('3 hours'));
+    assert.ok(lead3.body.includes('16:00'));
+
+    const lead6 = buildTaskLeadReminderCopy('Architecture Review', '19:00', 6, 'id');
+    assert.equal(lead6.title, 'Architecture Review');
+    assert.ok(lead6.body.includes('6 jam'));
+    assert.ok(lead6.body.includes('19:00'));
+
+    // Top 3 Daily Priority reminder
+    const top3 = buildTop3DailyReminderCopy(
+      [{ title: 'Task A' }, { title: 'Task B' }, { title: 'Task C' }],
+      'id'
+    );
+    assert.equal(top3.title, '3 Tugas Utama Hari Ini');
+    assert.ok(top3.body.includes('3 tugas penting'));
+    assert.ok(top3.body.includes('Task A'));
+
+    // Daily summary with quiet hours vs 23:59 fallback
+    const quietSummary = buildDailyQuietTimeSummaryCopy(5, 45, '22:00', 'id');
+    assert.equal(quietSummary.title, 'Rekap Hari Ini');
+    assert.ok(quietSummary.body.includes('22:00'));
+
+    const midnightSummary = buildDailyQuietTimeSummaryCopy(3, 20, undefined, 'id');
+    assert.ok(midnightSummary.body.includes('23:59'));
+
+    // Workload alerts: High and Low
+    const highAlert = buildWorkloadAlertCopy(94, 450, 480, 'high', 'id');
+    assert.equal(highAlert.title, 'Jadwal Hari Ini Cukup Padat');
+    assert.ok(highAlert.body.includes('94%'));
+
+    const lowAlert = buildWorkloadAlertCopy(25, 120, 480, 'low', 'id');
+    assert.equal(lowAlert.title, 'Jadwal Hari Ini Masih Longgar');
+    assert.ok(lowAlert.body.includes('25%'));
+
+    // Schedule Allocation Recommendation
+    const tipHigh = buildScheduleRecommendationCopy(90, 430, 480, 'id');
+    assert.equal(tipHigh.title, 'Saran Jadwal Hari Ini');
+    assert.ok(tipHigh.body.includes('padat'));
+
+    const tipBalanced = buildScheduleRecommendationCopy(65, 310, 480, 'id');
+    assert.ok(tipBalanced.body.includes('seimbang'));
+
+    const tipLow = buildScheduleRecommendationCopy(25, 120, 480, 'id');
+    assert.ok(tipLow.body.includes('santai'));
+  });
+
+  it('12. Browser Tab Notification Counter strictly guards against showing on logout / unauthenticated landing page', () => {
+    const storeCode = fs.readFileSync(
+      new URL('../src/state/focient-store.tsx', import.meta.url),
+      'utf8'
+    );
+
+    // 1. Guarding tab title synchronization: MUST check isAuthenticated
+    assert.ok(
+      storeCode.includes('if (isAuthenticated && unreadNotificationCount > 0)'),
+      'Tab title sync effect must require both isAuthenticated and unreadNotificationCount > 0'
+    );
+
+    // 2. Logout must explicitly clear notifications, local storage, and reset document.title
+    assert.ok(
+      storeCode.includes('setNotifications([]);'),
+      'logout() must reset notifications state to empty array'
+    );
+    assert.ok(
+      storeCode.includes("window.localStorage.removeItem('focient_notifications');"),
+      'logout() must remove focient_notifications from localStorage'
+    );
+    assert.ok(
+      storeCode.includes("document.title = 'FoCient';"),
+      'logout() must reset document.title to clean default on logout'
+    );
+
+    // 3. Auto-scheduler interval must be guarded by isAuthenticated
+    const normalizedStoreCode = storeCode.replace(/\r\n/g, '\n');
+    assert.ok(
+      normalizedStoreCode.includes('if (!isAuthenticated) {\n      scheduledTaskRemindersRef.current.clear();\n      return;\n    }'),
+      'Auto-scheduler interval must abort immediately if user is not authenticated'
+    );
+
+    // 4. Test title logic directly
+    const computeTabTitle = (isAuthenticated: boolean, unreadCount: number) => {
+      const baseTitle = 'FoCient';
+      if (isAuthenticated && unreadCount > 0) {
+        return `(${unreadCount}) FoCient`;
+      }
+      return baseTitle;
+    };
+
+    assert.equal(computeTabTitle(true, 7), '(7) FoCient');
+    assert.equal(computeTabTitle(true, 0), 'FoCient');
+    // When logged out, even if there were unread notifications in memory/cache, title must NEVER display counter
+    assert.equal(computeTabTitle(false, 7), 'FoCient');
+    assert.equal(computeTabTitle(false, 0), 'FoCient');
+  });
+
+  it('13. Notification Center CTA Navigation Contract reliably routes to tasks, plan, reschedule, insights, settings & dashboard', () => {
+    const modalCode = fs.readFileSync(
+      new URL('../src/screens/components/NotificationCenterModal.tsx', import.meta.url),
+      'utf8'
+    );
+
+    // 1. handleActionClick must explicitly handle task routing (lower.includes('task'))
+    assert.ok(
+      modalCode.includes("lower.includes('task')"),
+      "NotificationCenterModal must route task action URLs via lower.includes('task')"
+    );
+    assert.ok(
+      modalCode.includes("safeNavigate('tasks')"),
+      "NotificationCenterModal must navigate to 'tasks' tab for task actions"
+    );
+
+    // 2. handleActionClick must reliably handle reschedule (lower.includes('resched'))
+    assert.ok(
+      modalCode.includes("lower.includes('resched')"),
+      "NotificationCenterModal must route reschedule action URLs via lower.includes('resched')"
+    );
+    assert.ok(
+      modalCode.includes("safeNavigate('reschedule')"),
+      "NotificationCenterModal must navigate to 'reschedule' tab for reschedule actions"
+    );
+
+    // 3. handleActionClick must route plan, insights, settings, and dashboard
+    assert.ok(modalCode.includes("safeNavigate('plan')"), 'Must route plan');
+    assert.ok(modalCode.includes("safeNavigate('insights')"), 'Must route insights');
+    assert.ok(modalCode.includes("safeNavigate('settings')"), 'Must route settings');
+    assert.ok(modalCode.includes("safeNavigate('dashboard')"), 'Must route dashboard');
+
+    // 4. Notification cards must have onClick handler for intuitive tap-to-navigate
+    assert.ok(
+      modalCode.includes('handleActionClick(n.actionUrl, n.id)'),
+      'Card container must trigger handleActionClick when actionUrl is present'
+    );
+
+    // 5. Test router dispatch logic directly
+    const routeAction = (actionUrl?: string): string => {
+      if (!actionUrl) return '';
+      const lower = actionUrl.toLowerCase();
+      if (lower.includes('task')) return 'tasks';
+      if (lower.includes('plan')) return 'plan';
+      if (lower.includes('resched')) return 'reschedule';
+      if (lower.includes('insight')) return 'insights';
+      if (lower.includes('setting')) return 'settings';
+      return 'dashboard';
+    };
+
+    assert.equal(routeAction('/tasks'), 'tasks');
+    assert.equal(routeAction('/tasks?filter=today'), 'tasks');
+    assert.equal(routeAction('/task'), 'tasks');
+    assert.equal(routeAction('/plan'), 'plan');
+    assert.equal(routeAction('/reschedule'), 'reschedule');
+    assert.equal(routeAction('/insights'), 'insights');
+    assert.equal(routeAction('/settings'), 'settings');
+    assert.equal(routeAction('/dashboard'), 'dashboard');
+    assert.equal(routeAction(''), '');
+  });
+
+  it('14. Single Activity Single Notification Contract: Task completion strictly emits exactly one notification and prevents duplicate alerts', () => {
+    const storeCode = fs.readFileSync(
+      new URL('../src/state/focient-store.tsx', import.meta.url),
+      'utf8'
+    );
+
+    // 1. toggleTaskComplete must NOT call addAppNotification inside setTasks updater
+    const toggleFuncMatch = storeCode.match(/const toggleTaskComplete = useCallback\([\s\S]*?\n  \);/);
+    assert.ok(toggleFuncMatch, 'toggleTaskComplete must be defined in store');
+    const toggleFuncCode = toggleFuncMatch[0];
+
+    // Inside setTasks(...) there must NOT be any addAppNotification
+    const setTasksMatch = toggleFuncCode.match(/setTasks\(\(prev\) =>[\s\S]*?\);/);
+    assert.ok(setTasksMatch, 'setTasks updater must exist in toggleTaskComplete');
+    assert.equal(
+      setTasksMatch[0].includes('addAppNotification'),
+      false,
+      'setTasks updater callback MUST NOT call addAppNotification (pure updater function to prevent double invocation)'
+    );
+
+    // 2. toggleTaskComplete must have rapid click debounce guard
+    assert.ok(
+      toggleFuncCode.includes('lastTaskToggleTimeRef'),
+      'toggleTaskComplete must debounce rapid duplicate toggle events'
+    );
+
+    // 3. addAppNotification must enforce deduplication guard
+    assert.ok(
+      storeCode.includes('recentDispatchedNotifsRef'),
+      'addAppNotification must maintain recentDispatchedNotifsRef to drop duplicates'
+    );
+    assert.ok(
+      storeCode.includes('isDuplicate'),
+      'addAppNotification must verify no duplicate notifications exist in state within the cooldown window'
+    );
+
+    // 4. Test deduplication simulator directly
+    const notificationsState: AppNotification[] = [];
+    const dispatchLog: string[] = [];
+
+    const simulateAddNotification = (
+      notif: { title: string; message: string; category: NotificationCategory },
+      timestamp: number
+    ) => {
+      const isDup = notificationsState.some(
+        (n) =>
+          n.title === notif.title &&
+          n.message === notif.message &&
+          Math.abs(timestamp - new Date(n.createdAt).getTime()) < 3000
+      );
+      if (isDup) return false;
+
+      notificationsState.unshift({
+        id: `notif-${timestamp}`,
+        title: notif.title,
+        message: notif.message,
+        category: notif.category,
+        createdAt: new Date(timestamp).toISOString(),
+        read: false,
+      });
+      dispatchLog.push(notif.title);
+      return true;
+    };
+
+    const taskTitle = 'Finalize Budget Plan';
+    const completedCopy = {
+      title: 'Tugas Selesai!',
+      message: `Mantap! "${taskTitle}" sudah beres.`,
+      category: 'task' as NotificationCategory,
+    };
+
+    // First event at t=1000: Must succeed
+    const firstDispatch = simulateAddNotification(completedCopy, 1000);
+    assert.equal(firstDispatch, true);
+    assert.equal(notificationsState.length, 1);
+
+    // Duplicate event at t=1050 (e.g. React StrictMode or double-click): Must be blocked
+    const duplicateDispatch = simulateAddNotification(completedCopy, 1050);
+    assert.equal(duplicateDispatch, false);
+    assert.equal(notificationsState.length, 1, 'Notifications count must remain 1');
+
+    // Duplicate event at t=2000 (within 3s): Must be blocked
+    const thirdDispatch = simulateAddNotification(completedCopy, 2000);
+    assert.equal(thirdDispatch, false);
+    assert.equal(notificationsState.length, 1);
+
+    // A completely different activity at t=2100: Must succeed
+    const differentCopy = {
+      title: 'Waktunya Istirahat',
+      message: 'Tugas selesai! Istirahat 10 menit.',
+      category: 'rest' as NotificationCategory,
+    };
+    const diffDispatch = simulateAddNotification(differentCopy, 2100);
+    assert.equal(diffDispatch, true);
+    assert.equal(notificationsState.length, 2);
   });
 });

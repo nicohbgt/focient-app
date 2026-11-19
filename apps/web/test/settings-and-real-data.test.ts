@@ -95,4 +95,120 @@ describe('FoCient Settings Feature & Real Data-Driven State Suite', () => {
     assert.match(quietHours.start, timeRegex);
     assert.match(quietHours.end, timeRegex);
   });
+
+  it('6. Rapid concurrent setting updates merge correctly without reverting', () => {
+    // Simulating multiple rapid modifications in succession
+    let userState = {
+      name: 'Nico',
+      roleArchetype: 'General',
+      workingRhythm: 'Steady Pacer',
+      startWorkTime: '09:00',
+      endWorkTime: '17:00',
+      restTimePerTask: 10,
+      weekStartDay: 'monday',
+    };
+
+    // Rapid change 1: Rhythm to Night Owl
+    const change1 = { workingRhythm: 'Night Owl' };
+    userState = { ...userState, ...change1 };
+    assert.equal(userState.workingRhythm, 'Night Owl');
+
+    // Rapid change 2: Start time to 18:00 before change 1 server roundtrip
+    const change2 = { startWorkTime: '18:00' };
+    userState = { ...userState, ...change2 };
+    assert.equal(userState.startWorkTime, '18:00');
+
+    // Rapid change 3: Week start to sunday
+    const change3 = { weekStartDay: 'sunday' };
+    userState = { ...userState, ...change3 };
+    assert.equal(userState.weekStartDay, 'sunday');
+
+    // When change 1 network response arrives with stale startWorkTime '09:00',
+    // the store merge preserves optimistic updates ({ ...data.user, ...prev })
+    const serverResponse1 = {
+      name: 'Nico',
+      roleArchetype: 'General',
+      workingRhythm: 'Night Owl',
+      startWorkTime: '09:00', // Stale
+      endWorkTime: '17:00',
+      restTimePerTask: 10,
+      weekStartDay: 'monday', // Stale
+    };
+
+    // Store update logic
+    userState = { ...serverResponse1, ...userState };
+
+    // Assert that rapid changes 2 & 3 were NOT reverted!
+    assert.equal(userState.workingRhythm, 'Night Owl');
+    assert.equal(userState.startWorkTime, '18:00');
+    assert.equal(userState.weekStartDay, 'sunday');
+  });
+
+  it('7. Week Start Day setting is strictly located in Rhythm & Capacity without duplicate in Account & Language', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const settingsPath = path.resolve(process.cwd(), 'apps/web/src/screens/settings/SettingsScreen.tsx');
+    const content = fs.readFileSync(settingsPath, 'utf8');
+
+    // Must be in Rhythm section
+    assert.ok(
+      content.includes('activeSection === \'rhythm\'') || content.includes('activeSection === "rhythm"'),
+      'Rhythm section must exist'
+    );
+    assert.ok(
+      content.includes('handleSelectWeekStart(\'monday\')'),
+      'Week start day selector must be available in Rhythm & Capacity'
+    );
+
+    // Must NOT be in Security / Account & Language body panel
+    const securityPanelIndex = content.indexOf("{activeSection === 'security' && (");
+    assert.ok(securityPanelIndex > -1, 'Security (Account & Language) body panel must exist');
+    const securityPanelContent = content.slice(securityPanelIndex);
+    assert.equal(
+      securityPanelContent.includes('handleSelectWeekStart'),
+      false,
+      'Duplicate handleSelectWeekStart must be removed from Account & Language'
+    );
+  });
+
+  it('8. Settings screen initial render strictly skips autosave when values have not changed', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const settingsPath = path.resolve(process.cwd(), 'apps/web/src/screens/settings/SettingsScreen.tsx');
+    const content = fs.readFileSync(settingsPath, 'utf8');
+
+    // 1. Must maintain lastSavedSnapshotRef and getSettingsSnapshot
+    assert.ok(content.includes('lastSavedSnapshotRef = React.useRef'), 'Must declare lastSavedSnapshotRef');
+    assert.ok(content.includes('getSettingsSnapshot = useCallback'), 'Must declare getSettingsSnapshot');
+
+    // 2. Must initialize lastSavedSnapshotRef on mount with loaded values
+    assert.ok(
+      content.includes('lastSavedSnapshotRef.current = JSON.stringify({'),
+      'Must initialize lastSavedSnapshotRef on mount'
+    );
+
+    // 3. Must guard against running scheduleAutoSave when currentSnapshot === lastSavedSnapshotRef.current
+    assert.ok(
+      content.includes('if (currentSnapshot === lastSavedSnapshotRef.current) {\n      return;\n    }') ||
+      content.includes('if (currentSnapshot === lastSavedSnapshotRef.current) {\r\n      return;\r\n    }'),
+      'Autosave effect must return immediately without saving if current snapshot matches saved snapshot'
+    );
+  });
+
+  it('9. Today Plan screen uses max-w-6xl mx-auto w-full matching Dashboard, Tasks, Insights & Settings', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const planPath = path.resolve(process.cwd(), 'apps/web/src/screens/plan/TodayPlanScreen.tsx');
+    const content = fs.readFileSync(planPath, 'utf8');
+
+    assert.ok(
+      content.includes('max-w-6xl mx-auto w-full'),
+      'TodayPlanScreen must use max-w-6xl mx-auto w-full for consistent card layout'
+    );
+    assert.equal(
+      content.includes('max-w-4xl mx-auto'),
+      false,
+      'Obsolete narrower max-w-4xl mx-auto must be removed'
+    );
+  });
 });

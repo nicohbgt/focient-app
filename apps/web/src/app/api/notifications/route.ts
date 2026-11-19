@@ -73,7 +73,7 @@ export async function GET(request: Request) {
           category: mapPrismaTypeToCategory(n.type),
           createdAt: n.createdAt.toISOString(),
           read: n.isRead,
-          actionUrl: n.type === 'CAPACITY_WARNING' ? '/dashboard' : n.type === 'DAILY_SUMMARY' ? '/insights' : '/plan',
+          actionUrl: n.type === 'CAPACITY_WARNING' ? '/reschedule' : n.type === 'DAILY_SUMMARY' ? '/insights' : '/plan',
           actionLabel: n.type === 'CAPACITY_WARNING' ? 'Reschedule' : n.type === 'DAILY_SUMMARY' ? 'View Insights' : 'View Plan',
         }));
 
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
       category: mapPrismaTypeToCategory(n.type),
       createdAt: n.createdAt,
       read: n.isRead,
-      actionUrl: n.type === 'CAPACITY_WARNING' ? '/dashboard' : n.type === 'DAILY_SUMMARY' ? '/insights' : '/plan',
+      actionUrl: n.type === 'CAPACITY_WARNING' ? '/reschedule' : n.type === 'DAILY_SUMMARY' ? '/insights' : '/plan',
       actionLabel: n.type === 'CAPACITY_WARNING' ? 'Reschedule' : n.type === 'DAILY_SUMMARY' ? 'View Insights' : 'View Plan',
     }));
 
@@ -129,6 +129,34 @@ export async function POST(request: Request) {
     }
 
     const type = mapCategoryToPrismaType(category);
+
+    // Deduplication guard: if identical title & message was created within 4 seconds, return existing notification
+    const existingRecent = getNotificationsFromLocalDb(user.id).find(
+      (n) =>
+        n.title === title &&
+        n.message === bodyMessage &&
+        Math.abs(Date.now() - new Date(n.createdAt).getTime()) < 4000
+    );
+    if (existingRecent) {
+      return NextResponse.json({
+        success: true,
+        notification: {
+          id: existingRecent.id,
+          title: existingRecent.title,
+          message: existingRecent.message,
+          category: mapPrismaTypeToCategory(existingRecent.type),
+          createdAt: existingRecent.createdAt,
+          read: existingRecent.isRead,
+          actionUrl:
+            existingRecent.type === 'CAPACITY_WARNING'
+              ? '/reschedule'
+              : existingRecent.type === 'DAILY_SUMMARY'
+              ? '/insights'
+              : '/plan',
+        },
+      });
+    }
+
     const notifId = `notif_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const createdAt = new Date().toISOString();
 
@@ -167,7 +195,7 @@ export async function POST(request: Request) {
           category: mapPrismaTypeToCategory(created.type),
           createdAt: created.createdAt.toISOString(),
           read: created.isRead,
-          actionUrl: created.type === 'CAPACITY_WARNING' ? '/dashboard' : created.type === 'DAILY_SUMMARY' ? '/insights' : '/plan',
+          actionUrl: created.type === 'CAPACITY_WARNING' ? '/reschedule' : created.type === 'DAILY_SUMMARY' ? '/insights' : '/plan',
         },
       });
     } catch {
@@ -181,7 +209,7 @@ export async function POST(request: Request) {
           category: mapPrismaTypeToCategory(notifPayload.type),
           createdAt: notifPayload.createdAt,
           read: notifPayload.isRead,
-          actionUrl: notifPayload.type === 'CAPACITY_WARNING' ? '/dashboard' : notifPayload.type === 'DAILY_SUMMARY' ? '/insights' : '/plan',
+          actionUrl: notifPayload.type === 'CAPACITY_WARNING' ? '/reschedule' : notifPayload.type === 'DAILY_SUMMARY' ? '/insights' : '/plan',
         },
       });
     }

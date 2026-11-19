@@ -1,116 +1,63 @@
 {
   "users": [
     {
-      "id": "usr_nicohbgt512_gmail_com_mwjck4ir",
+      "id": "usr_nicohbgt512_gmail_com_mwn2kxpi",
       "email": "nicohbgt512@gmail.com",
       "name": "Nico Wiranata",
       "username": "Nico Wiranata",
-      "passwordHash": "e6704b00353dd6bf6d0da31ef930f6da6b8d31cbd2fdbd624e4c5cf46f9af80d8c904d3bbf3851f5fc8c0d3b91eec788eb99dfeb3fe7d4c22355ac259202b8cd",
+      "passwordHash": "faa7deedaa05d3e985bd1e1acc3b9d01addb8de34b19fd7f9d6619f522764521906bd66a83fbab5212cddc2f865a52042356c6bf846022e44dea3106b6d97bde",
       "roleArchetype": "General",
       "occupancy": "General",
       "workingRhythm": "Steady Pacer",
       "schedulingStyle": "Structured",
-      "workHourStart": "08:00",
-      "workHourEnd": "22:00",
-      "startWorkTime": "08:00",
-      "endWorkTime": "22:00",
-      "dailyCapacityMinutes": 840,
-      "restTimePerTask": 10,
+      "workHourStart": "09:00",
+      "workHourEnd": "18:00",
+      "startWorkTime": "09:00",
+      "endWorkTime": "18:00",
+      "dailyCapacityMinutes": 540,
+      "restTimePerTask": 15,
       "isOnboardingCompleted": true,
-      "createdAt": "2026-11-16T14:16:36.579Z",
-      "quietHourStart": "00:00",
-      "quietHourEnd": "00:00",
-      "quietHourEnabled": false
+      "createdAt": "2026-11-19T04:48:22.950Z",
+      "quietHourStart": "22:00",
+      "quietHourEnd": "07:00",
+      "quietHourEnabled": false,
+      "weekStartDay": "sunday"
     }
   ],
   "sessions": [
     {
-      "token": "c4254e4b3a15841944b32e62b48805a67fbcecf4b23ea4126074627e97514d02",
-      "tokenHash": "8fcb0a6461f088c62506ad95403e0e658163438a09537ffa7239648a777544ab",
-      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
-      "expiresAt": "2026-12-16T14:16:36.585Z",
+      "token": "c316e099ebda1857e7daa90a406d672d16bcd3e6cc6b2527ad5d104133bc4cb2",
+      "tokenHash": "b375ed3a124b65f5e584227e35cd5cbc225f2bc5884c86dc400726729576095c",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "expiresAt": "2026-12-19T07:40:42.098Z",
+      "revokedAt": "2026-11-19T07:40:53.072Z"
+    },
+    {
+      "token": "ac78cf0cb09ba1b327f057a141f8f7c4929f7f987e7e9253ab6337086f56a401",
+      "tokenHash": "368957b59c1223843ce0b73c5bfedfbc181feb8bcfb9ac35153e4ea14774f9dd",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "expiresAt": "2026-12-19T07:41:03.309Z",
+      "revokedAt": "2026-11-19T07:45:47.158Z"
+    },
+    {
+      "token": "dba94cd654f8a9f5a81afa90be76873d978287d0293bb3321622507d8790014c",
+      "tokenHash": "7eb4f6b0c7320aee39e3fdbf4450ce8d98ae6483b9f1924cc065ec4024a3c95d",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "expiresAt": "2026-12-19T07:45:53.562Z",
       "revokedAt": null
     }
   ],
-  "tasks": [
+  "webPushSubscriptions": [
     {
-      "id": "task-1794838618386",
-      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
-      "title": "Arrange Meeting",
-      "durationMinutes": 30,
-      "categoryName": "Admin",
-      "categoryColor": "#64748B",
-      "priority": "REGULAR",
-      "energyLevel": "LOW",
-      "focusType": "Low",
-      "restMinutes": 0,
-      "needRestAfter": false,
-      "isBacklog": false,
-      "isRecurring": false,
-      "recurrencePattern": "daily",
-      "recurrenceDays": null,
-      "startHourDisplay": "16:00",
-      "dateDisplay": "2026-11-16",
-      "status": "TODO",
-      "createdAt": "2026-11-16T14:16:58.475Z"
-    }
-  ],
-  "categories": [
-    {
-      "id": "cat_1794838619934_hdpo6",
-      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
-      "name": "Focus",
-      "colorHex": "#059669",
-      "focusType": "High",
-      "isDefault": true,
-      "createdAt": "2026-11-16T14:16:59.934Z"
-    },
-    {
-      "id": "cat_1794838619934_r7cgw",
-      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
-      "name": "Sync",
-      "colorHex": "#059669",
-      "focusType": "High",
-      "isDefault": true,
-      "createdAt": "2026-11-16T14:16:59.934Z"
-    },
-    {
-      "id": "cat_1794838619934_9uf89",
-      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
-      "name": "Admin",
-      "colorHex": "#64748B",
-      "focusType": "High",
-      "isDefault": true,
-      "createdAt": "2026-11-16T14:16:59.934Z"
-    },
-    {
-      "id": "cat_1794838619934_5hzwq",
-      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
-      "name": "Personal",
-      "colorHex": "#059669",
-      "focusType": "High",
-      "isDefault": true,
-      "createdAt": "2026-11-16T14:16:59.934Z"
-    }
-  ],
-  "notifications": [
-    {
-      "id": "notif_1794841200722_3dwnx",
-      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
-      "title": "Daily Calm Summary",
-      "message": "0 focus tasks completed with 0m mindful rest buffers protected. Rest peacefully tonight.",
-      "type": "DAILY_SUMMARY",
-      "isRead": false,
-      "createdAt": "2026-11-16T15:00:00.722Z"
-    },
-    {
-      "id": "notif_1794838618885_8mk2y",
-      "userId": "usr_nicohbgt512_gmail_com_mwjck4ir",
-      "title": "Task Added to System",
-      "message": "Task \"Arrange Meeting\" has been scheduled (16:00).",
-      "type": "FOCUS_REMINDER",
-      "isRead": false,
-      "createdAt": "2026-11-16T14:16:58.885Z"
+      "id": "sub_1795074357801",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "endpoint": "https://updates.push.services.mozilla.com/wpush/v2/gAAAAABq-bpgisxAuP9O_Kr2FrMnwleIJUd08s28U3hmBUSUyvBtPe7wWexWUcj_6GfoP5xIYQqczRq0V0uvN_SY0iWWIPmdpIvRsgyf6MhHErwmBenmiIoWAV8YUMnhw-L9ykYFJduuveMOgT-on_Rc3bTv8mkFyHatiOEEv9qweg44YcZBYQ4",
+      "keys": {
+        "auth": "uRO5sb7UxPJ0cCRgmsGn1Q",
+        "p256dh": "BPykCKwHaV3fQ-ciXwt8tI3xave9mSfQRy1IafH4S6QHvQ7QT-eaKTj6vr1c6jStF2fPFYnvBJ5NjlNgAp7mj6Q"
+      },
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:160.0) Gecko/20100101 Firefox/160.0",
+      "createdAt": "2026-11-19T07:45:57.801Z"
     }
   ]
 }

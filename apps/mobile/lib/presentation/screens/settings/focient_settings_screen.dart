@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../../data/auth_state.dart';
+import '../../../data/notification_state.dart';
 import '../../../data/workspace_category.dart';
+import '../../organism/focient_notification_sheet.dart';
 import '../../riverpod_providers.dart';
 
 /// FoCient Settings Screen
@@ -32,6 +34,7 @@ class _FocientSettingsScreenState extends ConsumerState<FocientSettingsScreen> {
   int _maxFocusHours = 6;
   int _bufferPercentage = 20;
   String _workingRhythm = 'Early Bird';
+  String _weekStartDay = 'Monday';
   bool _rescheduleAuto = true;
   bool _adviceEnabled = true;
   int _overloadThreshold = 80;
@@ -648,6 +651,88 @@ class _FocientSettingsScreenState extends ConsumerState<FocientSettingsScreen> {
     );
   }
 
+  void _showWeekStartModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark ? FocientColorDarkTokens.neutralSurfaceCard : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Week Start Day',
+                style: TextStyle(
+                  fontFamily: FocientTypographyTokens.fontFamily,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Choose whether your 7-day schedule cycle begins on Monday or Sunday.',
+                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                title: const Text('Monday (Mon - Sun)', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Standard work week cycle (ISO)'),
+                trailing: _weekStartDay == 'Monday'
+                    ? const Icon(Icons.check_circle_rounded, color: Color(0xFF2563EB))
+                    : null,
+                onTap: () {
+                  setState(() => _weekStartDay = 'Monday');
+                  Navigator.of(ctx).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Week start day set to Monday.'),
+                      backgroundColor: Color(0xFF059669),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                title: const Text('Sunday (Sun - Sat)', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Traditional calendar cycle'),
+                trailing: _weekStartDay == 'Sunday'
+                    ? const Icon(Icons.check_circle_rounded, color: Color(0xFF2563EB))
+                    : null,
+                onTap: () {
+                  setState(() => _weekStartDay = 'Sunday');
+                  Navigator.of(ctx).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Week start day set to Sunday.'),
+                      backgroundColor: Color(0xFF059669),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showRescheduleSetupModal() {
     showModalBottomSheet(
       context: context,
@@ -1017,6 +1102,10 @@ class _FocientSettingsScreenState extends ConsumerState<FocientSettingsScreen> {
                             title: 'Working Rhythm',
                             onTap: _showWorkingRhythmModal,
                           ),
+                          _SettingRowData(
+                            title: 'Week Start Day',
+                            onTap: _showWeekStartModal,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -1249,18 +1338,36 @@ class _FocientSettingsScreenState extends ConsumerState<FocientSettingsScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, size: 22),
-            color: subtitleColor,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('All systems calm. No notifications pending.'),
-                  behavior: SnackBarBehavior.floating,
+          Builder(
+            builder: (ctx) {
+              final unreadCount = ref.watch(unreadNotificationCountProvider);
+              return IconButton(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.notifications_outlined, size: 22),
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: -1,
+                        top: -1,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFEF4444),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
+                color: subtitleColor,
+                onPressed: () {
+                  NotificationCenterBottomSheet.show(context);
+                },
+                tooltip: 'Notifications',
               );
             },
-            tooltip: 'Notifications',
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined, size: 22),

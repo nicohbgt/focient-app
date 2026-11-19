@@ -288,31 +288,86 @@ export function getDayOfWeekIndex(dateStr?: string | null): number {
   return today === 0 ? 6 : today - 1;
 }
 
-export function getDayOfWeekName(dayIndex: number, locale: 'id' | 'en' = 'en'): string {
-  const namesEn = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const namesId = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-  return locale === 'id' ? namesId[dayIndex] || 'Hari' : namesEn[dayIndex] || 'Day';
+export type WeekStartDay = 'monday' | 'sunday';
+
+/**
+ * Returns the active default week-start preference.
+ * Reads seamlessly from browser localStorage ('focient_week_start_day') and defaults to 'monday'.
+ */
+export function getDefaultWeekStartDay(): WeekStartDay {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = window.localStorage.getItem('focient_week_start_day');
+      if (saved === 'sunday' || saved === 'monday') return saved;
+    } catch {}
+  }
+  return 'monday';
+}
+
+export function getCurrentWeekStartDate(referenceDate?: Date, weekStart: WeekStartDay = getDefaultWeekStartDay()): Date {
+  const base = referenceDate ? new Date(referenceDate) : new Date();
+  const currentDay = base.getDay(); // 0 is Sun, 1 is Mon, ..., 6 is Sat
+  let diffToStart = 0;
+  if (weekStart === 'sunday') {
+    diffToStart = -currentDay;
+  } else {
+    diffToStart = currentDay === 0 ? -6 : 1 - currentDay;
+  }
+  const start = new Date(base);
+  start.setDate(base.getDate() + diffToStart);
+  start.setHours(0, 0, 0, 0);
+  return start;
 }
 
 export function getCurrentWeekMonday(referenceDate?: Date): Date {
-  const base = referenceDate ? new Date(referenceDate) : new Date();
-  const currentDay = base.getDay(); // 0 is Sun, 1 is Mon
-  const diffToMon = currentDay === 0 ? -6 : 1 - currentDay;
-  const mon = new Date(base);
-  mon.setDate(base.getDate() + diffToMon);
-  mon.setHours(0, 0, 0, 0);
-  return mon;
+  return getCurrentWeekStartDate(referenceDate, 'monday');
 }
 
-export function getWeekDayDate(dayIndex: number, referenceDate?: Date): Date {
-  const mon = getCurrentWeekMonday(referenceDate);
-  const d = new Date(mon);
-  d.setDate(mon.getDate() + dayIndex);
+export function getWeekDayDate(dayIndex: number, referenceDate?: Date, weekStart: WeekStartDay = getDefaultWeekStartDay()): Date {
+  const start = getCurrentWeekStartDate(referenceDate, weekStart);
+  const d = new Date(start);
+  d.setDate(start.getDate() + dayIndex);
   return d;
 }
 
-export function isTodayDayOfWeek(dayIndex: number): boolean {
-  const today = new Date().getDay();
+export function getWeekDayKeys(
+  weekStart: WeekStartDay = getDefaultWeekStartDay(),
+  locale: 'id' | 'en' = 'en'
+): string[] {
+  if (weekStart === 'sunday') {
+    return locale === 'id'
+      ? ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
+      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  }
+  return locale === 'id'
+    ? ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+    : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+}
+
+export function getWeekRangeBadge(weekStart: WeekStartDay = getDefaultWeekStartDay(), locale: 'id' | 'en' = 'en'): string {
+  if (weekStart === 'sunday') {
+    return locale === 'id' ? 'Min - Sab' : 'Sun - Sat';
+  }
+  return locale === 'id' ? 'Sen - Min' : 'Mon - Sun';
+}
+
+export function getDayOfWeekName(dayIndex: number, locale: 'id' | 'en' = 'en', weekStart: WeekStartDay = getDefaultWeekStartDay()): string {
+  const namesEnMonday = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const namesIdMonday = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+  const namesEnSunday = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const namesIdSunday = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+  if (weekStart === 'sunday') {
+    return locale === 'id' ? namesIdSunday[dayIndex] || 'Hari' : namesEnSunday[dayIndex] || 'Day';
+  }
+  return locale === 'id' ? namesIdMonday[dayIndex] || 'Hari' : namesEnMonday[dayIndex] || 'Day';
+}
+
+export function isTodayDayOfWeek(dayIndex: number, weekStart: WeekStartDay = getDefaultWeekStartDay()): boolean {
+  const today = new Date().getDay(); // 0 = Sun, 1 = Mon ...
+  if (weekStart === 'sunday') {
+    return today === dayIndex;
+  }
   const todayIndex = today === 0 ? 6 : today - 1;
   return todayIndex === dayIndex;
 }

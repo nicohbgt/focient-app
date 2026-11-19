@@ -26,6 +26,10 @@ export const NotificationCenterModal: React.FC = () => {
     pwaPermission,
     requestPwaPermission,
     triggerTaskReminder,
+    triggerTaskLeadReminder,
+    triggerTop3DailyReminder,
+    triggerDailyQuietTimeSummary,
+    triggerScheduleRecommendation,
     triggerWorkloadAlert,
     triggerDailySummary,
     triggerRestBufferAlert,
@@ -53,22 +57,48 @@ export const NotificationCenterModal: React.FC = () => {
     closeNotificationPanel();
     if (!actionUrl) return;
 
-    if (actionUrl.includes('plan')) safeNavigate('plan');
-    else if (actionUrl.includes('dashboard')) safeNavigate('dashboard');
-    else if (actionUrl.includes('insights')) safeNavigate('insights');
-    else if (actionUrl.includes('rescheduling')) safeNavigate('reschedule');
+    const lower = actionUrl.toLowerCase();
+    if (lower.includes('task')) {
+      safeNavigate('tasks');
+    } else if (lower.includes('plan')) {
+      safeNavigate('plan');
+    } else if (lower.includes('resched')) {
+      safeNavigate('reschedule');
+    } else if (lower.includes('insight')) {
+      safeNavigate('insights');
+    } else if (lower.includes('setting')) {
+      safeNavigate('settings');
+    } else if (lower.includes('dashboard')) {
+      safeNavigate('dashboard');
+    } else {
+      safeNavigate('dashboard');
+    }
   };
 
-  const handleTestTrigger = async (type: 'task' | 'workload' | 'summary' | 'rest') => {
+  const handleTestTrigger = async (type: string) => {
     setIsTesting(true);
     try {
-      if (type === 'task') {
-        await triggerTaskReminder('Strategic Product Review', '10:00', 30);
-      } else if (type === 'workload') {
-        const capacity = user?.dailyCapacityMinutes || 480;
-        await triggerWorkloadAlert(92, 440, capacity);
+      const capacity = user?.dailyCapacityMinutes || 480;
+      if (type === 'lead-1h') {
+        await triggerTaskLeadReminder('Arrange Meeting', '14:00', 1);
+      } else if (type === 'lead-3h') {
+        await triggerTaskLeadReminder('Design System Review', '16:00', 3);
+      } else if (type === 'lead-6h') {
+        await triggerTaskLeadReminder('Sprint Retrospective', '19:00', 6);
+      } else if (type === 'top3') {
+        await triggerTop3DailyReminder([
+          { title: 'Arrange Meeting' },
+          { title: 'API Integration' },
+          { title: 'Security Audit' },
+        ]);
       } else if (type === 'summary') {
-        await triggerDailySummary(5, 40);
+        await triggerDailyQuietTimeSummary(4, 30);
+      } else if (type === 'workload-high') {
+        await triggerWorkloadAlert(95, 460, capacity, 'high');
+      } else if (type === 'workload-low') {
+        await triggerWorkloadAlert(20, 95, capacity, 'low');
+      } else if (type === 'recommendation') {
+        await triggerScheduleRecommendation(75, 360, capacity);
       } else if (type === 'rest') {
         await triggerRestBufferAlert(10);
       }
@@ -212,13 +242,12 @@ export const NotificationCenterModal: React.FC = () => {
                     setIsPushTesting(false);
                   }
                 }}
-                className="w-full py-1.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="w-full py-1.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-xs flex items-center justify-center cursor-pointer disabled:opacity-50"
               >
-                <BellIcon size="xs" />
                 <span>
                   {isPushTesting
                     ? (language === 'id' ? 'Mengirim...' : 'Sending...')
-                    : (language === 'id' ? 'Uji Web Push Latar Belakang (OS Banner)' : 'Test Background Push (OS Banner)')}
+                    : (language === 'id' ? 'Uji Notifikasi Web Push' : 'Test Background Push')}
                 </span>
               </button>
               {pushFeedback && (
@@ -244,9 +273,8 @@ export const NotificationCenterModal: React.FC = () => {
               <button
                 type="button"
                 onClick={requestPwaPermission}
-                className="w-full py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5"
+                className="w-full py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center"
               >
-                <BellIcon size="xs" />
                 <span>{language === 'id' ? 'Izinkan Notifikasi' : 'Allow Notifications'}</span>
               </button>
             </div>
@@ -256,40 +284,80 @@ export const NotificationCenterModal: React.FC = () => {
         {/* Quick Test Triggers (Demo & Verification) */}
         <div className="px-5 py-2.5 border-b border-slate-100">
           <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-            {language === 'id' ? 'Uji Coba Pengingat (Demo)' : 'Test Reminders (Demo)'}
+            {language === 'id' ? 'Uji Coba Notifikasi' : 'Test Notifications'}
           </span>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none no-scrollbar touch-pan-x whitespace-nowrap">
             <button
               type="button"
               disabled={isTesting}
-              onClick={() => handleTestTrigger('task')}
-              className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-slate-600 transition-colors"
+              onClick={() => handleTestTrigger('lead-1h')}
+              className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-slate-600 transition-colors"
             >
-              + {language === 'id' ? 'Tugas' : 'Task'}
+              1 Jam
             </button>
             <button
               type="button"
               disabled={isTesting}
-              onClick={() => handleTestTrigger('workload')}
-              className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-200 text-slate-600 transition-colors"
+              onClick={() => handleTestTrigger('lead-3h')}
+              className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-slate-600 transition-colors"
             >
-              + {language === 'id' ? 'Beban' : 'Workload'}
+              3 Jam
+            </button>
+            <button
+              type="button"
+              disabled={isTesting}
+              onClick={() => handleTestTrigger('lead-6h')}
+              className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-slate-600 transition-colors"
+            >
+              6 Jam
+            </button>
+            <button
+              type="button"
+              disabled={isTesting}
+              onClick={() => handleTestTrigger('top3')}
+              className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-slate-600 transition-colors"
+            >
+              Top 3
             </button>
             <button
               type="button"
               disabled={isTesting}
               onClick={() => handleTestTrigger('summary')}
-              className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 text-slate-600 transition-colors"
+              className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 text-slate-600 transition-colors"
             >
-              + {language === 'id' ? 'Rangkuman' : 'Summary'}
+              {language === 'id' ? 'Rekap Malam' : 'Night Recap'}
+            </button>
+            <button
+              type="button"
+              disabled={isTesting}
+              onClick={() => handleTestTrigger('workload-high')}
+              className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-200 text-slate-600 transition-colors"
+            >
+              {language === 'id' ? 'Beban Tinggi' : 'High Load'}
+            </button>
+            <button
+              type="button"
+              disabled={isTesting}
+              onClick={() => handleTestTrigger('workload-low')}
+              className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-200 text-slate-600 transition-colors"
+            >
+              {language === 'id' ? 'Beban Rendah' : 'Low Load'}
+            </button>
+            <button
+              type="button"
+              disabled={isTesting}
+              onClick={() => handleTestTrigger('recommendation')}
+              className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-slate-600 transition-colors"
+            >
+              {language === 'id' ? 'Rekomendasi' : 'Allocation Tip'}
             </button>
             <button
               type="button"
               disabled={isTesting}
               onClick={() => handleTestTrigger('rest')}
-              className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 text-slate-600 transition-colors"
+              className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 text-slate-600 transition-colors"
             >
-              + {language === 'id' ? 'Istirahat' : 'Rest'}
+              {language === 'id' ? 'Istirahat' : 'Rest'}
             </button>
           </div>
         </div>
@@ -345,7 +413,16 @@ export const NotificationCenterModal: React.FC = () => {
               return (
                 <div
                   key={n.id}
+                  onClick={() => {
+                    if (n.actionUrl) {
+                      handleActionClick(n.actionUrl, n.id);
+                    } else if (!n.read) {
+                      markNotificationAsRead(n.id);
+                    }
+                  }}
                   className={`p-3.5 rounded-2xl border transition-all space-y-2 ${
+                    n.actionUrl ? 'cursor-pointer hover:border-blue-300 hover:shadow-xs' : ''
+                  } ${
                     !n.read
                       ? 'bg-white border-blue-200/80 shadow-xs ring-1 ring-blue-500/10'
                       : 'bg-slate-50/60 border-slate-200 hover:bg-white hover:border-slate-300'
@@ -369,7 +446,10 @@ export const NotificationCenterModal: React.FC = () => {
                       </span>
                       <button
                         type="button"
-                        onClick={() => deleteNotification(n.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteNotification(n.id);
+                        }}
                         className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                         title={language === 'id' ? 'Hapus' : 'Delete'}
                       >
@@ -391,7 +471,10 @@ export const NotificationCenterModal: React.FC = () => {
                     {n.actionUrl ? (
                       <button
                         type="button"
-                        onClick={() => handleActionClick(n.actionUrl, n.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleActionClick(n.actionUrl, n.id);
+                        }}
                         className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
                       >
                         <span>{n.actionLabel || (language === 'id' ? 'Buka' : 'Open')}</span>
@@ -404,7 +487,10 @@ export const NotificationCenterModal: React.FC = () => {
                     {!n.read && (
                       <button
                         type="button"
-                        onClick={() => markNotificationAsRead(n.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markNotificationAsRead(n.id);
+                        }}
                         className="text-[11px] text-slate-500 hover:text-slate-800 transition-colors"
                       >
                         {language === 'id' ? 'Tandai telah dibaca' : 'Mark as read'}

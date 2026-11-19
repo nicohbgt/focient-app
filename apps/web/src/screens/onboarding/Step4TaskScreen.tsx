@@ -724,10 +724,9 @@ export const Step4TaskScreen: React.FC = () => {
         <button
           type="button"
           onClick={handleNext}
-          className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2"
+          className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold text-sm shadow-sm transition-all text-center"
         >
-          <span>{language === 'id' ? 'Tinjau Beban Kerja' : 'Review Workload'}</span>
-          <ArrowRightIcon size="sm" />
+          <span>{language === 'id' ? 'Lanjut' : 'Continue'}</span>
         </button>
       </div>
     </div>

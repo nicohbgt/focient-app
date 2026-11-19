@@ -25,6 +25,7 @@ export const AddTaskModal: React.FC = () => {
     quietHourEnabled,
     tasks,
     language,
+    weekStartDay,
   } = useFocient();
 
   const configuredRestMinutes = restMinutesPerTask || user?.restTimePerTask || 10;
@@ -707,15 +708,26 @@ export const AddTaskModal: React.FC = () => {
                   {recurrencePattern === 'custom' && (
                     <div className="pt-1 animate-fade-in">
                       <div className="flex items-center gap-1.5">
-                        {[
-                          { day: 1, nameEn: 'M', nameId: 'Sen', fullEn: 'Mon' },
-                          { day: 2, nameEn: 'T', nameId: 'Sel', fullEn: 'Tue' },
-                          { day: 3, nameEn: 'W', nameId: 'Rab', fullEn: 'Wed' },
-                          { day: 4, nameEn: 'T', nameId: 'Kam', fullEn: 'Thu' },
-                          { day: 5, nameEn: 'F', nameId: 'Jum', fullEn: 'Fri' },
-                          { day: 6, nameEn: 'S', nameId: 'Sab', fullEn: 'Sat' },
-                          { day: 0, nameEn: 'S', nameId: 'Min', fullEn: 'Sun' },
-                        ].map((d) => {
+                        {(weekStartDay === 'sunday'
+                          ? [
+                              { day: 0, nameEn: 'S', nameId: 'Min', fullEn: 'Sun' },
+                              { day: 1, nameEn: 'M', nameId: 'Sen', fullEn: 'Mon' },
+                              { day: 2, nameEn: 'T', nameId: 'Sel', fullEn: 'Tue' },
+                              { day: 3, nameEn: 'W', nameId: 'Rab', fullEn: 'Wed' },
+                              { day: 4, nameEn: 'T', nameId: 'Kam', fullEn: 'Thu' },
+                              { day: 5, nameEn: 'F', nameId: 'Jum', fullEn: 'Fri' },
+                              { day: 6, nameEn: 'S', nameId: 'Sab', fullEn: 'Sat' },
+                            ]
+                          : [
+                              { day: 1, nameEn: 'M', nameId: 'Sen', fullEn: 'Mon' },
+                              { day: 2, nameEn: 'T', nameId: 'Sel', fullEn: 'Tue' },
+                              { day: 3, nameEn: 'W', nameId: 'Rab', fullEn: 'Wed' },
+                              { day: 4, nameEn: 'T', nameId: 'Kam', fullEn: 'Thu' },
+                              { day: 5, nameEn: 'F', nameId: 'Jum', fullEn: 'Fri' },
+                              { day: 6, nameEn: 'S', nameId: 'Sab', fullEn: 'Sat' },
+                              { day: 0, nameEn: 'S', nameId: 'Min', fullEn: 'Sun' },
+                            ]
+                        ).map((d) => {
                           const active = recurrenceDays.includes(d.day);
                           return (
                             <button
@@ -771,15 +783,15 @@ export const AddTaskModal: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="py-2.5 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm transition-all"
+                className="py-2.5 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm transition-all text-center"
               >
                 {taskToEdit
                   ? language === 'id'
-                    ? 'Simpan Perubahan'
-                    : 'Save Changes'
+                    ? 'Simpan'
+                    : 'Save'
                   : language === 'id'
-                  ? 'Tambah Tugas Baru'
-                  : 'Confirm New Task'}
+                  ? 'Tambah Tugas'
+                  : 'Add Task'}
               </button>
             </div>
           </div>

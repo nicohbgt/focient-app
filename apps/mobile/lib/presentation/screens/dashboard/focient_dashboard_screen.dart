@@ -8,6 +8,9 @@ import '../../../data/workspace_category.dart';
 import '../../primitive/focient_button.dart';
 import '../../primitive/focient_input_field.dart';
 import '../../riverpod_providers.dart';
+import '../../../data/notification_state.dart';
+import '../../organism/focient_notification_sheet.dart';
+import '../../organism/focient_reschedule_modal.dart';
 import '../insight/focient_insight_screen.dart';
 import '../plan/focient_today_plan_screen.dart';
 import '../settings/focient_settings_screen.dart';
@@ -188,6 +191,15 @@ class _FocientDashboardScreenState
     setState(() {
       _rescheduleResolved = true;
     });
+
+    FocientRescheduleModal.show(
+      context,
+      onApplied: () {
+        setState(() {
+          _rescheduleResolved = true;
+        });
+      },
+    );
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -582,18 +594,39 @@ class _FocientDashboardScreenState
           ),
           const SizedBox(width: 8),
           // Bell Icon
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, size: 22),
-            color: subtitleColor,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Semua notifikasi ritme kerja tersinkronisasi.'),
-                  duration: Duration(seconds: 2),
+          Builder(
+            builder: (ctx) {
+              final unreadCount = ref.watch(unreadNotificationCountProvider);
+              return IconButton(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.notifications_none_rounded, size: 22),
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: -1,
+                        top: -1,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFEF4444),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
+                color: subtitleColor,
+                onPressed: () {
+                  NotificationCenterBottomSheet.show(
+                    context,
+                    onNavigateTab: (idx) => setState(() => _activeNavIndex = idx),
+                  );
+                },
+                tooltip: 'Notifications',
               );
             },
-            tooltip: 'Notifications',
           ),
           // Settings Gear Icon (Image 2)
           IconButton(

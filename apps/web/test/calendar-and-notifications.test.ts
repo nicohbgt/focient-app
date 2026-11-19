@@ -80,28 +80,28 @@ describe('FoCient Calendar Date Isolation & Expanded Notification System Suite',
   it('4. Expanded notification copy builders for urgent task reminders, task added, task completed, and daily summary', () => {
     // Urgent focus reminder
     const urgentEn = buildUrgentTaskReminderCopy('Finalize Security Audit', '14:00', 'en');
-    assert.ok(urgentEn.title.includes('Urgent Task Reminder'));
+    assert.ok(urgentEn.title.includes('Important Task Reminder'));
     assert.ok(urgentEn.body.includes('Finalize Security Audit'));
     assert.ok(urgentEn.body.includes('14:00'));
 
     const urgentId = buildUrgentTaskReminderCopy('Audit Keamanan Akhir', '14:00', 'id');
-    assert.ok(urgentId.title.includes('Pengingat Tugas Genting'));
+    assert.ok(urgentId.title.includes('Pengingat Tugas Penting'));
     assert.ok(urgentId.body.includes('Audit Keamanan Akhir'));
 
     // Task added notification
     const addedId = buildTaskAddedCopy('Desain Skema DB', '10:00', 'id');
-    assert.ok(addedId.title.includes('Tugas Ditambahkan ke Sistem'));
+    assert.ok(addedId.title.includes('Tugas Ditambahkan'));
     assert.ok(addedId.body.includes('Desain Skema DB'));
 
     // Task completed notification
     const completedId = buildTaskCompletedCopy('Desain Skema DB', 'id');
-    assert.ok(completedId.title.includes('Tugas Selesai Dikerjakan'));
+    assert.ok(completedId.title.includes('Tugas Selesai!'));
     assert.ok(completedId.body.includes('Desain Skema DB'));
 
     // Daily summary notification
     const summaryId = buildDailySummaryCopy(5, 45, 'id');
-    assert.ok(summaryId.title.includes('Rangkuman Ketenangan Hari Ini'));
-    assert.ok(summaryId.body.includes('5 tugas fokus'));
-    assert.ok(summaryId.body.includes('45 menit jeda pemulihan'));
+    assert.ok(summaryId.title.includes('Rekap Hari Ini'));
+    assert.ok(summaryId.body.includes('5 tugas selesai'));
+    assert.ok(summaryId.body.includes('45 menit'));
   });
 });

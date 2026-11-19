@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@focient/database';
-import { hashPassword, createSession } from '../../../../lib/auth-server';
+import {
+  hashPassword,
+  createSession,
+  saveUserToLocalDb,
+  findLocalUserByEmail,
+  LocalUserRecord,
+  isDbAvailable,
+  withDbTimeout,
+  handleDbError,
+} from '../../../../lib/auth-server';
 import { verifyAndConsumeOtp } from '../../../../lib/auth-otp-store';
 
 export const dynamic = 'force-dynamic';
@@ -36,44 +45,92 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Check or create real user in PostgreSQL
-    let user = await prisma.user.findUnique({
-      where: { email: cleanEmail },
-    });
-
-    if (!user) {
-      const hashedPassword = hashPassword(password || 'focient_default_pass_2026');
-      user = await prisma.user.create({
-        data: {
-          name: cleanName,
-          email: cleanEmail,
-          passwordHash: hashedPassword,
-          roleArchetype: '',
-          workHourStart: '',
-          workHourEnd: '',
-          startWorkTime: '',
-          endWorkTime: '',
-          dailyCapacityMinutes: 480,
-          isOnboardingCompleted: false,
-        },
-      });
+    // 2. Query or create real user in PostgreSQL or Local DB
+    let user: any = null;
+    if (isDbAvailable()) {
+      try {
+        user = await withDbTimeout(
+          prisma.user.findUnique({
+            where: { email: cleanEmail },
+          }),
+          350
+        );
+      } catch (err) {
+        handleDbError(err);
+      }
     }
 
-    // 3. Create Session & Token in PostgreSQL
-    const { token, expiresAt } = await createSession(user.id);
+    if (!user) {
+      user = findLocalUserByEmail(cleanEmail);
+    }
+
+    const hashedPassword = hashPassword(password || 'focient_default_pass_2026');
+    const userId = user?.id || `usr_${cleanEmail.replace(/[^a-z0-9]/g, '_')}_${Date.now().toString(36)}`;
+
+    const localUser: LocalUserRecord = {
+      id: userId,
+      email: cleanEmail,
+      name: user?.name || cleanName,
+      username: user?.username || cleanName,
+      passwordHash: user?.passwordHash || hashedPassword,
+      roleArchetype: user?.roleArchetype || '',
+      occupancy: user?.occupancy || '',
+      workingRhythm: user?.workingRhythm || '',
+      schedulingStyle: user?.schedulingStyle || '',
+      workHourStart: user?.workHourStart || '',
+      workHourEnd: user?.workHourEnd || '',
+      startWorkTime: user?.startWorkTime || '',
+      endWorkTime: user?.endWorkTime || '',
+      dailyCapacityMinutes: user?.dailyCapacityMinutes || 480,
+      restTimePerTask: user?.restTimePerTask || 10,
+      isOnboardingCompleted: Boolean(user?.isOnboardingCompleted),
+      createdAt: user?.createdAt || new Date().toISOString(),
+    };
+
+    saveUserToLocalDb(localUser);
+
+    if (!user && isDbAvailable()) {
+      try {
+        const created = await withDbTimeout(
+          prisma.user.create({
+            data: {
+              name: cleanName,
+              email: cleanEmail,
+              passwordHash: hashedPassword,
+              roleArchetype: '',
+              workHourStart: '',
+              workHourEnd: '',
+              startWorkTime: '',
+              endWorkTime: '',
+              dailyCapacityMinutes: 480,
+              isOnboardingCompleted: false,
+            },
+          }),
+          350
+        );
+        if (created) user = created;
+      } catch (err) {
+        handleDbError(err);
+      }
+    }
+
+    const finalUser = user || localUser;
+
+    // 3. Create Session & Token
+    const { token, expiresAt } = await createSession(finalUser.id);
 
     const userSession = {
-      id: user.id,
-      name: user.name,
-      username: user.name,
+      id: finalUser.id,
+      name: finalUser.name,
+      username: finalUser.username || finalUser.name,
       email: cleanEmail,
-      workHourStart: user.startWorkTime || user.workHourStart || '09:00',
-      workHourEnd: user.endWorkTime || user.workHourEnd || '17:00',
-      startWorkTime: user.startWorkTime || user.workHourStart || '09:00',
-      endWorkTime: user.endWorkTime || user.workHourEnd || '17:00',
-      dailyCapacityMinutes: user.dailyCapacityMinutes || 480,
-      roleArchetype: user.roleArchetype || roleArchetype,
-      isOnboardingCompleted: Boolean(user.isOnboardingCompleted),
+      workHourStart: finalUser.startWorkTime || finalUser.workHourStart || '09:00',
+      workHourEnd: finalUser.endWorkTime || finalUser.workHourEnd || '17:00',
+      startWorkTime: finalUser.startWorkTime || finalUser.workHourStart || '09:00',
+      endWorkTime: finalUser.endWorkTime || finalUser.workHourEnd || '17:00',
+      dailyCapacityMinutes: finalUser.dailyCapacityMinutes || 480,
+      roleArchetype: finalUser.roleArchetype || roleArchetype,
+      isOnboardingCompleted: Boolean(finalUser.isOnboardingCompleted),
       provider: 'credentials' as const,
     };
 

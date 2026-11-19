@@ -4,6 +4,7 @@ import 'package:focient_ui_tokens/focient_ui_tokens.dart';
 import '../../../data/focient_repository.dart';
 import '../../../data/task_state.dart';
 import '../../riverpod_providers.dart';
+import '../../organism/focient_notification_sheet.dart';
 import '../settings/focient_settings_screen.dart';
 import 'focient_add_task_screen.dart';
 
@@ -251,6 +252,32 @@ class _FocientTaskDetailScreenState extends ConsumerState<FocientTaskDetailScree
                             ),
                           ),
                         ),
+                        if (liveTask.isRecurring) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFBFDBFE)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.repeat_rounded, size: 14, color: Color(0xFF2563EB)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  liveTask.recurrencePattern.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF2563EB),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
 
@@ -463,7 +490,10 @@ class _FocientTaskDetailScreenState extends ConsumerState<FocientTaskDetailScree
             splashRadius: 20,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () {},
+            onPressed: () {
+              NotificationCenterBottomSheet.show(context);
+            },
+            tooltip: 'Notifications',
           ),
           const SizedBox(width: 6),
           IconButton(

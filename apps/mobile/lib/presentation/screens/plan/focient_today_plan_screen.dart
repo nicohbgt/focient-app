@@ -5,6 +5,8 @@ import '../../../data/focient_repository.dart';
 import '../../../data/planning_state.dart';
 import '../../../data/task_state.dart';
 import '../../riverpod_providers.dart';
+import '../../../data/notification_state.dart';
+import '../../organism/focient_notification_sheet.dart';
 import '../onboarding/add_task_category_sheet.dart';
 import '../settings/focient_settings_screen.dart';
 import 'quick_task_input_sheet.dart';
@@ -438,21 +440,43 @@ class _FocientTodayPlanScreenState extends ConsumerState<FocientTodayPlanScreen>
           const SizedBox(width: 10),
 
           // Notification Bell
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              size: 22,
-            ),
-            color: const Color(0xFF64748B),
-            splashRadius: 20,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tidak ada notifikasi baru.'),
-                  duration: Duration(seconds: 2),
+          Builder(
+            builder: (ctx) {
+              final unreadCount = ref.watch(unreadNotificationCountProvider);
+              return IconButton(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(
+                      Icons.notifications_none_rounded,
+                      size: 22,
+                    ),
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: -1,
+                        top: -1,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFEF4444),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
+                color: const Color(0xFF64748B),
+                splashRadius: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () {
+                  NotificationCenterBottomSheet.show(
+                    context,
+                    onNavigateTab: widget.onNavigateTab,
+                  );
+                },
+                tooltip: 'Notifications',
               );
             },
           ),

@@ -6,6 +6,8 @@ import '../../../data/models/task_item.dart';
 import '../../../data/task_state.dart';
 import '../../focient_copywriting.dart';
 import '../../riverpod_providers.dart';
+import '../../../data/notification_state.dart';
+import '../../organism/focient_notification_sheet.dart';
 import '../settings/focient_settings_screen.dart';
 import 'focient_add_task_screen.dart';
 import 'focient_task_detail_screen.dart';
@@ -132,10 +134,18 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
   Widget build(BuildContext context) {
     final allTasks = ref.watch(taskListProvider);
 
-    // Filter tasks for selected day
+    // Filter tasks for selected day (including repetitive/recurring tasks)
     final selectedDayStr = '$_selectedDay';
+    final targetDate = DateTime(_currentMonth.year, _currentMonth.month, _selectedDay);
+    final targetWeekday = targetDate.weekday; // 1 = Mon, ..., 7 = Sun
+
     final dayTasks = allTasks.where((t) {
       if (t.isBacklog) return false;
+      if (t.isRecurring) {
+        if (t.recurrencePattern == 'daily') return true;
+        if (t.recurrencePattern == 'weekdays') return targetWeekday >= 1 && targetWeekday <= 5;
+        if (t.recurrencePattern == 'weekly') return true;
+      }
       if (_selectedDay == 3) {
         return t.dateDisplay.contains('3rd') || t.dateDisplay.contains('October, 3');
       } else if (_selectedDay == 5) {
@@ -144,7 +154,25 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
         return t.dateDisplay.contains('10th') || t.dateDisplay.contains('October, 10');
       }
       return t.dateDisplay.contains(selectedDayStr);
-    }).toList();
+    }).toList()
+      ..sort((a, b) {
+        int parseMinutes(String timeStr) {
+          final clean = timeStr.trim().toUpperCase();
+          final isPm = clean.contains('PM');
+          final isAm = clean.contains('AM');
+          final parts = clean.replaceAll('AM', '').replaceAll('PM', '').trim().split(':');
+          if (parts.isEmpty) return 9999;
+          int h = int.tryParse(parts[0]) ?? 0;
+          final m = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+          if (isPm && h < 12) h += 12;
+          if (isAm && h == 12) h = 0;
+          return h * 60 + m;
+        }
+
+        final diff = parseMinutes(a.startHourDisplay).compareTo(parseMinutes(b.startHourDisplay));
+        if (diff != 0) return diff;
+        return a.title.compareTo(b.title);
+      });
 
     final taskItems = dayTasks.map(TaskItem.fromMobileTask).toList();
 
@@ -958,13 +986,42 @@ class _FocientTaskListScreenState extends ConsumerState<FocientTaskListScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, size: 22),
-            color: const Color(0xFF64748B),
-            splashRadius: 20,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () {},
+          Builder(
+            builder: (ctx) {
+              final unreadCount = ref.watch(unreadNotificationCountProvider);
+              return IconButton(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.notifications_none_rounded, size: 22),
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: -1,
+                        top: -1,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFEF4444),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                color: const Color(0xFF64748B),
+                splashRadius: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () {
+                  NotificationCenterBottomSheet.show(
+                    context,
+                    onNavigateTab: widget.onNavigateTab,
+                  );
+                },
+                tooltip: 'Notifications',
+              );
+            },
           ),
           const SizedBox(width: 6),
           IconButton(

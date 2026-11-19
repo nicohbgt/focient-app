@@ -542,9 +542,9 @@ export const TaskDetailModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleSaveEdit}
-                  className="py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm transition-all"
+                  className="py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm transition-all text-center"
                 >
-                  {language === 'id' ? 'Simpan Perubahan' : 'Save Changes'}
+                  {language === 'id' ? 'Simpan' : 'Save'}
                 </button>
               </div>
             </div>

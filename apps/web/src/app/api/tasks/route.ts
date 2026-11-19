@@ -6,6 +6,9 @@ import {
   verifySession,
   saveTaskToLocalDb,
   getTasksFromLocalDb,
+  isDbAvailable,
+  withDbTimeout,
+  handleDbError,
 } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
@@ -29,18 +32,23 @@ export async function GET(request: Request) {
     }
 
     // 1. Try PostgreSQL first
-    try {
-      const tasks = await prisma.task.findMany({
-        where: { userId: user.id },
-        orderBy: { scheduledStart: 'asc' },
-        take: 200,
-      });
+    if (isDbAvailable()) {
+      try {
+        const tasks = await withDbTimeout(
+          prisma.task.findMany({
+            where: { userId: user.id },
+            orderBy: { scheduledStart: 'asc' },
+            take: 200,
+          }),
+          350
+        );
 
-      if (tasks && tasks.length > 0) {
-        return NextResponse.json(tasks);
+        if (tasks && tasks.length > 0) {
+          return NextResponse.json(tasks);
+        }
+      } catch (err) {
+        handleDbError(err);
       }
-    } catch {
-      // PostgreSQL is offline
     }
 
     // 2. Fall back to local persistent store

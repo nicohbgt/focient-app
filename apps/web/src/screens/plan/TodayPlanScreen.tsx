@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useFocient, BacklogTaskItem, MobileTask } from '../../state/focient-store';
-import { isTaskOnDate, formatCurrentDate, normalizeToISODate } from '../../lib/date-utils';
+import { isTaskOnDate, formatCurrentDate, normalizeToISODate, getWeekRangeBadge, getWeekDayDate } from '../../lib/date-utils';
 import {
   BellIcon,
   SparklesIcon,
@@ -21,6 +21,7 @@ export const TodayPlanScreen: React.FC = () => {
     openAddTaskModal,
     categoryBudgets,
     weeklyWorkloads,
+    weekStartDay,
     rebalanceProposal,
     rescheduleOverloadedTasks,
     keepCurrentSchedule,
@@ -86,9 +87,19 @@ export const TodayPlanScreen: React.FC = () => {
     [todayTasks]
   );
 
+  const currentWeekDays = useMemo(() => {
+    return [0, 1, 2, 3, 4, 5, 6].map((i) => getWeekDayDate(i, undefined, weekStartDay));
+  }, [weekStartDay]);
+
+  const weeklyScheduledTasks = useMemo(() => {
+    return tasks.filter(
+      (t) => !t.isBacklog && currentWeekDays.some((dayDate) => isTaskOnDate(t.dateDisplay, dayDate, t))
+    );
+  }, [tasks, currentWeekDays]);
+
   const weeklyActiveTasks = useMemo(
-    () => tasks.filter((t) => !t.isBacklog && t.status !== 'completed'),
-    [tasks]
+    () => weeklyScheduledTasks.filter((t) => t.status !== 'completed'),
+    [weeklyScheduledTasks]
   );
   const weeklyActiveMinutes = useMemo(
     () => weeklyActiveTasks.reduce((sum, t) => sum + (t.durationMinutes || 0), 0),
@@ -145,7 +156,7 @@ export const TodayPlanScreen: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-20 animate-fade-in max-w-4xl mx-auto">
+    <div className="space-y-6 pb-24 md:pb-12 animate-fade-in max-w-6xl mx-auto w-full">
       {/* Top Bar */}
       <div className="flex items-center justify-between bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div>
@@ -240,7 +251,10 @@ export const TodayPlanScreen: React.FC = () => {
                   <div className="flex items-center gap-3 overflow-hidden">
                     <button
                       type="button"
-                      onClick={() => toggleTaskComplete(task.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskComplete(task.id);
+                      }}
                       className={`w-5 h-5 rounded-md flex items-center justify-center transition-all duration-150 border ${
                         isCompleted
                           ? 'bg-[#0D9488] border-[#0D9488] text-white'
@@ -352,7 +366,7 @@ export const TodayPlanScreen: React.FC = () => {
             </p>
           </div>
           <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
-            Mon - Sun
+            {getWeekRangeBadge(weekStartDay, language)}
           </span>
         </div>
 
@@ -408,7 +422,7 @@ export const TodayPlanScreen: React.FC = () => {
               {language === 'id' ? 'Total Terjadwal' : 'Scheduled Tasks'}
             </span>
             <span className="text-sm font-extrabold text-slate-900 tabular-nums">
-              {weeklyActiveTasks.length}
+              {weeklyScheduledTasks.length}
             </span>
           </div>
         </div>

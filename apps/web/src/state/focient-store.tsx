@@ -8,6 +8,9 @@ import {
   getDayOfWeekIndex,
   getDayOfWeekName,
   getWeekDayDate,
+  getWeekDayKeys,
+  getWeekRangeBadge,
+  WeekStartDay,
   isTaskOnDate,
   isTimeOverlappingQuietHours,
   normalizeToISODate,
@@ -22,6 +25,11 @@ import {
   subscribeToWebPush,
   triggerServerWebPush,
   buildTaskReminderCopy,
+  buildTaskLeadReminderCopy,
+  buildTop3DailyReminderCopy,
+  buildDailyQuietTimeSummaryCopy,
+  buildWorkloadAlertCopy,
+  buildScheduleRecommendationCopy,
   buildWorkloadWarningCopy,
   buildDailySummaryCopy,
   buildRestBufferCopy,
@@ -559,6 +567,8 @@ interface FocientContextType {
 
   // Planning & Rebalancer
   weeklyWorkloads: DailyWorkloadItem[];
+  weekStartDay: WeekStartDay;
+  setWeekStartDay: (day: WeekStartDay) => void;
   categoryBudgets: CategoryBudgetItem[];
   backlogTasks: BacklogTaskItem[];
   rebalanceProposal: RebalanceTaskProposal | null;
@@ -656,7 +666,11 @@ interface FocientContextType {
   addAppNotification: (notification: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => void;
   requestPwaPermission: () => Promise<NotificationPermission>;
   triggerTaskReminder: (taskTitle: string, startHour: string, durationMinutes: number) => Promise<boolean>;
-  triggerWorkloadAlert: (workloadPercent: number, allocatedMinutes: number, capacityMinutes: number) => Promise<boolean>;
+  triggerTaskLeadReminder: (taskTitle: string, startHour: string, leadHours: 1 | 3 | 6) => Promise<boolean>;
+  triggerTop3DailyReminder: (top3Tasks: Array<{ title: string }>) => Promise<boolean>;
+  triggerDailyQuietTimeSummary: (completedCount: number, restMinutes: number) => Promise<boolean>;
+  triggerScheduleRecommendation: (workloadPercent: number, allocatedMinutes: number, capacityMinutes: number) => Promise<boolean>;
+  triggerWorkloadAlert: (workloadPercent: number, allocatedMinutes: number, capacityMinutes: number, type?: 'high' | 'low') => Promise<boolean>;
   triggerDailySummary: (completedCount: number, restMinutes: number) => Promise<boolean>;
   triggerRestBufferAlert: (restMinutes: number) => Promise<boolean>;
   triggerWebPushTest: () => Promise<{ success: boolean; sentCount?: number; message?: string }>;
@@ -1029,16 +1043,54 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
   const [selectedCalendarDay, setSelectedCalendarDay] = useState<number>(() => new Date().getDate());
   const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<MobileTask | null>(null);
 
+  const [weekStartDay, setWeekStartDayState] = useState<WeekStartDay>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = window.localStorage.getItem('focient_week_start_day');
+        if (saved === 'sunday' || saved === 'monday') return saved;
+      } catch {}
+    }
+    return 'monday';
+  });
+
+  const setWeekStartDay = useCallback((day: WeekStartDay) => {
+    setWeekStartDayState(day);
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem('focient_week_start_day', day);
+      } catch {}
+    }
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated: UserSession = {
+        ...prev,
+        weekStartDay: day,
+      };
+      if (typeof window !== 'undefined') {
+        try {
+          authClient.setSession(authClient.getToken() || 'focient_token', updated);
+        } catch {}
+      }
+      return updated;
+    });
+  }, []);
+
   // Planning state
-  const [weeklyWorkloads, setWeeklyWorkloads] = useState<DailyWorkloadItem[]>([
-    { dayKey: 'Mon', fullDayName: 'Monday', percentage: 40 },
-    { dayKey: 'Tue', fullDayName: 'Tuesday', percentage: 60 },
-    { dayKey: 'Wed', fullDayName: 'Wednesday', percentage: 75 },
-    { dayKey: 'Thu', fullDayName: 'Thursday', percentage: 50 },
-    { dayKey: 'Fri', fullDayName: 'Friday', percentage: 65 },
-    { dayKey: 'Sat', fullDayName: 'Saturday', percentage: 0 },
-    { dayKey: 'Sun', fullDayName: 'Sunday', percentage: 0 },
-  ]);
+  const [weeklyWorkloads, setWeeklyWorkloads] = useState<DailyWorkloadItem[]>(() => {
+    let initialStart: WeekStartDay = 'monday';
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = window.localStorage.getItem('focient_week_start_day');
+        if (saved === 'sunday' || saved === 'monday') initialStart = saved;
+      } catch {}
+    }
+    const keys = getWeekDayKeys(initialStart);
+    return keys.map((key, i) => ({
+      dayKey: key,
+      fullDayName: getDayOfWeekName(i, 'en', initialStart),
+      percentage: 0,
+    }));
+  });
 
   const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudgetItem[]>([
     { name: 'Strategic', allocatedMinutes: 0, maxMinutes: 180, colorHex: '#7C3AED' },
@@ -1225,18 +1277,11 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
   // Dynamically compute weeklyWorkloads and rebalance proposals from real user tasks and capacity baseline
   useEffect(() => {
     const capacity = calculateCapacityMinutes(user?.workHourStart, user?.workHourEnd);
-    const dayKeys: Array<{ dayKey: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun'; index: number }> = [
-      { dayKey: 'Mon', index: 0 },
-      { dayKey: 'Tue', index: 1 },
-      { dayKey: 'Wed', index: 2 },
-      { dayKey: 'Thu', index: 3 },
-      { dayKey: 'Fri', index: 4 },
-      { dayKey: 'Sat', index: 5 },
-      { dayKey: 'Sun', index: 6 },
-    ];
+    const dayKeyList = getWeekDayKeys(weekStartDay, language);
+    const dayKeys = dayKeyList.map((dayKey, index) => ({ dayKey, index }));
 
     const computedWorkloads: DailyWorkloadItem[] = dayKeys.map((day) => {
-      const weekDayDate = getWeekDayDate(day.index);
+      const weekDayDate = getWeekDayDate(day.index, undefined, weekStartDay);
       const dayTasks = tasks.filter((t) => {
         if (t.isBacklog) return false;
         return isTaskOnDate(t.dateDisplay, weekDayDate, t);
@@ -1251,7 +1296,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
 
       return {
         dayKey: day.dayKey,
-        fullDayName: getDayOfWeekName(day.index, language),
+        fullDayName: getDayOfWeekName(day.index, language, weekStartDay),
         percentage,
       };
     });
@@ -1270,7 +1315,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
 
     if (!rescheduleAlertResolved && !rescheduleAlertDismissed) {
       for (const day of dayKeys) {
-        const weekDayDate = getWeekDayDate(day.index);
+        const weekDayDate = getWeekDayDate(day.index, undefined, weekStartDay);
         const dayTasks = tasks
           .filter(
             (t) =>
@@ -1302,7 +1347,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
                 candidateTask: t2,
                 conflictingWith: t1,
                 dayIndex: day.index,
-                dayName: getDayOfWeekName(day.index, language),
+                dayName: getDayOfWeekName(day.index, language, weekStartDay),
                 suggestedSlot: `${shiftHour}:${shiftMin}`,
                 buffer: t1Buffer,
               };
@@ -1332,7 +1377,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     const overloadedDay = computedWorkloads.find((d) => d.percentage > 80);
     if (overloadedDay && !rescheduleAlertResolved && !rescheduleAlertDismissed) {
       const dayIndex = dayKeys.find((dk) => dk.dayKey === overloadedDay.dayKey)?.index ?? 0;
-      const dayDate = getWeekDayDate(dayIndex);
+      const dayDate = getWeekDayDate(dayIndex, undefined, weekStartDay);
       const dayTasks = tasks.filter((t) => {
         if (t.isBacklog || t.status === 'completed') return false;
         return isTaskOnDate(t.dateDisplay, dayDate, t);
@@ -1382,7 +1427,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     } else {
       setRebalanceProposal(null);
     }
-  }, [tasks, user?.workHourStart, user?.workHourEnd, user?.workHoursLimit, user?.workingRhythm, user?.schedulingStyle, selectedRhythm, selectedStyle, language, rescheduleAlertResolved, rescheduleAlertDismissed]);
+  }, [tasks, user?.workHourStart, user?.workHourEnd, user?.workHoursLimit, user?.workingRhythm, user?.schedulingStyle, selectedRhythm, selectedStyle, language, weekStartDay, rescheduleAlertResolved, rescheduleAlertDismissed]);
 
   const refreshTasksFromDb = useCallback(async () => {
     if (typeof window === 'undefined') return;
@@ -1489,12 +1534,25 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.user) {
+          const serverWeekStart = data.user.weekStartDay;
+          if (serverWeekStart === 'sunday' || serverWeekStart === 'monday') {
+            setWeekStartDayState(serverWeekStart);
+            if (typeof window !== 'undefined') {
+              try {
+                window.localStorage.setItem('focient_week_start_day', serverWeekStart);
+              } catch {}
+            }
+          }
           const updatedUserObj: UserSession = {
             ...(user || ({} as any)),
             ...data.user,
             workHourStart: data.user.startWorkTime || data.user.workHourStart || '09:00',
             workHourEnd: data.user.endWorkTime || data.user.workHourEnd || '17:00',
             dailyCapacityMinutes: data.user.dailyCapacityMinutes || 480,
+            weekStartDay:
+              serverWeekStart === 'sunday' || serverWeekStart === 'monday'
+                ? serverWeekStart
+                : weekStartDay || 'monday',
           };
           setUser(updatedUserObj);
           if (token) {
@@ -1574,6 +1632,9 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
           }
         }
         if (newSettings.schedulingStyle) setSelectedStyle(newSettings.schedulingStyle);
+        if (newSettings.weekStartDay === 'sunday' || newSettings.weekStartDay === 'monday') {
+          setWeekStartDay(newSettings.weekStartDay);
+        }
         if (newSettings.quietHourStart || newSettings.preferences?.quietHoursStart) {
           setQuietHourStart(newSettings.quietHourStart || newSettings.preferences?.quietHoursStart);
         }
@@ -1595,7 +1656,15 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         if (res.ok) {
           const data = await res.json();
           if (data.user) {
-            setUser((prev) => (prev ? { ...prev, ...data.user } : data.user));
+            setUser((prev) => (prev ? { ...data.user, ...prev } : data.user));
+            if (data.user.weekStartDay === 'sunday' || data.user.weekStartDay === 'monday') {
+              setWeekStartDayState(data.user.weekStartDay);
+              if (typeof window !== 'undefined') {
+                try {
+                  window.localStorage.setItem('focient_week_start_day', data.user.weekStartDay);
+                } catch {}
+              }
+            }
             if (typeof window !== 'undefined') {
               const token = authClient.getToken() || 'focient_token';
               const currentUser = authClient.getUser() || user;
@@ -1603,6 +1672,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
                 authClient.setSession(token, {
                   ...currentUser,
                   ...data.user,
+                  ...(newSettings || {}),
                 });
               }
             }
@@ -1696,15 +1766,14 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     if (emptyStateMode) {
       setTasks([]);
       setBacklogTasks([]);
-      setWeeklyWorkloads([
-        { dayKey: 'Mon', fullDayName: 'Monday', percentage: 0 },
-        { dayKey: 'Tue', fullDayName: 'Tuesday', percentage: 0 },
-        { dayKey: 'Wed', fullDayName: 'Wednesday', percentage: 0 },
-        { dayKey: 'Thu', fullDayName: 'Thursday', percentage: 0 },
-        { dayKey: 'Fri', fullDayName: 'Friday', percentage: 0 },
-        { dayKey: 'Sat', fullDayName: 'Saturday', percentage: 0 },
-        { dayKey: 'Sun', fullDayName: 'Sunday', percentage: 0 },
-      ]);
+      const currentKeys = getWeekDayKeys(weekStartDay, language);
+      setWeeklyWorkloads(
+        currentKeys.map((key, i) => ({
+          dayKey: key,
+          fullDayName: getDayOfWeekName(i, language, weekStartDay),
+          percentage: 0,
+        }))
+      );
       setCategoryBudgets([
         { name: 'Strategic', allocatedMinutes: 0, colorHex: '#7C3AED' },
         { name: 'Execution', allocatedMinutes: 0, colorHex: '#0284C7' },
@@ -1714,15 +1783,15 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     } else {
       setTasks(kSampleTasks);
       setBacklogTasks(kSampleBacklog);
-      setWeeklyWorkloads([
-        { dayKey: 'Mon', fullDayName: 'Monday', percentage: 65 },
-        { dayKey: 'Tue', fullDayName: 'Tuesday', percentage: 75 },
-        { dayKey: 'Wed', fullDayName: 'Wednesday', percentage: 92 },
-        { dayKey: 'Thu', fullDayName: 'Thursday', percentage: 55 },
-        { dayKey: 'Fri', fullDayName: 'Friday', percentage: 60 },
-        { dayKey: 'Sat', fullDayName: 'Saturday', percentage: 20 },
-        { dayKey: 'Sun', fullDayName: 'Sunday', percentage: 10 },
-      ]);
+      const currentKeys = getWeekDayKeys(weekStartDay, language);
+      const samplePercentages = [65, 75, 92, 55, 60, 20, 10];
+      setWeeklyWorkloads(
+        currentKeys.map((key, i) => ({
+          dayKey: key,
+          fullDayName: getDayOfWeekName(i, language, weekStartDay),
+          percentage: samplePercentages[i] ?? 50,
+        }))
+      );
       setCategoryBudgets([
         { name: 'Strategic', allocatedMinutes: 150, maxMinutes: 180, colorHex: '#7C3AED' },
         { name: 'Execution', allocatedMinutes: 180, maxMinutes: 240, colorHex: '#0284C7' },
@@ -2180,6 +2249,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await authClient.logout();
     authClient.clearSession();
+    const currentUserId = user?.id;
     setUser(null);
     setIsAuthenticated(false);
     setIsOtpPending(false);
@@ -2190,6 +2260,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     setTasks([]);
     setBacklogTasks([]);
     setCategories([]);
+    setNotifications([]);
     setSelectedOccupancy(null);
     setSelectedRhythm(null);
     setSelectedStyle(null);
@@ -2200,11 +2271,19 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
       try {
         window.localStorage.removeItem('focient_web_tasks');
         window.localStorage.removeItem('focient_web_backlog');
+        window.localStorage.removeItem('focient_notifications');
+        if (currentUserId) {
+          window.localStorage.removeItem(`focient_notifications_${currentUserId}`);
+          window.localStorage.removeItem(`focient_web_tasks_${currentUserId}`);
+        }
         window.sessionStorage.clear();
       } catch {}
+      if (typeof document !== 'undefined') {
+        document.title = 'FoCient';
+      }
     }
     showToast(language === 'id' ? 'Berhasil keluar dari akun' : 'Logged out successfully', 'info');
-  }, [language, showToast]);
+  }, [user?.id, language, showToast]);
 
   // Onboarding actions
   const addCategory = useCallback((cat: WorkspaceCategory) => {
@@ -2316,6 +2395,54 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
           ];
     const token = authClient.getToken();
 
+    // 1. Optimistic immediate transition (0ms latency for button click response)
+    const baseUser: any = user || {
+      id: 'usr_' + Date.now(),
+      email: 'user@focient.app',
+      name: onboardingUsername || 'FoCient Member',
+      username: onboardingUsername ? onboardingUsername.toLowerCase().replace(/\s+/g, '') : 'member',
+      workHourStart: '09:00',
+      workHourEnd: '17:00',
+      dailyCapacityMinutes: computedCapacity,
+    };
+    const updatedUser: UserSession = {
+      ...baseUser,
+      name: onboardingUsername || baseUser.name,
+      roleArchetype: selectedOccupancy || baseUser.roleArchetype || 'Software Engineer',
+      occupancy: selectedOccupancy || baseUser.occupancy || 'Software Engineer',
+      workingRhythm: selectedRhythm || baseUser.workingRhythm || 'Early Bird',
+      schedulingStyle: selectedStyle || baseUser.schedulingStyle || 'Structured',
+      startWorkTime: startHour || baseUser.workHourStart || '09:00',
+      endWorkTime: endHour || baseUser.workHourEnd || '17:00',
+      workHourStart: startHour || baseUser.workHourStart || '09:00',
+      workHourEnd: endHour || baseUser.workHourEnd || '17:00',
+      restTimePerTask: restMinutesPerTask,
+      dailyCapacityMinutes: computedCapacity,
+      quietHourStart: quietHourStart || baseUser.quietHourStart || '',
+      quietHourEnd: quietHourEnd || baseUser.quietHourEnd || '',
+      quietHourEnabled: quietHourEnabled !== undefined ? quietHourEnabled : true,
+      isOnboardingCompleted: true,
+    };
+    setUser(updatedUser);
+    authClient.setSession(token || 'focient_token', updatedUser);
+
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(`focient_web_tasks_${updatedUser.id}`, JSON.stringify(tasks));
+      } catch {}
+    }
+
+    setOnboardingStep(5);
+    setActiveNavTab('dashboard');
+    setAuthView('dashboard');
+    showToast(
+      language === 'id'
+        ? 'Setup ruang kerja selesai! Selamat berfokus tanpa rasa bersalah.'
+        : 'Workspace ready! Enjoy your guilt-free focus journey.',
+      'success'
+    );
+
+    // 2. Background persistence to server / DB
     const payload = {
       job: selectedOccupancy || user?.roleArchetype || 'Software Engineer',
       roleArchetype: selectedOccupancy || user?.roleArchetype || 'Software Engineer',
@@ -2334,72 +2461,19 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     };
 
     try {
-      const res = await fetch('/api/onboarding/complete', {
+      fetch('/api/onboarding/complete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(payload),
+      }).catch((err) => {
+        console.warn('Background sync on complete onboarding warning:', err);
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        const updated = data.user || data;
-        if (updated) {
-          const updatedUser: UserSession = {
-            ...(user || ({} as any)),
-            ...updated,
-            quietHourStart: quietHourStart || updated.quietHourStart || '',
-            quietHourEnd: quietHourEnd || updated.quietHourEnd || '',
-            quietHourEnabled: quietHourEnabled !== undefined ? quietHourEnabled : updated.quietHourEnabled,
-            isOnboardingCompleted: true,
-          };
-          setUser(updatedUser);
-          authClient.setSession(token || 'focient_token', updatedUser);
-        }
-      }
     } catch (err) {
       console.warn('Failed to post /api/onboarding/complete:', err);
     }
-
-    if (user) {
-      const updatedUser: UserSession = {
-        ...user,
-        name: onboardingUsername || user.name,
-        roleArchetype: selectedOccupancy || user.roleArchetype,
-        workingRhythm: selectedRhythm || user.workingRhythm,
-        schedulingStyle: selectedStyle || user.schedulingStyle,
-        startWorkTime: startHour || user.workHourStart || '09:00',
-        endWorkTime: endHour || user.workHourEnd || '17:00',
-        workHourStart: startHour || user.workHourStart || '09:00',
-        workHourEnd: endHour || user.workHourEnd || '17:00',
-        restTimePerTask: restMinutesPerTask,
-        dailyCapacityMinutes: computedCapacity,
-        quietHourStart: quietHourStart || user.quietHourStart || '',
-        quietHourEnd: quietHourEnd || user.quietHourEnd || '',
-        quietHourEnabled: quietHourEnabled !== undefined ? quietHourEnabled : user.quietHourEnabled,
-        isOnboardingCompleted: true,
-      };
-      setUser(updatedUser);
-      authClient.setSession(authClient.getToken() || 'focient_token', updatedUser);
-
-      if (typeof window !== 'undefined') {
-        try {
-          window.localStorage.setItem(`focient_web_tasks_${updatedUser.id}`, JSON.stringify(tasks));
-        } catch {}
-      }
-    }
-
-    setOnboardingStep(5);
-    setActiveNavTab('dashboard');
-    setAuthView('dashboard');
-    showToast(
-      language === 'id'
-        ? 'Setup ruang kerja selesai! Selamat berfokus tanpa rasa bersalah.'
-        : 'Workspace ready! Enjoy your guilt-free focus journey.',
-      'success'
-    );
   }, [user, onboardingUsername, selectedOccupancy, selectedRhythm, selectedStyle, startHour, endHour, categories, restMinutesPerTask, quietHourStart, quietHourEnd, quietHourEnabled, tasks, language, showToast]);
 
   // -------------------------------------------------------------
@@ -2411,7 +2485,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const [pwaPermission, setPwaPermission] = useState<NotificationPermission>('default');
 
-  // Load notifications from localStorage and API on mount
+  // Load notifications from localStorage and API on mount / authentication change
   useEffect(() => {
     if (typeof window !== 'undefined') {
       registerPwaServiceWorker();
@@ -2421,8 +2495,14 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         subscribeToWebPush().catch(() => {});
       }
 
+      if (!isAuthenticated) {
+        setNotifications([]);
+        return;
+      }
+
       try {
-        const saved = localStorage.getItem('focient_notifications');
+        const userScopedKey = user?.id ? `focient_notifications_${user.id}` : null;
+        const saved = (userScopedKey && localStorage.getItem(userScopedKey)) || localStorage.getItem('focient_notifications');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -2433,7 +2513,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         // fallback
       }
 
-      // Fetch from API in background
+      // Fetch from API in background only when logged in
       fetch('/api/notifications')
         .then((res) => res.json())
         .then((data) => {
@@ -2443,20 +2523,36 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         })
         .catch(() => {});
     }
-  }, []);
+  }, [isAuthenticated, user?.id]);
 
   // Sync to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      if (!isAuthenticated) return;
       try {
+        if (user?.id) {
+          localStorage.setItem(`focient_notifications_${user.id}`, JSON.stringify(notifications));
+        }
         localStorage.setItem('focient_notifications', JSON.stringify(notifications));
       } catch (e) {}
     }
-  }, [notifications]);
+  }, [notifications, isAuthenticated, user?.id]);
 
   const unreadNotificationCount = useMemo(() => {
+    if (!isAuthenticated) return 0;
     return notifications.filter((n) => !n.read).length;
-  }, [notifications]);
+  }, [notifications, isAuthenticated]);
+
+  // Synchronize browser tab title with unread notifications strictly when authenticated
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const baseTitle = 'FoCient';
+    if (isAuthenticated && unreadNotificationCount > 0) {
+      document.title = `(${unreadNotificationCount}) FoCient`;
+    } else {
+      document.title = baseTitle;
+    }
+  }, [isAuthenticated, unreadNotificationCount]);
 
   const openNotificationPanel = useCallback(() => setIsNotificationPanelOpen(true), []);
   const closeNotificationPanel = useCallback(() => setIsNotificationPanelOpen(false), []);
@@ -2485,15 +2581,53 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     fetch(`/api/notifications?id=${id}`, { method: 'DELETE' }).catch(() => {});
   }, []);
 
+  const recentDispatchedNotifsRef = useRef<Map<string, number>>(new Map());
+
   const addAppNotification = useCallback(
     (notif: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => {
+      if (!isAuthenticated) return;
+
+      const notifKey = `${notif.category}:${notif.title}:${notif.message}`;
+      const now = Date.now();
+      const lastDispatched = recentDispatchedNotifsRef.current.get(notifKey) || 0;
+
+      // Strictly prevent duplicate notifications for the exact same event within 3 seconds
+      if (now - lastDispatched < 3000) {
+        return;
+      }
+      recentDispatchedNotifsRef.current.set(notifKey, now);
+
       const newNotification: AppNotification = {
         ...notif,
-        id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        id: `notif-${now}-${Math.random().toString(36).slice(2, 7)}`,
         createdAt: new Date().toISOString(),
         read: false,
       };
-      setNotifications((prev) => [newNotification, ...prev]);
+
+      setNotifications((prev) => {
+        // Prevent duplicate entries in state
+        const isDuplicate = prev.some(
+          (n) =>
+            n.title === notif.title &&
+            n.message === notif.message &&
+            Math.abs(now - new Date(n.createdAt).getTime()) < 3000
+        );
+        if (isDuplicate) {
+          return prev;
+        }
+        return [newNotification, ...prev];
+      });
+
+      // Dynamic tab alert when user is on another browser tab (strictly when authenticated)
+      if (typeof document !== 'undefined' && document.hidden && isAuthenticated) {
+        const prevTitle = document.title;
+        document.title = `🔔 ${notif.title} | FoCient`;
+        setTimeout(() => {
+          if (typeof document !== 'undefined') {
+            document.title = isAuthenticated ? prevTitle : 'FoCient';
+          }
+        }, 3500);
+      }
 
       fetch('/api/notifications', {
         method: 'POST',
@@ -2505,7 +2639,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         }),
       }).catch(() => {});
     },
-    []
+    [isAuthenticated]
   );
 
   // Task actions with Real-Time Database Synchronization
@@ -2620,8 +2754,10 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         title: addedCopy.title,
         message: addedCopy.body,
         category: 'task',
-        actionUrl: '/plan',
-        actionLabel: language === 'id' ? 'Lihat Jadwal' : 'View Plan',
+        actionUrl: task.isBacklog ? '/tasks' : '/plan',
+        actionLabel: language === 'id'
+          ? (task.isBacklog ? 'Lihat Tugas' : 'Lihat Jadwal')
+          : (task.isBacklog ? 'View Tasks' : 'View Plan'),
       });
 
       showToast(
@@ -2788,37 +2924,24 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     [tasks, selectedTaskForDetail, language, showToast]
   );
 
+  const lastTaskToggleTimeRef = useRef<Map<string, number>>(new Map());
+
   const toggleTaskComplete = useCallback(
     (id: string) => {
-      setTasks((prev) => {
-        const target = prev.find((t) => t.id === id);
-        const nextStatus = target?.status === 'completed' ? 'todo' : 'completed';
+      const now = Date.now();
+      const lastToggled = lastTaskToggleTimeRef.current.get(id) || 0;
+      // Debounce rapid repeated clicks on the same task checkbox (within 400ms)
+      if (now - lastToggled < 400) return;
+      lastTaskToggleTimeRef.current.set(id, now);
 
-        // Asynchronous Real-Time Database Persistence
-        if (typeof window !== 'undefined') {
-          const token = authClient.getToken();
-          fetch(`/api/tasks/${id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify({ status: nextStatus }),
-          }).catch(() => {});
-        }
+      const target = tasks.find((t) => t.id === id);
+      if (!target) return;
 
-        if (nextStatus === 'completed' && target) {
-          const completedCopy = buildTaskCompletedCopy(target.title, language);
-          addAppNotification({
-            title: completedCopy.title,
-            message: completedCopy.body,
-            category: 'task',
-            actionUrl: '/plan',
-            actionLabel: language === 'id' ? 'Lihat Jadwal' : 'View Plan',
-          });
-        }
+      const nextStatus = target.status === 'completed' ? 'todo' : 'completed';
 
-        return prev.map((t) => {
+      // 1. Pure state update
+      setTasks((prev) =>
+        prev.map((t) => {
           if (t.id === id) {
             return {
               ...t,
@@ -2826,10 +2949,35 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
             };
           }
           return t;
+        })
+      );
+
+      // 2. Real-Time Database Persistence (strictly outside setState updater)
+      if (typeof window !== 'undefined') {
+        const token = authClient.getToken();
+        fetch(`/api/tasks/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ status: nextStatus }),
+        }).catch(() => {});
+      }
+
+      // 3. Exactly one guilt-free notification when completing a task (strictly outside setState updater)
+      if (nextStatus === 'completed') {
+        const completedCopy = buildTaskCompletedCopy(target.title, language);
+        addAppNotification({
+          title: completedCopy.title,
+          message: completedCopy.body,
+          category: 'task',
+          actionUrl: '/plan',
+          actionLabel: language === 'id' ? 'Lihat Jadwal' : 'View Plan',
         });
-      });
+      }
     },
-    [language, addAppNotification]
+    [tasks, language, addAppNotification]
   );
 
   // Planning & Reschedule with Real-Time Database Support
@@ -2839,7 +2987,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
       const targetDayName = parts[0]?.trim() || '';
       const timePart = parts[1]?.trim().split(' ')[0] || '10:00';
       const targetDayIdx = getDayOfWeekIndex(targetDayName);
-      const targetExactDate = formatCurrentDate(getWeekDayDate(targetDayIdx), language);
+      const targetExactDate = formatCurrentDate(getWeekDayDate(targetDayIdx, undefined, weekStartDay), language);
       setTasks((prev) =>
         prev.map((t) => {
           if (t.id === rebalanceProposal.id) {
@@ -3134,36 +3282,64 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     [language, addAppNotification]
   );
 
-  const triggerWorkloadAlert = useCallback(
-    async (workloadPercent: number, allocatedMinutes: number, capacityMinutes: number): Promise<boolean> => {
-      const copy = buildWorkloadWarningCopy(workloadPercent, allocatedMinutes, capacityMinutes, language);
+  const triggerTaskLeadReminder = useCallback(
+    async (taskTitle: string, startHour: string, leadHours: 1 | 3 | 6): Promise<boolean> => {
+      const copy = buildTaskLeadReminderCopy(taskTitle, startHour, leadHours, language);
       addAppNotification({
         title: copy.title,
         message: copy.body,
-        category: 'workload',
-        actionUrl: '/dashboard',
-        actionLabel: language === 'id' ? 'Atur Jadwal' : 'Adjust Schedule',
+        category: 'task',
+        actionUrl: '/plan',
+        actionLabel: language === 'id' ? 'Buka Jadwal' : 'View Plan',
       });
       triggerServerWebPush({
         title: copy.title,
         body: copy.body,
-        url: '/dashboard',
-        tag: 'workload-warning',
-        category: 'workload',
+        url: '/plan',
+        tag: `task-lead-${leadHours}h-${Date.now()}`,
+        category: 'task',
       }).catch(() => {});
       return await showPwaNotification({
         title: copy.title,
         body: copy.body,
-        tag: 'workload-warning',
-        url: '/dashboard',
+        tag: `task-lead-${leadHours}h-${Date.now()}`,
+        url: '/plan',
       });
     },
     [language, addAppNotification]
   );
 
-  const triggerDailySummary = useCallback(
+  const triggerTop3DailyReminder = useCallback(
+    async (top3Tasks: Array<{ title: string }>): Promise<boolean> => {
+      const copy = buildTop3DailyReminderCopy(top3Tasks, language);
+      addAppNotification({
+        title: copy.title,
+        message: copy.body,
+        category: 'task',
+        actionUrl: '/plan',
+        actionLabel: language === 'id' ? 'Mulai Hari' : 'Start Day',
+      });
+      triggerServerWebPush({
+        title: copy.title,
+        body: copy.body,
+        url: '/plan',
+        tag: `top3-daily-${Date.now()}`,
+        category: 'task',
+      }).catch(() => {});
+      return await showPwaNotification({
+        title: copy.title,
+        body: copy.body,
+        tag: `top3-daily-${Date.now()}`,
+        url: '/plan',
+      });
+    },
+    [language, addAppNotification]
+  );
+
+  const triggerDailyQuietTimeSummary = useCallback(
     async (completedCount: number, restMinutes: number): Promise<boolean> => {
-      const copy = buildDailySummaryCopy(completedCount, restMinutes, language);
+      const effectiveQuietStart = quietHourEnabled && quietHourStart ? quietHourStart : undefined;
+      const copy = buildDailyQuietTimeSummaryCopy(completedCount, restMinutes, effectiveQuietStart, language);
       addAppNotification({
         title: copy.title,
         message: copy.body,
@@ -3175,17 +3351,78 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         title: copy.title,
         body: copy.body,
         url: '/insights',
-        tag: 'daily-summary',
+        tag: 'daily-quiet-summary',
         category: 'summary',
       }).catch(() => {});
       return await showPwaNotification({
         title: copy.title,
         body: copy.body,
-        tag: 'daily-summary',
+        tag: 'daily-quiet-summary',
         url: '/insights',
       });
     },
+    [language, quietHourEnabled, quietHourStart, addAppNotification]
+  );
+
+  const triggerScheduleRecommendation = useCallback(
+    async (workloadPercent: number, allocatedMinutes: number, capacityMinutes: number): Promise<boolean> => {
+      const copy = buildScheduleRecommendationCopy(workloadPercent, allocatedMinutes, capacityMinutes, language);
+      addAppNotification({
+        title: copy.title,
+        message: copy.body,
+        category: 'workload',
+        actionUrl: '/dashboard',
+        actionLabel: language === 'id' ? 'Lihat Dasbor' : 'View Dashboard',
+      });
+      triggerServerWebPush({
+        title: copy.title,
+        body: copy.body,
+        url: '/dashboard',
+        tag: 'schedule-recommendation',
+        category: 'workload',
+      }).catch(() => {});
+      return await showPwaNotification({
+        title: copy.title,
+        body: copy.body,
+        tag: 'schedule-recommendation',
+        url: '/dashboard',
+      });
+    },
     [language, addAppNotification]
+  );
+
+  const triggerWorkloadAlert = useCallback(
+    async (workloadPercent: number, allocatedMinutes: number, capacityMinutes: number, type: 'high' | 'low' = 'high'): Promise<boolean> => {
+      const copy = buildWorkloadAlertCopy(workloadPercent, allocatedMinutes, capacityMinutes, type, language);
+      addAppNotification({
+        title: copy.title,
+        message: copy.body,
+        category: 'workload',
+        actionUrl: type === 'high' ? '/reschedule' : '/tasks',
+        actionLabel: language === 'id' ? (type === 'high' ? 'Atur Ulang' : 'Pilih Tugas') : (type === 'high' ? 'Reschedule' : 'Pick Tasks'),
+      });
+      triggerServerWebPush({
+        title: copy.title,
+        body: copy.body,
+        url: type === 'high' ? '/reschedule' : '/tasks',
+        tag: `workload-${type}-warning`,
+        category: 'workload',
+      }).catch(() => {});
+      return await showPwaNotification({
+        title: copy.title,
+        body: copy.body,
+        tag: `workload-${type}-warning`,
+        url: type === 'high' ? '/reschedule' : '/tasks',
+      });
+    },
+    [language, addAppNotification]
+  );
+
+  const triggerDailySummary = useCallback(
+    async (completedCount: number, restMinutes: number): Promise<boolean> => {
+      return await triggerDailyQuietTimeSummary(completedCount, restMinutes);
+    },
+    [triggerDailyQuietTimeSummary]
   );
 
   const triggerRestBufferAlert = useCallback(
@@ -3261,12 +3498,16 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     [language, addAppNotification]
   );
 
-  // Client-side Auto-Scheduler interval (checks upcoming tasks, urgent tasks & workload alerts every 30 seconds)
+  // Client-side Auto-Scheduler interval (checks upcoming tasks, lead reminders, top 3, workload & quiet time summary every 30 seconds)
   const scheduledTaskRemindersRef = useRef<Set<string>>(new Set());
   const lastWorkloadAlertTimeRef = useRef<number>(0);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (!isAuthenticated) {
+      scheduledTaskRemindersRef.current.clear();
+      return;
+    }
 
     const interval = setInterval(() => {
       const now = new Date();
@@ -3274,86 +3515,145 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
       const currentMinutes = now.getMinutes();
       const currentTimeInMinutes = currentHours * 60 + currentMinutes;
       const currentHourStr = `${String(currentHours).padStart(2, '0')}:${String(currentMinutes).padStart(2, '0')}`;
+      const today = new Date();
+      const todayDateString = today.toDateString();
 
-      // Respect quiet hours if enabled
+      const todayScheduled = tasks.filter(
+        (t) => !t.isBacklog && isTaskOnDate(t.dateDisplay, today, t)
+      );
+      const todayPendingTasks = todayScheduled.filter((t) => t.status !== 'completed');
+      const completedCount = todayScheduled.filter((t) => t.status === 'completed').length;
+      const restMinutes = todayScheduled.reduce((sum, t) => sum + (t.restMinutes || 0), 0);
+
+      const capMin = calculateCapacityMinutes(user?.workHourStart, user?.workHourEnd);
+      const allocatedMin = todayPendingTasks.reduce((sum, t) => sum + (t.durationMinutes || 0), 0);
+      const pct = capMin > 0 ? Math.round((allocatedMin / capMin) * 100) : 0;
+
+      // 1. Check Daily Quiet Time Summary (or 23:59 if quiet hours not set)
+      const quietSummaryKey = `quiet-summary-${todayDateString}`;
+      const quietStartMin = quietHourEnabled && quietHourStart ? parseTime24ToMinutes(quietHourStart) : null;
+      const isQuietSummaryTime =
+        quietStartMin !== null
+          ? currentTimeInMinutes >= quietStartMin - 15 && currentTimeInMinutes <= quietStartMin + 20
+          : currentTimeInMinutes >= 1438; // 23:58 - 23:59 fallback
+
+      if (isQuietSummaryTime && !scheduledTaskRemindersRef.current.has(quietSummaryKey)) {
+        scheduledTaskRemindersRef.current.add(quietSummaryKey);
+        triggerDailyQuietTimeSummary(completedCount, restMinutes);
+      }
+
+      // Respect quiet hours: suppress disruptive task and workload alarms during quiet period
       if (quietHourEnabled && quietHourStart && quietHourEnd) {
         if (isTimeOverlappingQuietHours(currentHourStr, 1, quietHourStart, quietHourEnd, quietHourEnabled)) {
           return;
         }
       }
 
-      // Check upcoming tasks scheduled for today within 5 minutes
-      const today = new Date();
-      const todayPendingTasks = tasks.filter(
-        (t) => !t.isBacklog && t.status !== 'completed' && isTaskOnDate(t.dateDisplay, today, t)
-      );
+      // 2. Daily Top 3 Priority Task Reminder (Start of day / morning)
+      const todayTop3 = todayPendingTasks.filter((t) => t.priority === 'top3');
+      if (todayTop3.length > 0) {
+        const top3DailyKey = `top3-daily-${todayDateString}`;
+        const workStartMin = parseTime24ToMinutes(user?.workHourStart || user?.startWorkTime || '09:00') || 540;
+        if (currentTimeInMinutes >= Math.max(420, workStartMin - 30) && !scheduledTaskRemindersRef.current.has(top3DailyKey)) {
+          scheduledTaskRemindersRef.current.add(top3DailyKey);
+          triggerTop3DailyReminder(todayTop3);
+        }
+      }
 
+      // 3. Task Advance Reminders (6h, 3h, 1h) and Starting Reminder (0-5m)
       for (const task of todayPendingTasks) {
         if (!task.startHourDisplay) continue;
         const taskMinutes = parseTime24ToMinutes(task.startHourDisplay);
         if (taskMinutes === null) continue;
         const minutesUntilStart = taskMinutes - currentTimeInMinutes;
 
-        // Upcoming task reminder (within 0 - 5 minutes of start time)
+        // 6 hours before (360 min, window 350 - 365)
+        if (minutesUntilStart >= 350 && minutesUntilStart <= 365) {
+          const lead6Key = `lead6h-${task.id}-${todayDateString}`;
+          if (!scheduledTaskRemindersRef.current.has(lead6Key)) {
+            scheduledTaskRemindersRef.current.add(lead6Key);
+            triggerTaskLeadReminder(task.title, task.startHourDisplay, 6);
+          }
+        }
+
+        // 3 hours before (180 min, window 170 - 185)
+        if (minutesUntilStart >= 170 && minutesUntilStart <= 185) {
+          const lead3Key = `lead3h-${task.id}-${todayDateString}`;
+          if (!scheduledTaskRemindersRef.current.has(lead3Key)) {
+            scheduledTaskRemindersRef.current.add(lead3Key);
+            triggerTaskLeadReminder(task.title, task.startHourDisplay, 3);
+          }
+        }
+
+        // 1 hour before (60 min, window 50 - 65)
+        if (minutesUntilStart >= 50 && minutesUntilStart <= 65) {
+          const lead1Key = `lead1h-${task.id}-${todayDateString}`;
+          if (!scheduledTaskRemindersRef.current.has(lead1Key)) {
+            scheduledTaskRemindersRef.current.add(lead1Key);
+            triggerTaskLeadReminder(task.title, task.startHourDisplay, 1);
+          }
+        }
+
+        // Starting now (within 0 - 5 minutes of start time)
         if (minutesUntilStart >= 0 && minutesUntilStart <= 5) {
-          const reminderKey = `${task.id}-${today.toDateString()}`;
+          const reminderKey = `start-${task.id}-${todayDateString}`;
           if (!scheduledTaskRemindersRef.current.has(reminderKey)) {
             scheduledTaskRemindersRef.current.add(reminderKey);
             triggerTaskReminder(task.title, task.startHourDisplay, task.durationMinutes);
           }
         }
-
-        // Urgent focus task reminder for Top 3 tasks that need completion
-        if (task.priority === 'top3') {
-          const urgentKey = `urgent-${task.id}-${today.toDateString()}`;
-          if (minutesUntilStart >= -30 && minutesUntilStart <= 15 && !scheduledTaskRemindersRef.current.has(urgentKey)) {
-            scheduledTaskRemindersRef.current.add(urgentKey);
-            const urgentCopy = buildUrgentTaskReminderCopy(task.title, task.startHourDisplay, language);
-            addAppNotification({
-              title: urgentCopy.title,
-              message: urgentCopy.body,
-              category: 'task',
-              actionUrl: '/plan',
-              actionLabel: language === 'id' ? 'Buka Jadwal' : 'View Plan',
-            });
-            if (getNotificationPermission() === 'granted') {
-              showPwaNotification({
-                title: urgentCopy.title,
-                body: urgentCopy.body,
-                tag: `urgent-task-${task.id}`,
-                url: '/plan',
-              }).catch(() => {});
-            }
-          }
-        }
       }
 
-      // Check workload warning (>90% threshold, max once every 30 minutes)
-      const allocatedMin = todayPendingTasks.reduce((sum, t) => sum + (t.durationMinutes || 0), 0);
-      const capMin = calculateCapacityMinutes(user?.workHourStart, user?.workHourEnd);
-      const pct = capMin > 0 ? Math.round((allocatedMin / capMin) * 100) : 0;
+      // 4. Workload Alerts (Both Too High >90% and Too Low <30%)
+      const workStartMin = parseTime24ToMinutes(user?.workHourStart || user?.startWorkTime || '09:00') || 540;
+      const workEndMin = parseTime24ToMinutes(user?.workHourEnd || user?.endWorkTime || '17:00') || 1020;
 
-      if (pct >= 90 && Date.now() - lastWorkloadAlertTimeRef.current > 30 * 60 * 1000) {
+      // High Workload (>90%, throttled to every 45 min)
+      if (pct >= 90 && Date.now() - lastWorkloadAlertTimeRef.current > 45 * 60 * 1000) {
         lastWorkloadAlertTimeRef.current = Date.now();
-        triggerWorkloadAlert(pct, allocatedMin, capMin);
+        triggerWorkloadAlert(pct, allocatedMin, capMin, 'high');
       }
 
-      // Check daily evening summary (after workHourEnd or after 18:00, once per day)
-      const workEndMinutes = parseTime24ToMinutes(user?.workHourEnd || user?.endWorkTime || '17:00') || 1020;
-      if (currentTimeInMinutes >= workEndMinutes && currentTimeInMinutes <= workEndMinutes + 120) {
-        const summaryKey = `summary-${today.toDateString()}`;
-        if (!scheduledTaskRemindersRef.current.has(summaryKey)) {
-          scheduledTaskRemindersRef.current.add(summaryKey);
-          const todayScheduled = tasks.filter((t) => !t.isBacklog && isTaskOnDate(t.dateDisplay, today, t));
-          const completedCount = todayScheduled.filter((t) => t.status === 'completed').length;
-          const restMinutes = todayScheduled.reduce((sum, t) => sum + (t.restMinutes || 0), 0);
-          triggerDailySummary(completedCount, restMinutes);
-        }
+      // Low Workload (<30%, active working hours only, once per day)
+      if (
+        pct < 30 &&
+        currentTimeInMinutes >= workStartMin + 60 &&
+        currentTimeInMinutes <= workEndMin &&
+        !scheduledTaskRemindersRef.current.has(`low-workload-${todayDateString}`)
+      ) {
+        scheduledTaskRemindersRef.current.add(`low-workload-${todayDateString}`);
+        triggerWorkloadAlert(pct, allocatedMin, capMin, 'low');
+      }
+
+      // 5. Simple Schedule Allocation Recommendation (active working hours, once per day)
+      const schedRecomKey = `sched-recom-${todayDateString}`;
+      if (
+        currentTimeInMinutes >= workStartMin &&
+        currentTimeInMinutes <= workEndMin &&
+        !scheduledTaskRemindersRef.current.has(schedRecomKey)
+      ) {
+        scheduledTaskRemindersRef.current.add(schedRecomKey);
+        triggerScheduleRecommendation(pct, allocatedMin, capMin);
       }
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [tasks, quietHourEnabled, quietHourStart, quietHourEnd, user, language, addAppNotification, triggerTaskReminder, triggerWorkloadAlert, triggerDailySummary]);
+  }, [
+    isAuthenticated,
+    tasks,
+    quietHourEnabled,
+    quietHourStart,
+    quietHourEnd,
+    user,
+    language,
+    addAppNotification,
+    triggerTaskReminder,
+    triggerTaskLeadReminder,
+    triggerTop3DailyReminder,
+    triggerDailyQuietTimeSummary,
+    triggerWorkloadAlert,
+    triggerScheduleRecommendation,
+  ]);
 
   // Dynamic Badge Counts
   const badgeCounts = useMemo(() => {
@@ -3545,6 +3845,8 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         setSelectedTaskForDetail,
 
         weeklyWorkloads,
+        weekStartDay,
+        setWeekStartDay,
         categoryBudgets,
         backlogTasks: allBacklogTasks,
         rebalanceProposal,
@@ -3627,6 +3929,10 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         addAppNotification,
         requestPwaPermission,
         triggerTaskReminder,
+        triggerTaskLeadReminder,
+        triggerTop3DailyReminder,
+        triggerDailyQuietTimeSummary,
+        triggerScheduleRecommendation,
         triggerWorkloadAlert,
         triggerDailySummary,
         triggerRestBufferAlert,
