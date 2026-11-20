@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@focient/contracts', '@focient/ui-tokens'],
+  turbopack: {},
+  transpilePackages: ['@focient/contracts', '@focient/database', '@focient/ui-tokens'],
   webpack: (config) => {
     config.resolve.extensionAlias = {
       '.js': ['.ts', '.tsx', '.js', '.jsx'],

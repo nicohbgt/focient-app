@@ -9,9 +9,9 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export async function PUT(
+export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = extractTokenFromRequest(request);
@@ -24,7 +24,42 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await context.params;
+
+    let task: any = null;
+    try {
+      task = await prisma.task.findFirst({
+        where: { id, userId: user.id },
+      });
+    } catch {}
+
+    if (!task) {
+      return NextResponse.json({ error: 'Tugas tidak ditemukan.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ task });
+  } catch (error) {
+    console.error('GET /api/tasks/[id] error:', error);
+    return NextResponse.json({ error: 'Gagal mengambil tugas.' }, { status: 500 });
+  }
+}
+
+export async function PUT(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const token = extractTokenFromRequest(request);
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { valid, user } = await verifySession(token);
+    if (!valid || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await context.params;
     const body = await request.json();
 
     const patch: any = {};
@@ -64,9 +99,16 @@ export async function PUT(
   }
 }
 
+export async function PATCH(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  return PUT(request, context);
+}
+
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = extractTokenFromRequest(request);
@@ -79,7 +121,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await context.params;
 
     // Resilient local deletion
     deleteTaskFromLocalDb(user.id, id);

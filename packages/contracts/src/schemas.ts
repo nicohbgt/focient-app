@@ -142,18 +142,18 @@ export const TIME_24H_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
  */
 export const CreateTaskSchema = z.object({
   title: z
-    .string({ required_error: MSG.taskTitle, invalid_type_error: MSG.taskTitle })
+    .string()
     .trim()
     .min(1, MSG.taskTitle)
     .max(120, MSG.taskTitle),
   notes: z.string().max(1000).optional(),
   durationMinutes: z
-    .number({ required_error: MSG.taskDuration, invalid_type_error: MSG.taskDuration })
+    .number()
     .int(MSG.taskDuration)
     .min(5, MSG.taskDuration)
     .max(480, MSG.taskDuration),
   categoryId: z
-    .string({ required_error: MSG.taskCategory, invalid_type_error: MSG.taskCategory })
+    .string()
     .uuid(MSG.taskCategory)
     .optional(),
   category: z.string().max(50).optional(),
@@ -208,7 +208,7 @@ export const OnboardingSetupSchema = z
     job: z.string().optional(),
     roleArchetype: z.string().min(1).optional().default('Software Engineer'),
     workHoursLimit: z
-      .number({ required_error: MSG.workHoursLimit, invalid_type_error: MSG.workHoursLimit })
+      .number()
       .min(1, MSG.workHoursLimit)
       .max(16, MSG.workHoursLimit)
       .refine(
@@ -217,10 +217,10 @@ export const OnboardingSetupSchema = z
       )
       .default(8),
     startWorkTime: z
-      .string({ required_error: MSG.workHoursFormat, invalid_type_error: MSG.workHoursFormat })
+      .string()
       .regex(TIME_24H_REGEX, MSG.workHoursFormat),
     endWorkTime: z
-      .string({ required_error: MSG.workHoursFormat, invalid_type_error: MSG.workHoursFormat })
+      .string()
       .regex(TIME_24H_REGEX, MSG.workHoursFormat),
     selectedCategories: z
       .array(z.string().min(1))
@@ -295,7 +295,7 @@ export const GeneratePlanSchema = z.object({
 export const AdaptiveScheduleConfirmSchema = z.object({
   taskId: z.string().uuid('ID tugas tidak valid'),
   confirmedStartTime: z
-    .string({ required_error: MSG.taskStartTime, invalid_type_error: MSG.taskStartTime })
+    .string()
     .datetime({ offset: true, message: MSG.taskStartTime })
     .refine(
       (val) => {
