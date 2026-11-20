@@ -1291,7 +1291,9 @@ export const LandingPageScreen: React.FC = () => {
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse" />
-                <span>Status: All Systems Operational</span>
+                <span>
+                  {language === 'id' ? 'Status: Semua Sistem Beroperasi Normal' : 'Status: All Systems Operational'}
+                </span>
               </span>
               <button
                 type="button"

@@ -293,7 +293,7 @@ export const NotificationCenterModal: React.FC = () => {
               onClick={() => handleTestTrigger('lead-1h')}
               className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-slate-600 transition-colors"
             >
-              1 Jam
+              {language === 'id' ? '1 Jam' : '1 Hour'}
             </button>
             <button
               type="button"
@@ -301,7 +301,7 @@ export const NotificationCenterModal: React.FC = () => {
               onClick={() => handleTestTrigger('lead-3h')}
               className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-slate-600 transition-colors"
             >
-              3 Jam
+              {language === 'id' ? '3 Jam' : '3 Hours'}
             </button>
             <button
               type="button"
@@ -309,7 +309,7 @@ export const NotificationCenterModal: React.FC = () => {
               onClick={() => handleTestTrigger('lead-6h')}
               className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-slate-600 transition-colors"
             >
-              6 Jam
+              {language === 'id' ? '6 Jam' : '6 Hours'}
             </button>
             <button
               type="button"
@@ -368,7 +368,7 @@ export const NotificationCenterModal: React.FC = () => {
             {[
               { id: 'all', labelEn: 'All', labelId: 'Semua' },
               { id: 'task', labelEn: 'Tasks', labelId: 'Tugas' },
-              { id: 'workload', labelEn: 'Workload', labelId: 'Beban' },
+              { id: 'workload', labelEn: 'Workload', labelId: 'Beban Kerja' },
               { id: 'summary', labelEn: 'Summary', labelId: 'Rangkuman' },
               { id: 'rest', labelEn: 'Rest', labelId: 'Istirahat' },
             ].map((tab) => {

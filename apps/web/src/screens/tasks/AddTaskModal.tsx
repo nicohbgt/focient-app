@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useFocient, MobileTask, FocusType, RecurrencePattern } from '../../state/focient-store';
+import { useFocient, MobileTask, FocusType, RecurrencePattern, resolveCategoryFocusType } from '../../state/focient-store';
 import { XIcon, PlusIcon, CheckIcon, RepeatIcon, MoonIcon, TrashIcon } from '../../components/icons';
 import { formatCurrentDate, isTimeOverlappingQuietHours, normalizeToISODate, formatToDisplayDate, parseTime24ToMinutes } from '../../lib/date-utils';
 import { TimePicker24 } from '../../components/primitive/TimePicker24';
@@ -182,8 +182,8 @@ export const AddTaskModal: React.FC = () => {
       }
     }
 
-    const catObj = categories.find((c) => c.name === selectedCategory) || categories[0];
-    const categoryColor = catObj?.colorHex || '#7C3AED';
+    const selectedCatObj = categories.find((c) => c.name === selectedCategory) || categories[0];
+    const categoryColor = selectedCatObj?.colorHex || '#7C3AED';
 
     // Quiet Hours Validation
     if (
@@ -202,7 +202,7 @@ export const AddTaskModal: React.FC = () => {
       return;
     }
 
-    const resolvedFocusType = focusType || 'Medium';
+    const resolvedFocusType = focusType || (selectedCatObj ? resolveCategoryFocusType(selectedCatObj) : 'Medium');
 
     if (taskToEdit) {
       updateTask({
@@ -364,19 +364,17 @@ export const AddTaskModal: React.FC = () => {
             <label className="block font-semibold text-slate-700 mb-1.5">
               {language === 'id' ? 'Kategori Tugas *' : 'Task Categories *'}
             </label>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none no-scrollbar touch-pan-x whitespace-nowrap">
               {categories.map((cat) => {
                 const isSelected = selectedCategory === cat.name;
+                const catIntensity = resolveCategoryFocusType(cat);
                 return (
                   <button
                     key={cat.id}
                     type="button"
                     onClick={() => {
                       setSelectedCategory(cat.name);
-                      if (cat.focusType) {
-                        const mapped = cat.focusType === 'Deep Focus' ? 'High' : cat.focusType === 'Light' ? 'Low' : cat.focusType;
-                        setFocusType(mapped);
-                      }
+                      setFocusType(catIntensity);
                     }}
                     className={`inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium border transition-all ${
                       isSelected
@@ -402,7 +400,7 @@ export const AddTaskModal: React.FC = () => {
                 {duration} {language === 'id' ? 'Menit' : 'Minutes'}
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none no-scrollbar touch-pan-x whitespace-nowrap">
               {TASK_DURATION_PRESETS.map((d) => (
                 <button
                   key={d}

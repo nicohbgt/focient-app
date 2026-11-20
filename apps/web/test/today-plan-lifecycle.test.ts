@@ -28,12 +28,11 @@ test('Today Plan Screen: 4 Data-Driven Lifecycle States & Web Local-First Optimi
   });
 
   await t.test('3. Today Plan 4 Lifecycle UI States: Empty State Specification', () => {
-    // Empty state container (#F0FDFA), soft teal Lucide icon (#0D9488), headline & CTA
+    // Empty state container, headline & clean uncluttered CTA without decorative icon
     assert.ok(todayPlanSource.includes('Mulai Hari dengan Ritme Tenang'), 'Must render headline Mulai Hari dengan Ritme Tenang');
     assert.ok(todayPlanSource.includes('Belum ada agenda terencana. Tambahkan aktivitas pertamamu untuk memulai fokus.'), 'Must render empty subtitle');
-    assert.ok(todayPlanSource.includes('+ Buat Rencana Pertama'), 'Must render CTA + Buat Rencana Pertama');
-    assert.ok(todayPlanSource.includes('bg-[#F0FDFA]'), 'Icon ring must use #F0FDFA');
-    assert.ok(todayPlanSource.includes('text-[#0D9488]'), 'Icon accent must use soft teal #0D9488');
+    assert.ok(todayPlanSource.includes('Buat Rencana Pertama'), 'Must render CTA Buat Rencana Pertama');
+    assert.equal(todayPlanSource.includes('bg-[#F0FDFA]'), false, 'Decorative icon ring must be removed');
   });
 
   await t.test('4. Today Plan 4 Lifecycle UI States: Populated State & Top 3 Priority Visual Highlight', () => {

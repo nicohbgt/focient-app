@@ -160,7 +160,7 @@ export const InsightsScreen: React.FC = () => {
         status,
       };
     });
-  }, [dayKeys, currentRangeTasks, referenceDate, weekStartDay, capacityMinutes, language]);
+  }, [currentRangeTasks, dayKeys, referenceDate, weekStartDay, capacityMinutes, language]);
 
   // Intensity Distribution (Low=Green, Medium=Blue, High=Red)
   const lowTasks = currentRangeTasks.filter((t) => t.focusType === 'Low' || t.focusType === 'Light');
@@ -179,37 +179,41 @@ export const InsightsScreen: React.FC = () => {
   return (
     <div className="space-y-6 pb-24 md:pb-12 animate-fade-in max-w-6xl mx-auto w-full">
       {/* Header Banner */}
-      <div className="flex items-center justify-between bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <h2 className="text-lg font-bold text-slate-900">
             {language === 'id' ? 'Refleksi Mingguan' : 'Weekly Insights & Reflection'}
           </h2>
           <p className="text-xs text-slate-500">
             {language === 'id'
-              ? 'Lihat perkembangan dan ritme kerjamu minggu ini dengan santai.'
-              : 'Take a relaxed look at your focus and rest rhythm this week.'}
+              ? 'Lihat perkembangan dan ritme kerjamu dengan santai.'
+              : 'Take a relaxed look at your focus and rest rhythm.'}
           </p>
         </div>
 
-        {/* Range Selector */}
+        {/* Range Switcher: Minggu Lalu / Minggu Ini */}
         <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200">
-          <button
-            type="button"
-            onClick={() => setSelectedRange('thisWeek')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              selectedRange === 'thisWeek' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            {language === 'id' ? 'Minggu Ini' : 'This Week'}
-          </button>
           <button
             type="button"
             onClick={() => setSelectedRange('lastWeek')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              selectedRange === 'lastWeek' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              selectedRange === 'lastWeek'
+                ? 'bg-white text-blue-700 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             {language === 'id' ? 'Minggu Lalu' : 'Last Week'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedRange('thisWeek')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              selectedRange === 'thisWeek'
+                ? 'bg-white text-blue-700 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {language === 'id' ? 'Minggu Ini' : 'This Week'}
           </button>
         </div>
       </div>
@@ -269,7 +273,9 @@ export const InsightsScreen: React.FC = () => {
             <span className="text-xs font-medium text-slate-500">/ {currentRangeTasks.length}</span>
           </div>
           <p className="text-[11px] text-slate-600 font-semibold">
-            {language === 'id' ? 'Tugas beres hari ini' : 'Done for today'}
+            {selectedRange === 'lastWeek'
+              ? (language === 'id' ? 'Selesai pekan lalu' : 'Completed last week')
+              : (language === 'id' ? 'Selesai pekan ini' : 'Completed this week')}
           </p>
         </div>
 

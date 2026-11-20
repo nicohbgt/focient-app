@@ -384,6 +384,54 @@ export function deleteTaskFromLocalDb(userId: string, taskId: string): boolean {
   return false;
 }
 
+export function resolveCategoryFocusTypeByName(name?: string): string {
+  if (!name) return 'Medium';
+  const clean = name.trim().toLowerCase();
+
+  if (
+    clean.includes('admin') ||
+    clean.includes('pribadi') ||
+    clean.includes('personal') ||
+    clean.includes('keuangan') ||
+    clean.includes('finance') ||
+    clean.includes('ops') ||
+    clean.includes('operasional') ||
+    clean.includes('campus') ||
+    clean.includes('organisasi') ||
+    clean.includes('recovery') ||
+    clean.includes('errand') ||
+    clean.includes('rutin') ||
+    clean.includes('routine') ||
+    clean.includes('santai') ||
+    clean.includes('istirahat') ||
+    clean.includes('break')
+  ) {
+    return 'Low';
+  }
+
+  if (
+    clean.includes('fokus') ||
+    clean.includes('focus') ||
+    clean.includes('deep') ||
+    clean.includes('core') ||
+    clean.includes('strateg') ||
+    clean.includes('proyek') ||
+    clean.includes('project') ||
+    clean.includes('belajar') ||
+    clean.includes('study') ||
+    clean.includes('tugas') ||
+    clean.includes('assignment') ||
+    clean.includes('produk') ||
+    clean.includes('product') ||
+    clean.includes('research') ||
+    clean.includes('riset')
+  ) {
+    return 'High';
+  }
+
+  return 'Medium';
+}
+
 export function saveCategoriesToLocalDb(
   userId: string,
   categories: Array<{
@@ -401,12 +449,16 @@ export function saveCategoriesToLocalDb(
     const existingIdx = db.categories.findIndex(
       (c) => c.userId === userId && c.name.toLowerCase() === cat.name.toLowerCase()
     );
+    const resolvedFocus = cat.isDefault
+      ? resolveCategoryFocusTypeByName(cat.name)
+      : cat.focusType || resolveCategoryFocusTypeByName(cat.name);
+
     const catRecord: LocalCategoryRecord = {
       id: cat.id || `cat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       userId,
       name: cat.name,
       colorHex: cat.colorHex || cat.colorToken || '#0284C7',
-      focusType: cat.focusType || 'High',
+      focusType: resolvedFocus,
       isDefault: cat.isDefault !== undefined ? cat.isDefault : true,
       createdAt: now,
     };

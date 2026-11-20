@@ -7,6 +7,7 @@ import {
   saveUserToLocalDb,
   saveCategoriesToLocalDb,
   getCategoriesFromLocalDb,
+  resolveCategoryFocusTypeByName,
   isDbAvailable,
   withDbTimeout,
   handleDbError,
@@ -84,7 +85,8 @@ export async function POST(request: Request) {
 
         // 2. Persist initial user categories scoped strictly to user.id
         if (Array.isArray(selectedCategories) && selectedCategories.length > 0) {
-          for (const catName of selectedCategories) {
+          for (const item of selectedCategories) {
+            const catName = typeof item === 'string' ? item : item.name;
             const existing = await withDbTimeout(
               prisma.category.findFirst({
                 where: { userId: user.id, name: catName },
@@ -92,16 +94,24 @@ export async function POST(request: Request) {
               350
             );
             if (!existing) {
+              const colorToken =
+                typeof item === 'object' && item.colorHex
+                  ? item.colorHex
+                  : catName.toLowerCase().includes('strategic') || catName.toLowerCase().includes('fokus')
+                  ? '#7C3AED'
+                  : catName.toLowerCase().includes('communication') || catName.toLowerCase().includes('komunikasi')
+                  ? '#0284C7'
+                  : catName.toLowerCase().includes('admin')
+                  ? '#64748B'
+                  : '#059669';
+
               await withDbTimeout(
                 prisma.category.create({
                   data: {
                     userId: user.id,
                     name: catName,
-                    colorToken:
-                      catName.toLowerCase().includes('strategic') || catName.toLowerCase().includes('fokus')
-                        ? '#7C3AED'
-                        : '#0284C7',
-                    isDefault: true,
+                    colorToken,
+                    isDefault: typeof item === 'object' && item.isDefault !== undefined ? item.isDefault : true,
                   },
                 }),
                 350
@@ -158,19 +168,29 @@ export async function POST(request: Request) {
     }
 
     if (Array.isArray(selectedCategories) && selectedCategories.length > 0) {
-      const catObjects = selectedCategories.map((catName: string) => ({
-        name: catName,
-        colorHex:
-          catName.toLowerCase().includes('strategic') || catName.toLowerCase().includes('fokus')
+      const catObjects = selectedCategories.map((item: any) => {
+        const catName = typeof item === 'string' ? item : item.name;
+        const colorHex =
+          typeof item === 'object' && item.colorHex
+            ? item.colorHex
+            : catName.toLowerCase().includes('strategic') || catName.toLowerCase().includes('fokus')
             ? '#7C3AED'
             : catName.toLowerCase().includes('communication') || catName.toLowerCase().includes('komunikasi')
             ? '#0284C7'
             : catName.toLowerCase().includes('admin')
             ? '#64748B'
-            : '#059669',
-        focusType: 'High',
-        isDefault: true,
-      }));
+            : '#059669';
+        const focusType =
+          typeof item === 'object' && item.focusType
+            ? item.focusType
+            : resolveCategoryFocusTypeByName(catName);
+        return {
+          name: catName,
+          colorHex,
+          focusType,
+          isDefault: typeof item === 'object' && item.isDefault !== undefined ? item.isDefault : true,
+        };
+      });
       saveCategoriesToLocalDb(user.id, catObjects);
     }
 

@@ -44,7 +44,7 @@ export const AppNavigation: React.FC = () => {
     },
     {
       id: 'plan' as const,
-      label: language === 'id' ? 'Rencana' : 'Today Plan',
+      label: language === 'id' ? 'Rencana Hari Ini' : "Today's Plan",
       icon: <SparklesIcon size="sm" />,
       badge: badgeCounts.todayPlan,
     },

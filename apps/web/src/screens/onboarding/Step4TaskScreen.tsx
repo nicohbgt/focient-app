@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useFocient, MobileTask, FocusType, RecurrencePattern } from '../../state/focient-store';
+import { useFocient, MobileTask, FocusType, RecurrencePattern, resolveCategoryFocusType } from '../../state/focient-store';
 import { ArrowLeftIcon, ArrowRightIcon, PlusIcon, TrashIcon, ClockIcon, RepeatIcon, MoonIcon } from '../../components/icons';
 import { formatCurrentDate, isTimeOverlappingQuietHours } from '../../lib/date-utils';
 import { TimePicker24 } from '../../components/primitive/TimePicker24';
@@ -213,16 +213,14 @@ export const Step4TaskScreen: React.FC = () => {
             <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none no-scrollbar touch-pan-x whitespace-nowrap">
               {categories.map((cat) => {
                 const isSelected = selectedCategory === cat.name;
+                const catIntensity = resolveCategoryFocusType(cat);
                 return (
                   <button
                     key={cat.id}
                     type="button"
                     onClick={() => {
                       setSelectedCategory(cat.name);
-                      if (cat.focusType) {
-                        const mapped = cat.focusType === 'Deep Focus' ? 'High' : cat.focusType === 'Light' ? 'Low' : cat.focusType;
-                        setFocusType(mapped);
-                      }
+                      setFocusType(catIntensity);
                     }}
                     className={`shrink-0 inline-flex items-center justify-center gap-1.5 px-3.5 min-w-[96px] h-10 rounded-xl text-xs font-semibold border transition-all text-center ${
                       isSelected

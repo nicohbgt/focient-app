@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {
   getCurrentWeekStartDate,
   getWeekDayDate,
@@ -140,5 +141,58 @@ describe('FoCient Week-Start Preference & Button UI Optimization Suite', () => {
     const emptyOffsetMondayFeb = firstDayFeb2027 === 0 ? 6 : firstDayFeb2027 - 1; // 0
     assert.equal(emptyOffsetSundayFeb, 1);
     assert.equal(emptyOffsetMondayFeb, 0);
+  });
+
+  it('9. Anti-burnout Settings text strictly omits redundant "(maximum 8 hours)"', () => {
+    const settingsCode = fs.readFileSync(
+      new URL('../src/screens/settings/SettingsScreen.tsx', import.meta.url),
+      'utf8'
+    );
+    assert.equal(settingsCode.includes('(maximum 8 hours)'), false, 'SettingsScreen must not include (maximum 8 hours)');
+    assert.equal(settingsCode.includes('(maksimal 8 jam)'), false, 'SettingsScreen must not include (maksimal 8 jam)');
+    assert.ok(settingsCode.includes('Maximum daily capacity enforces FoCient anti-burnout principles.'), 'Clean description present');
+  });
+
+  it('10. InsightsScreen thisWeek and lastWeek range selection & weekly completion caption contract', () => {
+    const insightsCode = fs.readFileSync(
+      new URL('../src/screens/insights/InsightsScreen.tsx', import.meta.url),
+      'utf8'
+    );
+
+    // 1. Must use 'thisWeek' and 'lastWeek' range switch with Last Week placed before This Week
+    assert.ok(insightsCode.includes("'thisWeek' | 'lastWeek'"), 'Must define range as thisWeek | lastWeek');
+    assert.ok(insightsCode.includes("setSelectedRange('thisWeek')"), 'Must include thisWeek switch');
+    assert.ok(insightsCode.includes("setSelectedRange('lastWeek')"), 'Must include lastWeek switch');
+    const lastWeekIdx = insightsCode.indexOf("setSelectedRange('lastWeek')");
+    const thisWeekIdx = insightsCode.indexOf("setSelectedRange('thisWeek')");
+    assert.ok(lastWeekIdx < thisWeekIdx, 'Last Week button must appear before This Week button in switch order');
+
+    // 2. Card 3 caption must NOT be misleading static "Done for today", but weekly-scoped
+    assert.ok(!insightsCode.includes(": 'Done for today'"), 'Must not have hardcoded "Done for today"');
+    assert.ok(insightsCode.includes("'Completed this week'") || insightsCode.includes("'Selesai pekan ini'"), 'Must have this week completion caption');
+    assert.ok(insightsCode.includes("'Completed last week'") || insightsCode.includes("'Selesai pekan lalu'"), 'Must have last week completion caption');
+
+    // 3. Test weekly date isolation directly
+    const today = new Date(2026, 10, 20); // Friday Nov 20, 2026
+    const thisWeekDates = [0, 1, 2, 3, 4, 5, 6].map(i => getWeekDayDate(i, today, 'monday'));
+
+    const lastWeekDate = new Date(today);
+    lastWeekDate.setDate(today.getDate() - 7);
+    const lastWeekDates = [0, 1, 2, 3, 4, 5, 6].map(i => getWeekDayDate(i, lastWeekDate, 'monday'));
+
+    const tasksSample = [
+      { id: '1', dateDisplay: '2026-11-20', status: 'completed' }, // This Friday
+      { id: '2', dateDisplay: '2026-11-16', status: 'completed' }, // This Monday
+      { id: '3', dateDisplay: '2026-11-13', status: 'completed' }, // Last Friday
+      { id: '4', dateDisplay: '2026-11-09', status: 'completed' }, // Last Monday
+    ];
+
+    const matchingThisWeek = tasksSample.filter(t => thisWeekDates.some(d => isTaskOnDate(t.dateDisplay, d)));
+    assert.equal(matchingThisWeek.length, 2);
+    assert.deepEqual(matchingThisWeek.map(t => t.id), ['1', '2']);
+
+    const matchingLastWeek = tasksSample.filter(t => lastWeekDates.some(d => isTaskOnDate(t.dateDisplay, d)));
+    assert.equal(matchingLastWeek.length, 2);
+    assert.deepEqual(matchingLastWeek.map(t => t.id), ['3', '4']);
   });
 });

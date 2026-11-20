@@ -161,10 +161,10 @@ export const TodayPlanScreen: React.FC = () => {
       <div className="flex items-center justify-between bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <h2 className="text-lg font-bold text-slate-900">
-            {language === 'id' ? 'Rencana Kerja' : 'Your Planning'}
+            {language === 'id' ? 'Rencana Hari Ini' : 'Your Planning'}
           </h2>
           <p className="text-xs text-slate-500">
-            {language === 'id' ? 'Optimasi kapasitas dan distribusi beban' : 'Capacity optimization & workload balance'}
+            {language === 'id' ? 'Optimalisasi kapasitas & keseimbangan beban kerja' : 'Capacity optimization & workload balance'}
           </p>
         </div>
       </div>
@@ -173,9 +173,6 @@ export const TodayPlanScreen: React.FC = () => {
       {todayTasks.length === 0 ? (
         /* Empty State */
         <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm text-center flex flex-col items-center justify-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-[#F0FDFA] flex items-center justify-center text-[#0D9488]">
-            <SparklesIcon size="md" />
-          </div>
           <div className="max-w-md space-y-1">
             <h3 className="text-base font-bold text-slate-900">
               {language === 'id' ? 'Mulai Hari dengan Ritme Tenang' : 'Start Your Day in a Calm Rhythm'}
@@ -189,10 +186,10 @@ export const TodayPlanScreen: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsAddTaskModalOpen(true)}
-            className="px-5 py-2.5 rounded-xl bg-[#0D9488] hover:bg-[#0f766e] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+            className="px-5 py-2.5 rounded-xl bg-[#0D9488] hover:bg-[#0f766e] text-white text-xs font-bold transition-all shadow-sm inline-flex items-center gap-1.5"
           >
             <PlusIcon size="xs" />
-            <span>{language === 'id' ? '+ Buat Rencana Pertama' : '+ Create First Plan'}</span>
+            <span>{language === 'id' ? 'Buat Rencana Pertama' : 'Create First Plan'}</span>
           </button>
         </div>
       ) : allTasksCompleted ? (
@@ -362,7 +359,7 @@ export const TodayPlanScreen: React.FC = () => {
               {language === 'id' ? 'Distribusi Beban Kerja Mingguan' : 'Weekly Workload Distribution'}
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              {language === 'id' ? 'Monitoring kapasitas 7 hari' : '7-day capacity monitoring'}
+              {language === 'id' ? 'Pantauan kapasitas 7 hari' : '7-day capacity monitoring'}
             </p>
           </div>
           <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
@@ -419,7 +416,7 @@ export const TodayPlanScreen: React.FC = () => {
           </div>
           <div className="p-2 rounded-xl bg-slate-50">
             <span className="text-[11px] text-slate-500 block">
-              {language === 'id' ? 'Total Terjadwal' : 'Scheduled Tasks'}
+              {language === 'id' ? 'Tugas Terjadwal' : 'Scheduled Tasks'}
             </span>
             <span className="text-sm font-extrabold text-slate-900 tabular-nums">
               {weeklyScheduledTasks.length}
@@ -437,7 +434,7 @@ export const TodayPlanScreen: React.FC = () => {
             </div>
             <div>
               <h3 className="text-sm font-bold text-amber-900">
-                {language === 'id' ? 'Smart Rebalancer' : 'Smart Rebalancer'}
+                {language === 'id' ? 'Penyeimbang Jadwal Otomatis' : 'Smart Rebalancer'}
               </h3>
               <p className="text-xs text-amber-800 mt-1 leading-relaxed">
                 {language === 'id'

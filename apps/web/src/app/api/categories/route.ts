@@ -7,6 +7,7 @@ import {
   getCategoriesFromLocalDb,
   deleteCategoryFromLocalDb,
   findLocalUserById,
+  resolveCategoryFocusTypeByName,
 } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
       id: body.id || `cat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       name: body.name,
       colorHex: body.colorHex || body.colorToken || '#0284C7',
-      focusType: body.focusType || 'High',
+      focusType: body.focusType || resolveCategoryFocusTypeByName(body.name),
       isDefault: Boolean(body.isDefault),
     };
 

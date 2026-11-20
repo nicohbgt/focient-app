@@ -218,6 +218,87 @@ export const kOccupancyCategoryTemplatesId: Record<string, WorkspaceCategory[]> 
   ],
 };
 
+export const resolveCategoryFocusTypeByName = (name?: string): FocusType => {
+  if (!name) return 'Medium';
+  const clean = name.trim().toLowerCase();
+
+  // 1. Direct template matching
+  for (const list of Object.values(kOccupancyCategoryTemplates)) {
+    const found = list.find((t) => t.name.toLowerCase() === clean);
+    if (found?.focusType) return found.focusType;
+  }
+  for (const list of Object.values(kOccupancyCategoryTemplatesId)) {
+    const found = list.find((t) => t.name.toLowerCase() === clean);
+    if (found?.focusType) return found.focusType;
+  }
+
+  // 2. Keyword heuristic for Low intensity
+  if (
+    clean.includes('admin') ||
+    clean.includes('pribadi') ||
+    clean.includes('personal') ||
+    clean.includes('keuangan') ||
+    clean.includes('finance') ||
+    clean.includes('ops') ||
+    clean.includes('operasional') ||
+    clean.includes('campus') ||
+    clean.includes('organisasi') ||
+    clean.includes('recovery') ||
+    clean.includes('errand') ||
+    clean.includes('rutin') ||
+    clean.includes('routine') ||
+    clean.includes('santai') ||
+    clean.includes('istirahat') ||
+    clean.includes('break')
+  ) {
+    return 'Low';
+  }
+
+  // 3. Keyword heuristic for High intensity
+  if (
+    clean.includes('fokus') ||
+    clean.includes('focus') ||
+    clean.includes('deep') ||
+    clean.includes('core') ||
+    clean.includes('strateg') ||
+    clean.includes('proyek') ||
+    clean.includes('project') ||
+    clean.includes('belajar') ||
+    clean.includes('study') ||
+    clean.includes('tugas') ||
+    clean.includes('assignment') ||
+    clean.includes('produk') ||
+    clean.includes('product') ||
+    clean.includes('research') ||
+    clean.includes('riset')
+  ) {
+    return 'High';
+  }
+
+  // 4. Default for communications, sync, reviews, meetings, etc.
+  return 'Medium';
+};
+
+export const resolveCategoryFocusType = (cat?: Partial<WorkspaceCategory> | null): FocusType => {
+  if (!cat) return 'Medium';
+  const name = cat.name || '';
+
+  // If it's a default category, respect the canonical template intensity
+  if (cat.isDefault) {
+    return resolveCategoryFocusTypeByName(name);
+  }
+
+  // If explicitly configured for custom category
+  if (cat.focusType) {
+    const ft = cat.focusType;
+    if (ft === 'Deep Focus') return 'High';
+    if (ft === 'Light') return 'Low';
+    if (ft === 'High' || ft === 'Medium' || ft === 'Low') return ft;
+  }
+
+  return resolveCategoryFocusTypeByName(name);
+};
+
 const monDateStr = formatCurrentDate(getWeekDayDate(0), 'en');
 const tueDateStr = formatCurrentDate(getWeekDayDate(1), 'en');
 const wedDateStr = formatCurrentDate(getWeekDayDate(2), 'en');
@@ -784,7 +865,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
                 id: c.id,
                 name: c.name,
                 colorHex: c.colorToken || c.colorHex || '#0284C7',
-                focusType: 'High',
+                focusType: resolveCategoryFocusType(c),
                 isDefault: Boolean(c.isDefault),
               }))
             );
@@ -864,7 +945,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
                     id: c.id,
                     name: c.name,
                     colorHex: c.colorToken || c.colorHex || '#0284C7',
-                    focusType: 'High',
+                    focusType: resolveCategoryFocusType(c),
                     isDefault: Boolean(c.isDefault),
                   }))
                 );
@@ -943,7 +1024,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
           id: c.id,
           name: c.name,
           colorHex: c.colorToken || c.colorHex || '#0284C7',
-          focusType: 'High',
+          focusType: resolveCategoryFocusType(c),
           isDefault: Boolean(c.isDefault),
         }));
       }
@@ -1084,10 +1165,17 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         if (saved === 'sunday' || saved === 'monday') initialStart = saved;
       } catch {}
     }
-    const keys = getWeekDayKeys(initialStart);
+    let initialLang: Language = 'id';
+    if (typeof window !== 'undefined') {
+      try {
+        const savedLang = window.localStorage.getItem('focient_language');
+        if (savedLang === 'en' || savedLang === 'id') initialLang = savedLang;
+      } catch {}
+    }
+    const keys = getWeekDayKeys(initialStart, initialLang);
     return keys.map((key, i) => ({
       dayKey: key,
-      fullDayName: getDayOfWeekName(i, 'en', initialStart),
+      fullDayName: getDayOfWeekName(i, initialLang, initialStart),
       percentage: 0,
     }));
   });
@@ -1111,16 +1199,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     }
     return [];
   });
-  const [rebalanceProposal, setRebalanceProposal] = useState<RebalanceTaskProposal | null>({
-    id: 'reb-1',
-    title: 'Design Architecture Monorepo',
-    previousSchedule: 'Wednesday, 14:00 - 15:00',
-    newSchedule: 'Thursday, 10:00 - 11:00 (Buffer: 15m)',
-    taskDurationMinutes: 45,
-    restDurationMinutes: 15,
-    categoryName: 'Execution',
-    categoryColor: '#0284C7',
-  });
+  const [rebalanceProposal, setRebalanceProposal] = useState<RebalanceTaskProposal | null>(null);
 
   // Reschedule alert on dashboard
   const [rescheduleAlertResolved, setRescheduleAlertResolved] = useState<boolean>(false);
@@ -1130,7 +1209,27 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
   const [activeNavTab, setActiveNavTab] = useState<ActiveNavTab>('dashboard');
   const [inspectorView, setInspectorView] = useState<ScreenInspectorView>('fullFlow');
   const [devicePreview, setDevicePreview] = useState<DevicePreviewMode>('responsive');
-  const [language, setLanguage] = useState<Language>('en');
+  const [language, setLanguageState] = useState<Language>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = window.localStorage.getItem('focient_language');
+        if (saved === 'en' || saved === 'id') return saved;
+      } catch {}
+    }
+    return 'id';
+  });
+
+  const setLanguage = useCallback((action: Language | ((prev: Language) => Language)) => {
+    setLanguageState((prev) => {
+      const next = typeof action === 'function' ? action(prev) : action;
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem('focient_language', next);
+        } catch {}
+      }
+      return next;
+    });
+  }, []);
   const [isTermsOpen, setIsTermsOpen] = useState<boolean>(false);
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState<boolean>(false);
   const [taskToEdit, setTaskToEdit] = useState<MobileTask | null>(null);
@@ -1364,7 +1463,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         id: collisionCandidate.candidateTask.id,
         title: collisionCandidate.candidateTask.title,
         previousSchedule: `${collisionCandidate.dayName}, ${collisionCandidate.candidateTask.startHourDisplay || '15:00'}`,
-        newSchedule: `${collisionCandidate.dayName}, ${collisionCandidate.suggestedSlot} (Buffer: ${collisionCandidate.buffer}m)`,
+        newSchedule: `${collisionCandidate.dayName}, ${collisionCandidate.suggestedSlot} (${language === 'id' ? 'Jeda' : 'Buffer'}: ${collisionCandidate.buffer}m)`,
         taskDurationMinutes: collisionCandidate.candidateTask.durationMinutes,
         restDurationMinutes: collisionCandidate.buffer,
         categoryName: collisionCandidate.candidateTask.categoryName,
@@ -1415,7 +1514,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
           id: candidateTask.id,
           title: candidateTask.title,
           previousSchedule: `${overloadedDay.fullDayName}, ${candidateTask.startHourDisplay || '14:00'}`,
-          newSchedule: `${lighterDay.fullDayName}, ${recommendedTimeSlot} (Buffer: ${taskRestBuffer}m)`,
+          newSchedule: `${lighterDay.fullDayName}, ${recommendedTimeSlot} (${language === 'id' ? 'Jeda' : 'Buffer'}: ${taskRestBuffer}m)`,
           taskDurationMinutes: candidateTask.durationMinutes,
           restDurationMinutes: taskRestBuffer,
           categoryName: candidateTask.categoryName,
@@ -1572,7 +1671,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
                   id: c.id,
                   name: c.name,
                   colorHex: c.colorToken || c.colorHex || '#0284C7',
-                  focusType: 'High',
+                  focusType: resolveCategoryFocusType(c),
                   isDefault: Boolean(c.isDefault),
                 }))
               );
@@ -1849,7 +1948,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
               id: c.id,
               name: c.name,
               colorHex: c.colorToken || c.colorHex || '#0284C7',
-              focusType: 'High',
+              focusType: resolveCategoryFocusType(c),
               isDefault: Boolean(c.isDefault),
             }))
           );
@@ -2384,15 +2483,21 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
 
   const completeOnboarding = useCallback(async () => {
     const computedCapacity = calculateCapacityMinutes(startHour, endHour);
-    const categoryNames =
+    const categoryObjects =
       categories.length > 0
-        ? categories.map((c) => c.name)
-        : [
-            language === 'id' ? 'Fokus' : 'Focus',
-            language === 'id' ? 'Komunikasi' : 'Sync',
-            language === 'id' ? 'Administrasi' : 'Admin',
-            language === 'id' ? 'Pribadi' : 'Personal',
-          ];
+        ? categories.map((c) => ({
+            name: c.name,
+            colorHex: c.colorHex,
+            focusType: resolveCategoryFocusType(c),
+            isDefault: Boolean(c.isDefault),
+          }))
+        : (language === 'id' ? kOccupancyCategoryTemplatesId.General : kOccupancyCategoryTemplates.General).map((c) => ({
+            name: c.name,
+            colorHex: c.colorHex,
+            focusType: c.focusType,
+            isDefault: true,
+          }));
+    const categoryNames = categoryObjects.map((c) => c.name);
     const token = authClient.getToken();
 
     // 1. Optimistic immediate transition (0ms latency for button click response)
@@ -2450,7 +2555,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
       workHoursLimit: computedCapacity / 60 || 8,
       startWorkTime: startHour || '09:00',
       endWorkTime: endHour || '17:00',
-      selectedCategories: categoryNames,
+      selectedCategories: categoryObjects,
       workingRhythm: selectedRhythm || 'Early Bird',
       schedulingStyle: selectedStyle || 'Structured',
       restTimeMinutesPerTask: restMinutesPerTask,
@@ -3263,7 +3368,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         message: copy.body,
         category: 'task',
         actionUrl: '/plan',
-        actionLabel: language === 'id' ? 'Buka Jadwal' : 'View Plan',
+        actionLabel: language === 'id' ? 'Buka Rencana' : 'View Plan',
       });
       triggerServerWebPush({
         title: copy.title,
@@ -3290,7 +3395,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         message: copy.body,
         category: 'task',
         actionUrl: '/plan',
-        actionLabel: language === 'id' ? 'Buka Jadwal' : 'View Plan',
+        actionLabel: language === 'id' ? 'Buka Rencana' : 'View Plan',
       });
       triggerServerWebPush({
         title: copy.title,
@@ -3317,7 +3422,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         message: copy.body,
         category: 'task',
         actionUrl: '/plan',
-        actionLabel: language === 'id' ? 'Mulai Hari' : 'Start Day',
+        actionLabel: language === 'id' ? 'Buka Rencana' : 'Start Day',
       });
       triggerServerWebPush({
         title: copy.title,
@@ -3345,7 +3450,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         message: copy.body,
         category: 'summary',
         actionUrl: '/insights',
-        actionLabel: language === 'id' ? 'Lihat Wawasan' : 'View Insights',
+        actionLabel: language === 'id' ? 'Buka Refleksi' : 'View Insights',
       });
       triggerServerWebPush({
         title: copy.title,
@@ -3372,7 +3477,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         message: copy.body,
         category: 'workload',
         actionUrl: '/dashboard',
-        actionLabel: language === 'id' ? 'Lihat Dasbor' : 'View Dashboard',
+        actionLabel: language === 'id' ? 'Buka Beranda' : 'View Dashboard',
       });
       triggerServerWebPush({
         title: copy.title,

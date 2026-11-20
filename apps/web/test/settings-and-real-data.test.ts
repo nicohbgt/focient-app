@@ -209,4 +209,79 @@ describe('FoCient Settings Feature & Real Data-Driven State Suite', () => {
       'Obsolete narrower max-w-4xl mx-auto must be removed'
     );
   });
+
+  it('10. Task category intensity default mapping & non-high preservation contract', async () => {
+    const { resolveCategoryFocusTypeByName, resolveCategoryFocusType } = await import(
+      '../src/state/focient-store.js'
+    );
+
+    // 1. Template default intensities must NOT automatically default to High
+    assert.equal(resolveCategoryFocusTypeByName('Sync'), 'Medium');
+    assert.equal(resolveCategoryFocusTypeByName('Komunikasi'), 'Medium');
+    assert.equal(resolveCategoryFocusTypeByName('Meeting'), 'Medium');
+    assert.equal(resolveCategoryFocusTypeByName('Review'), 'Medium');
+
+    assert.equal(resolveCategoryFocusTypeByName('Admin'), 'Low');
+    assert.equal(resolveCategoryFocusTypeByName('Administrasi'), 'Low');
+    assert.equal(resolveCategoryFocusTypeByName('Personal'), 'Low');
+    assert.equal(resolveCategoryFocusTypeByName('Pribadi'), 'Low');
+    assert.equal(resolveCategoryFocusTypeByName('Finance'), 'Low');
+    assert.equal(resolveCategoryFocusTypeByName('Ops'), 'Low');
+
+    assert.equal(resolveCategoryFocusTypeByName('Focus'), 'High');
+    assert.equal(resolveCategoryFocusTypeByName('Fokus'), 'High');
+    assert.equal(resolveCategoryFocusTypeByName('Project'), 'High');
+
+    // 2. Default category objects with stale/misassigned 'High' must be corrected to template intensity
+    assert.equal(
+      resolveCategoryFocusType({ name: 'Sync', focusType: 'High', isDefault: true }),
+      'Medium'
+    );
+    assert.equal(
+      resolveCategoryFocusType({ name: 'Admin', focusType: 'High', isDefault: true }),
+      'Low'
+    );
+    assert.equal(
+      resolveCategoryFocusType({ name: 'Pribadi', focusType: 'High', isDefault: true }),
+      'Low'
+    );
+
+    // 3. Custom user categories with explicit low/mid intensity must preserve their choice
+    assert.equal(
+      resolveCategoryFocusType({ name: 'Custom Routine', focusType: 'Low', isDefault: false }),
+      'Low'
+    );
+    assert.equal(
+      resolveCategoryFocusType({ name: 'Client Chat', focusType: 'Medium', isDefault: false }),
+      'Medium'
+    );
+    assert.equal(
+      resolveCategoryFocusType({ name: 'Deep Architecture', focusType: 'High', isDefault: false }),
+      'High'
+    );
+
+    // 4. Verify AddTaskModal binds category click to resolveCategoryFocusType and uses clean horizontal scrolling
+    const fs = await import('node:fs');
+    const addTaskPath = fileURLToPath(new URL('../src/screens/tasks/AddTaskModal.tsx', import.meta.url));
+    const addTaskContent = fs.readFileSync(addTaskPath, 'utf8');
+    assert.ok(
+      addTaskContent.includes('const catIntensity = resolveCategoryFocusType(cat);'),
+      'AddTaskModal must compute dynamic category intensity'
+    );
+    assert.ok(
+      addTaskContent.includes('setFocusType(catIntensity);'),
+      'AddTaskModal must update task focusType to category intensity on click'
+    );
+
+    // 5. Category chips and duration chips must scroll horizontally without nested intensity badges
+    assert.ok(
+      addTaskContent.includes('overflow-x-auto') && addTaskContent.includes('whitespace-nowrap'),
+      'AddTaskModal must scroll chips horizontally'
+    );
+    assert.equal(
+      addTaskContent.includes("catIntensity === 'High' ? (language === 'id' ? 'Tinggi' : 'High')"),
+      false,
+      'AddTaskModal must not have nested intensity badge inside category chip'
+    );
+  });
 });

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useFocient } from '../../state/focient-store.js';
+import { useFocient, FocusType, resolveCategoryFocusType } from '../../state/focient-store.js';
 import {
   CheckIcon,
   CheckCircleIcon,
@@ -77,6 +77,7 @@ export const SettingsScreen: React.FC = () => {
   // New Category Form
   const [newCatName, setNewCatName] = useState('');
   const [newCatColor, setNewCatColor] = useState('#2563EB');
+  const [newCatFocusType, setNewCatFocusType] = useState<FocusType>('Medium');
   const [isAddingCat, setIsAddingCat] = useState(false);
   const [isPushTesting, setIsPushTesting] = useState(false);
 
@@ -342,7 +343,7 @@ export const SettingsScreen: React.FC = () => {
         id: newId,
         name: newCatName.trim(),
         colorHex: newCatColor,
-        focusType: 'High',
+        focusType: newCatFocusType,
         isDefault: false,
       });
 
@@ -353,10 +354,13 @@ export const SettingsScreen: React.FC = () => {
         body: JSON.stringify({
           name: newCatName.trim(),
           colorToken: newCatColor,
+          colorHex: newCatColor,
+          focusType: newCatFocusType,
         }),
       });
 
       setNewCatName('');
+      setNewCatFocusType('Medium');
       showToast(
         language === 'id' ? 'Kategori berhasil ditambahkan' : 'Category added successfully',
         'success'
@@ -664,8 +668,8 @@ export const SettingsScreen: React.FC = () => {
                 </h2>
                 <p className="text-xs text-slate-500">
                   {language === 'id'
-                    ? 'Batas kapasitas maksimal harian menerapkan prinsip anti-burnout FoCient (maksimal 8 jam).'
-                    : 'Maximum daily capacity enforces FoCient anti-burnout principles (maximum 8 hours).'}
+                    ? 'Batas kapasitas maksimal harian menerapkan prinsip anti-burnout FoCient.'
+                    : 'Maximum daily capacity enforces FoCient anti-burnout principles.'}
                 </p>
               </div>
 
@@ -1080,6 +1084,31 @@ export const SettingsScreen: React.FC = () => {
                     </label>
                   </div>
                 </div>
+
+                {/* Category Intensity Selection */}
+                <div className="space-y-1.5 pt-2 border-t border-slate-200">
+                  <div className="text-[11px] font-semibold text-slate-600">
+                    {language === 'id' ? 'Intensitas Fokus Kategori' : 'Category Focus Intensity'}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { type: 'Low' as FocusType, label: language === 'id' ? 'Rendah' : 'Low', active: 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20' },
+                      { type: 'Medium' as FocusType, label: language === 'id' ? 'Sedang' : 'Medium', active: 'border-sky-600 bg-sky-50 text-sky-900 ring-2 ring-sky-500/20' },
+                      { type: 'High' as FocusType, label: language === 'id' ? 'Tinggi' : 'High', active: 'border-red-600 bg-red-50 text-red-900 ring-2 ring-red-500/20' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.type}
+                        type="button"
+                        onClick={() => setNewCatFocusType(opt.type)}
+                        className={`py-1.5 px-2 rounded-xl border text-xs font-bold text-center transition-all ${
+                          newCatFocusType === opt.type ? opt.active : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </form>
 
               {/* List of Real Categories */}
@@ -1088,36 +1117,54 @@ export const SettingsScreen: React.FC = () => {
                   {language === 'id' ? 'Daftar Kategori Aktif' : 'Active Categories'} ({categories.length})
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {categories.map((cat) => (
-                    <div
-                      key={cat.id}
-                      className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors shadow-2xs"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span
-                          className="w-3.5 h-3.5 rounded-full shrink-0"
-                          style={{ backgroundColor: cat.colorHex }}
-                        />
-                        <span className="text-xs font-bold text-slate-800">{cat.name}</span>
-                        {cat.isDefault && (
-                          <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded">
-                            {language === 'id' ? 'Bawaan' : 'Default'}
+                  {categories.map((cat) => {
+                    const catIntensity = resolveCategoryFocusType(cat);
+                    return (
+                      <div
+                        key={cat.id}
+                        className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors shadow-2xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-3.5 h-3.5 rounded-full shrink-0"
+                            style={{ backgroundColor: cat.colorHex }}
+                          />
+                          <span className="text-xs font-bold text-slate-800">{cat.name}</span>
+                          <span
+                            className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
+                              catIntensity === 'High'
+                                ? 'bg-red-50 text-red-600'
+                                : catIntensity === 'Low'
+                                ? 'bg-emerald-50 text-emerald-600'
+                                : 'bg-sky-50 text-sky-600'
+                            }`}
+                          >
+                            {catIntensity === 'High'
+                              ? (language === 'id' ? 'Tinggi' : 'High')
+                              : catIntensity === 'Low'
+                              ? (language === 'id' ? 'Rendah' : 'Low')
+                              : (language === 'id' ? 'Sedang' : 'Medium')}
                           </span>
+                          {cat.isDefault && (
+                            <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded">
+                              {language === 'id' ? 'Bawaan' : 'Default'}
+                            </span>
+                          )}
+                        </div>
+
+                        {!cat.isDefault && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCategory(cat.id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title={language === 'id' ? 'Hapus Kategori' : 'Delete Category'}
+                          >
+                            <TrashIcon size="xs" />
+                          </button>
                         )}
                       </div>
-
-                      {!cat.isDefault && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCategory(cat.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title={language === 'id' ? 'Hapus Kategori' : 'Delete Category'}
-                        >
-                          <TrashIcon size="xs" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>

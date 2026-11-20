@@ -93,7 +93,7 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
       case 'reschedule':
         return language === 'id' ? 'Penyesuaian Adaptif' : 'Adaptive Reschedule';
       case 'insights':
-        return language === 'id' ? 'Refleksi & Wawasan' : 'Insights & Reflection';
+        return language === 'id' ? 'Refleksi' : 'Insights & Reflection';
       case 'settings':
         return language === 'id' ? 'Pengaturan' : 'Settings';
       case 'addTask':
@@ -115,7 +115,7 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
     },
     {
       id: 'plan',
-      label: language === 'id' ? 'Rencana & Reschedule' : "Today's Plan",
+      label: language === 'id' ? 'Rencana Hari Ini' : "Today's Plan",
       icon: <SparklesIcon size="sm" />,
       active: activeNavTab === 'plan' || activeNavTab === 'reschedule',
       badgeCount: badgeCounts.todayPlan + badgeCounts.reschedule,
@@ -211,7 +211,13 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
                       : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
                   }`}
                   title={
-                    dbSyncStatus === 'connected'
+                    language === 'id'
+                      ? dbSyncStatus === 'connected'
+                        ? 'Terhubung ke database (sinkron otomatis)'
+                        : dbSyncStatus === 'syncing'
+                        ? 'Sedang menyinkronkan data...'
+                        : 'Mode penyimpanan lokal'
+                      : dbSyncStatus === 'connected'
                       ? 'Connected to PostgreSQL via Prisma & SSE Stream'
                       : dbSyncStatus === 'syncing'
                       ? 'Syncing with database...'
@@ -221,7 +227,7 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
                   {dbSyncStatus === 'connected' ? (
                     <>
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>{language === 'id' ? 'Live DB Sync' : 'Live DB Sync'}</span>
+                      <span>{language === 'id' ? 'Sinkronisasi Aktif' : 'Live DB Sync'}</span>
                     </>
                   ) : dbSyncStatus === 'syncing' ? (
                     <>
@@ -231,7 +237,7 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
                   ) : (
                     <>
                       <span className="w-2 h-2 rounded-full bg-amber-500" />
-                      <span>{language === 'id' ? 'Local Cache' : 'Local Cache'}</span>
+                      <span>{language === 'id' ? 'Penyimpanan Lokal' : 'Local Cache'}</span>
                     </>
                   )}
                 </button>
@@ -260,12 +266,12 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-slate-500">{language === 'id' ? 'Stream Kanal:' : 'Stream Channel:'}</span>
+                        <span className="text-slate-500">{language === 'id' ? 'Kanal Real-time:' : 'Stream Channel:'}</span>
                         <span className="font-semibold text-slate-800">/api/realtime (SSE)</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-slate-500">{language === 'id' ? 'State Latensi:' : 'Latency State:'}</span>
-                        <span className="font-semibold text-emerald-600">0ms (Local-First)</span>
+                        <span className="text-slate-500">{language === 'id' ? 'Waktu Tanggap:' : 'Latency State:'}</span>
+                        <span className="font-semibold text-emerald-600">{language === 'id' ? '0ms (Lokal Langsung)' : '0ms (Local-First)'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500">{language === 'id' ? 'Status Server:' : 'Server Status:'}</span>
@@ -276,7 +282,7 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
                         >
                           {dbSyncStatus === 'connected'
                             ? (language === 'id' ? 'Terhubung Aktif' : 'Actively Connected')
-                            : (language === 'id' ? 'Mode Offline Fallback' : 'Offline Fallback Mode')}
+                            : (language === 'id' ? 'Mode Cadangan Lokal' : 'Offline Fallback Mode')}
                         </span>
                       </div>
                     </div>
@@ -387,7 +393,13 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
                     : 'bg-amber-500'
                 }`}
                 title={
-                  dbSyncStatus === 'connected'
+                  language === 'id'
+                    ? dbSyncStatus === 'connected'
+                      ? 'Sinkronisasi Aktif'
+                      : dbSyncStatus === 'syncing'
+                      ? 'Menyinkronkan...'
+                      : 'Penyimpanan Lokal'
+                    : dbSyncStatus === 'connected'
                     ? 'Live DB Sync Active'
                     : dbSyncStatus === 'syncing'
                     ? 'Syncing DB...'
