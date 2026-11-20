@@ -8,7 +8,7 @@
       "passwordHash": "faa7deedaa05d3e985bd1e1acc3b9d01addb8de34b19fd7f9d6619f522764521906bd66a83fbab5212cddc2f865a52042356c6bf846022e44dea3106b6d97bde",
       "roleArchetype": "General",
       "occupancy": "General",
-      "workingRhythm": "Steady Pacer",
+      "workingRhythm": "Early Bird",
       "schedulingStyle": "Structured",
       "workHourStart": "09:00",
       "workHourEnd": "18:00",
@@ -26,28 +26,56 @@
   ],
   "sessions": [
     {
-      "token": "c316e099ebda1857e7daa90a406d672d16bcd3e6cc6b2527ad5d104133bc4cb2",
-      "tokenHash": "b375ed3a124b65f5e584227e35cd5cbc225f2bc5884c86dc400726729576095c",
+      "token": "30a6012220e7c48fa9db19d135e1dcd6bddc76b50147cc02b075fdd2e2431757",
+      "tokenHash": "d8b92edca02b74be7ddf7f62a3f23bf02740ea539fdfe366622f3dfe80fa8e9b",
       "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
-      "expiresAt": "2026-12-19T07:40:42.098Z",
-      "revokedAt": "2026-11-19T07:40:53.072Z"
-    },
-    {
-      "token": "ac78cf0cb09ba1b327f057a141f8f7c4929f7f987e7e9253ab6337086f56a401",
-      "tokenHash": "368957b59c1223843ce0b73c5bfedfbc181feb8bcfb9ac35153e4ea14774f9dd",
-      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
-      "expiresAt": "2026-12-19T07:41:03.309Z",
-      "revokedAt": "2026-11-19T07:45:47.158Z"
-    },
-    {
-      "token": "dba94cd654f8a9f5a81afa90be76873d978287d0293bb3321622507d8790014c",
-      "tokenHash": "7eb4f6b0c7320aee39e3fdbf4450ce8d98ae6483b9f1924cc065ec4024a3c95d",
-      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
-      "expiresAt": "2026-12-19T07:45:53.562Z",
+      "expiresAt": "2026-12-20T07:49:58.788Z",
       "revokedAt": null
     }
   ],
   "tasks": [
+    {
+      "id": "task-1795144187565",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Lunch and Rest",
+      "durationMinutes": 50,
+      "categoryName": "Sync",
+      "categoryColor": "#059669",
+      "priority": "REGULAR",
+      "energyLevel": "MEDIUM",
+      "focusType": "Medium",
+      "restMinutes": 0,
+      "needRestAfter": false,
+      "isBacklog": false,
+      "isRecurring": false,
+      "recurrencePattern": "daily",
+      "recurrenceDays": null,
+      "startHourDisplay": "10:45",
+      "dateDisplay": "2026-11-20",
+      "status": "COMPLETED",
+      "createdAt": "2026-11-20T03:09:47.967Z"
+    },
+    {
+      "id": "task-1795144137512",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Change the content of today plan and insight page",
+      "durationMinutes": 30,
+      "categoryName": "Focus",
+      "categoryColor": "#059669",
+      "priority": "TOP_3",
+      "energyLevel": "HIGH",
+      "focusType": "High",
+      "restMinutes": 15,
+      "needRestAfter": true,
+      "isBacklog": false,
+      "isRecurring": false,
+      "recurrencePattern": "daily",
+      "recurrenceDays": null,
+      "startHourDisplay": "10:00",
+      "dateDisplay": "2026-11-20",
+      "status": "COMPLETED",
+      "createdAt": "2026-11-20T03:08:57.909Z"
+    },
     {
       "id": "task-1795063737790",
       "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
@@ -109,6 +137,132 @@
     }
   ],
   "notifications": [
+    {
+      "id": "notif_1795161038678_v9mty",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Schedule Tip",
+      "message": "A light day ahead (0m). Focus on 1 key task or enjoy some relaxing downtime.",
+      "type": "CAPACITY_WARNING",
+      "isRead": true,
+      "createdAt": "2026-11-20T07:50:38.678Z"
+    },
+    {
+      "id": "notif_1795161038618_5xtoc",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Light Schedule Today",
+      "message": "Only at 0% (0/540m). You can relax or pick tasks from your task list.",
+      "type": "CAPACITY_WARNING",
+      "isRead": true,
+      "createdAt": "2026-11-20T07:50:38.618Z"
+    },
+    {
+      "id": "notif_1795161008285_u1ze7",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Task Done!",
+      "message": "Well done! \"Lunch and Rest\" is finished. Take a quick breather before moving on.",
+      "type": "FOCUS_REMINDER",
+      "isRead": true,
+      "createdAt": "2026-11-20T07:50:08.285Z"
+    },
+    {
+      "id": "notif_1795147165420_klru9",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Light Schedule Today",
+      "message": "Only at 9% (50/540m). You can relax or pick tasks from your task list.",
+      "type": "CAPACITY_WARNING",
+      "isRead": true,
+      "createdAt": "2026-11-20T03:59:25.420Z"
+    },
+    {
+      "id": "notif_1795147165392_241fx",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Schedule Tip",
+      "message": "A light day ahead (50m). Focus on 1 key task or enjoy some relaxing downtime.",
+      "type": "CAPACITY_WARNING",
+      "isRead": true,
+      "createdAt": "2026-11-20T03:59:25.392Z"
+    },
+    {
+      "id": "notif_1795147032540_s403x",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Schedule Tip",
+      "message": "A light day ahead (30m). Focus on 1 key task or enjoy some relaxing downtime.",
+      "type": "CAPACITY_WARNING",
+      "isRead": true,
+      "createdAt": "2026-11-20T03:57:12.540Z"
+    },
+    {
+      "id": "notif_1795147032200_rw77f",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Light Schedule Today",
+      "message": "Only at 6% (30/540m). You can relax or pick tasks from your task list.",
+      "type": "CAPACITY_WARNING",
+      "isRead": true,
+      "createdAt": "2026-11-20T03:57:12.200Z"
+    },
+    {
+      "id": "notif_1795147000483_5rp4c",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Task Done!",
+      "message": "Well done! \"Change the content of today plan and insight page\" is finished. Take a quick breather before moving on.",
+      "type": "FOCUS_REMINDER",
+      "isRead": true,
+      "createdAt": "2026-11-20T03:56:40.484Z"
+    },
+    {
+      "id": "notif_1795144187985_3iw2u",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Task Added",
+      "message": "Task \"Open the enrichment website\" scheduled for 10:45.",
+      "type": "FOCUS_REMINDER",
+      "isRead": true,
+      "createdAt": "2026-11-20T03:09:47.985Z"
+    },
+    {
+      "id": "notif_1795144167673_rk69u",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Today's Top 3 Tasks",
+      "message": "You have 1 key tasks today (\"Change the content of today plan and insight page\"). Take them one step at a time.",
+      "type": "FOCUS_REMINDER",
+      "isRead": true,
+      "createdAt": "2026-11-20T03:09:27.673Z"
+    },
+    {
+      "id": "notif_1795144137936_0g24i",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Task Added",
+      "message": "Task \"Change the content of today plan and insight page\" scheduled for 10:00.",
+      "type": "FOCUS_REMINDER",
+      "isRead": true,
+      "createdAt": "2026-11-20T03:08:57.936Z"
+    },
+    {
+      "id": "notif_1795143683818_1kfuj",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Schedule Tip",
+      "message": "Nicely balanced schedule (360m). Finish your key tasks earlier in the day.",
+      "type": "CAPACITY_WARNING",
+      "isRead": true,
+      "createdAt": "2026-11-20T03:01:23.818Z"
+    },
+    {
+      "id": "notif_1795143630025_7b8jn",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Light Schedule Today",
+      "message": "Only at 0% (0/540m). You can relax or pick tasks from your task list.",
+      "type": "CAPACITY_WARNING",
+      "isRead": true,
+      "createdAt": "2026-11-20T03:00:30.025Z"
+    },
+    {
+      "id": "notif_1795143600999_hnv1h",
+      "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",
+      "title": "Schedule Tip",
+      "message": "A light day ahead (0m). Focus on 1 key task or enjoy some relaxing downtime.",
+      "type": "CAPACITY_WARNING",
+      "isRead": true,
+      "createdAt": "2026-11-20T03:00:00.999Z"
+    },
     {
       "id": "notif_1795074337781_4hpyi",
       "userId": "usr_nicohbgt512_gmail_com_mwn2kxpi",

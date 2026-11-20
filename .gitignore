@@ -25,3 +25,9 @@ packages/database/.env
 *.local_auth_db.json
 .focient_local_auth_db.json
 apps/web/.focient_local_auth_db.json
+
+packages/database/.env
+*.local_auth_db.json
+.focient_local_auth_db.json
+apps/web/.focient_local_auth_db.json
+prisma.config.ts
