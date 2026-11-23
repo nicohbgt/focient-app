@@ -288,7 +288,7 @@ export const TaskValidationForm: React.FC<TaskValidationFormProps> = ({
               className="focient-tnum"
               style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-neutral-text-bold, #0F172A)', marginTop: '2px' }}
             >
-              {calculatedEnd ? new Date(calculatedEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+              {calculatedEnd ? new Date(calculatedEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
             </div>
           </div>
           <Badge variant="accent">Otomatis</Badge>

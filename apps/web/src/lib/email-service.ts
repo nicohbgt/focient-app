@@ -56,7 +56,7 @@ function getEmailHtml(code: string, email: string): string {
                 • Jika Anda tidak meminta kode ini, Anda dapat mengabaikan email ini.
               </p>
               <p style="margin: 20px 0 0 0; font-size: 12px; color: #94A3B8; text-align: center;">
-                FoCient — Intelligent Focus Management & Guilt-Free Adaptive Rescheduling
+                FoCient • Intelligent Focus Management & Guilt-Free Adaptive Rescheduling
               </p>
             </td>
           </tr>
