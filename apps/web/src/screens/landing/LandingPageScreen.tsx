@@ -232,11 +232,20 @@ export const LandingPageScreen: React.FC = () => {
               {language}
             </button>
 
+            {/* Quick Demo CTA */}
+            <button
+              type="button"
+              onClick={loginAsGuest}
+              className="hidden sm:inline-flex px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] text-slate-700 font-bold text-xs shadow-2xs transition-all"
+            >
+              <span>{language === 'id' ? 'Demo' : 'Demo'}</span>
+            </button>
+
             {/* Login Link */}
             <button
               type="button"
               onClick={() => setAuthView('login')}
-              className="hidden sm:inline-flex px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+              className="hidden sm:inline-flex px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
             >
               {language === 'id' ? 'Masuk' : 'Log In'}
             </button>
@@ -248,15 +257,6 @@ export const LandingPageScreen: React.FC = () => {
               className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-xs shadow-sm transition-all"
             >
               <span>{language === 'id' ? 'Daftar' : 'Sign Up'}</span>
-            </button>
-
-            {/* Quick Demo CTA */}
-            <button
-              type="button"
-              onClick={loginAsGuest}
-              className="hidden sm:inline-flex px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] text-slate-700 font-bold text-xs shadow-2xs transition-all"
-            >
-              <span>{language === 'id' ? 'Demo' : 'Demo'}</span>
             </button>
 
             {/* Mobile Hamburger Button */}
@@ -327,6 +327,16 @@ export const LandingPageScreen: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setIsMobileMenuOpen(false);
+                  loginAsGuest();
+                }}
+                className="w-full py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-center font-bold text-xs transition-colors"
+              >
+                <span>{language === 'id' ? 'Demo' : 'Demo'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
                   setAuthView('login');
                 }}
                 className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-700 text-center font-bold text-xs hover:bg-slate-50 transition-colors"
@@ -342,16 +352,6 @@ export const LandingPageScreen: React.FC = () => {
                 className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-center font-bold text-xs transition-colors"
               >
                 <span>{language === 'id' ? 'Daftar' : 'Sign Up'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  loginAsGuest();
-                }}
-                className="w-full py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-center font-bold text-xs transition-colors"
-              >
-                <span>{language === 'id' ? 'Demo' : 'Demo'}</span>
               </button>
             </div>
           </div>
