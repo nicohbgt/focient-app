@@ -757,6 +757,126 @@ interface FocientContextType {
   triggerWebPushTest: () => Promise<{ success: boolean; sentCount?: number; message?: string }>;
 }
 
+/**
+ * Tab title naming resolution strictly following FoCient design specification:
+ * - Landing page: "FoCient"
+ * - All other pages: "[nama page] - FoCient"
+ * - Zero decorative icons or emojis (no bell/alert icons)
+ */
+export function resolveDocumentTitle({
+  authView,
+  activeNavTab,
+  inspectorView,
+  language = 'id',
+  isAuthenticated = false,
+  pathname = '',
+}: {
+  authView?: AuthView;
+  activeNavTab?: ActiveNavTab;
+  inspectorView?: ScreenInspectorView;
+  language?: Language;
+  isAuthenticated?: boolean;
+  pathname?: string;
+}): string {
+  // 1. Inspector Overrides (development testing)
+  if (inspectorView && inspectorView !== 'fullFlow') {
+    if (inspectorView === 'landing' || inspectorView === 'welcome') {
+      return 'FoCient';
+    }
+    let inspectorPage = '';
+    switch (inspectorView) {
+      case 'login':
+        inspectorPage = language === 'en' ? 'Log In' : 'Masuk';
+        break;
+      case 'register':
+        inspectorPage = language === 'en' ? 'Sign Up' : 'Daftar';
+        break;
+      case 'forgotPassword':
+        inspectorPage = language === 'en' ? 'Forgot Password' : 'Lupa Kata Sandi';
+        break;
+      case 'resetPassword':
+        inspectorPage = language === 'en' ? 'Reset Password' : 'Reset Kata Sandi';
+        break;
+      case 'step1Workspace':
+      case 'step2Rhythm':
+      case 'step3Time':
+      case 'step4Task':
+      case 'step5Review':
+        inspectorPage = 'Onboarding';
+        break;
+      case 'dashboard':
+        inspectorPage = 'Dashboard';
+        break;
+      case 'todayPlan':
+        inspectorPage = language === 'en' ? "Today's Plan" : 'Rencana Hari Ini';
+        break;
+      case 'taskList':
+        inspectorPage = language === 'en' ? 'Tasks' : 'Daftar Tugas';
+        break;
+      case 'reschedule':
+        inspectorPage = language === 'en' ? 'Reschedule' : 'Penyesuaian Jadwal';
+        break;
+      case 'insights':
+        inspectorPage = language === 'en' ? 'Insights' : 'Refleksi';
+        break;
+      case 'settings':
+        inspectorPage = language === 'en' ? 'Settings' : 'Pengaturan';
+        break;
+      case 'addTask':
+        inspectorPage = language === 'en' ? 'Add Task' : 'Tambah Tugas';
+        break;
+      default:
+        inspectorPage = '';
+    }
+    return inspectorPage ? `${inspectorPage} - FoCient` : 'FoCient';
+  }
+
+  const cleanPath = (pathname || '').toLowerCase();
+
+  // 2. Landing page exception: strictly 'FoCient' without page name
+  if (authView === 'landing' || authView === 'welcome') {
+    return 'FoCient';
+  }
+  if (!authView && (cleanPath === '/' || cleanPath === '/welcome')) {
+    return 'FoCient';
+  }
+
+  // 3. Auth views / pages
+  let pageName = '';
+  if (authView === 'login' || cleanPath.startsWith('/login') || cleanPath.startsWith('/auth/login')) {
+    pageName = language === 'en' ? 'Log In' : 'Masuk';
+  } else if (authView === 'register' || cleanPath.startsWith('/register') || cleanPath.startsWith('/auth/register')) {
+    pageName = language === 'en' ? 'Sign Up' : 'Daftar';
+  } else if (authView === 'forgotPassword' || cleanPath.startsWith('/forgot-password') || cleanPath.startsWith('/auth/forgot-password')) {
+    pageName = language === 'en' ? 'Forgot Password' : 'Lupa Kata Sandi';
+  } else if (authView === 'resetPassword' || cleanPath.startsWith('/reset-password') || cleanPath.startsWith('/auth/reset-password')) {
+    pageName = language === 'en' ? 'Reset Password' : 'Reset Kata Sandi';
+  } else if (authView === 'otp' || cleanPath.startsWith('/verify-otp') || cleanPath.startsWith('/auth/verify-otp') || cleanPath.startsWith('/auth/otp')) {
+    pageName = language === 'en' ? 'Verify OTP' : 'Verifikasi OTP';
+  } else if (authView === 'onboarding' || cleanPath.startsWith('/onboarding')) {
+    pageName = 'Onboarding';
+  } else {
+    // 4. Main app authenticated screens / tabs
+    if (activeNavTab === 'plan' || cleanPath.startsWith('/plan') || cleanPath.startsWith('/today')) {
+      pageName = language === 'en' ? "Today's Plan" : 'Rencana Hari Ini';
+    } else if (activeNavTab === 'tasks' || cleanPath.startsWith('/tasks')) {
+      pageName = language === 'en' ? 'Tasks' : 'Daftar Tugas';
+    } else if (activeNavTab === 'reschedule' || cleanPath.startsWith('/rescheduling')) {
+      pageName = language === 'en' ? 'Reschedule' : 'Penyesuaian Jadwal';
+    } else if (activeNavTab === 'insights' || cleanPath.startsWith('/insights')) {
+      pageName = language === 'en' ? 'Insights' : 'Refleksi';
+    } else if (activeNavTab === 'settings' || cleanPath.startsWith('/settings')) {
+      pageName = language === 'en' ? 'Settings' : 'Pengaturan';
+    } else if (activeNavTab === 'addTask') {
+      pageName = language === 'en' ? 'Add Task' : 'Tambah Tugas';
+    } else {
+      pageName = 'Dashboard';
+    }
+  }
+
+  return pageName ? `${pageName} - FoCient` : 'FoCient';
+}
+
 const FocientContext = createContext<FocientContextType | null>(null);
 
 export function FocientProvider({ children }: { children: React.ReactNode }) {
@@ -792,7 +912,21 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
   });
   const [otpPurpose, setOtpPurpose] = useState<'register' | 'forgotPassword'>('register');
   const [isResetPasswordPending, setIsResetPasswordPending] = useState<boolean>(false);
-  const [authView, setAuthView] = useState<AuthView>('landing');
+  const [authView, setAuthView] = useState<AuthView>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname.toLowerCase();
+      if (path.startsWith('/login') || path.startsWith('/auth/login')) return 'login';
+      if (path.startsWith('/register') || path.startsWith('/auth/register')) return 'register';
+      if (path.startsWith('/forgot-password') || path.startsWith('/auth/forgot-password')) return 'forgotPassword';
+      if (path.startsWith('/reset-password') || path.startsWith('/auth/reset-password')) return 'resetPassword';
+      if (path.startsWith('/verify-otp') || path.startsWith('/auth/verify-otp') || path.startsWith('/auth/otp')) return 'otp';
+      if (path.startsWith('/onboarding')) return 'onboarding';
+      if (path.startsWith('/dashboard') || path.startsWith('/plan') || path.startsWith('/tasks') || path.startsWith('/insights') || path.startsWith('/settings') || path.startsWith('/rescheduling')) {
+        return 'dashboard';
+      }
+    }
+    return 'landing';
+  });
 
   // Google OAuth state (Native GIS & Standard OAuth 2.0 Popup)
   const [isGoogleAuthModalOpen, setIsGoogleAuthModalOpen] = useState<boolean>(false);
@@ -1206,7 +1340,18 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
   const [rescheduleAlertDismissed, setRescheduleAlertDismissed] = useState<boolean>(false);
 
   // UI state
-  const [activeNavTab, setActiveNavTab] = useState<ActiveNavTab>('dashboard');
+  const [activeNavTab, setActiveNavTab] = useState<ActiveNavTab>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname.toLowerCase();
+      if (path.startsWith('/plan') || path.startsWith('/today')) return 'plan';
+      if (path.startsWith('/tasks')) return 'tasks';
+      if (path.startsWith('/rescheduling')) return 'reschedule';
+      if (path.startsWith('/insights')) return 'insights';
+      if (path.startsWith('/settings')) return 'settings';
+      if (path.startsWith('/dashboard')) return 'dashboard';
+    }
+    return 'dashboard';
+  });
   const [inspectorView, setInspectorView] = useState<ScreenInspectorView>('fullFlow');
   const [devicePreview, setDevicePreview] = useState<DevicePreviewMode>('responsive');
   const [language, setLanguageState] = useState<Language>(() => {
@@ -2877,16 +3022,39 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     return notifications.filter((n) => !n.read).length;
   }, [notifications, isAuthenticated]);
 
-  // Synchronize browser tab title with unread notifications strictly when authenticated
+  // Synchronize browser tab title strictly formatted as "[nama page] - FoCient", or "FoCient" on landing page
+  // Zero decorative icons or emojis (no bell/alert icons)
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    const baseTitle = 'FoCient';
-    if (isAuthenticated && unreadNotificationCount > 0) {
-      document.title = `(${unreadNotificationCount}) FoCient`;
-    } else {
-      document.title = baseTitle;
-    }
-  }, [isAuthenticated, unreadNotificationCount]);
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+    const newTitle = resolveDocumentTitle({
+      authView,
+      activeNavTab,
+      inspectorView,
+      language,
+      isAuthenticated,
+      pathname: currentPath,
+    });
+    document.title = newTitle;
+  }, [authView, activeNavTab, inspectorView, language, isAuthenticated]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handlePopState = () => {
+      const currentPath = window.location.pathname;
+      const newTitle = resolveDocumentTitle({
+        authView,
+        activeNavTab,
+        inspectorView,
+        language,
+        isAuthenticated,
+        pathname: currentPath,
+      });
+      document.title = newTitle;
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [authView, activeNavTab, inspectorView, language, isAuthenticated]);
 
   const openNotificationPanel = useCallback(() => setIsNotificationPanelOpen(true), []);
   const closeNotificationPanel = useCallback(() => setIsNotificationPanelOpen(false), []);
@@ -2952,16 +3120,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         return [newNotification, ...prev];
       });
 
-      // Dynamic tab alert when user is on another browser tab (strictly when authenticated)
-      if (typeof document !== 'undefined' && document.hidden && isAuthenticated) {
-        const prevTitle = document.title;
-        document.title = `🔔 ${notif.title} | FoCient`;
-        setTimeout(() => {
-          if (typeof document !== 'undefined') {
-            document.title = isAuthenticated ? prevTitle : 'FoCient';
-          }
-        }, 3500);
-      }
+
 
       fetch('/api/notifications', {
         method: 'POST',

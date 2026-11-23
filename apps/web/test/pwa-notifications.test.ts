@@ -15,7 +15,7 @@ import {
   isNotificationSupported,
   getNotificationPermission,
 } from '../src/lib/pwa-notifications.ts';
-import type { AppNotification, NotificationCategory } from '../src/state/focient-store.tsx';
+import { resolveDocumentTitle, type AppNotification, type NotificationCategory } from '../src/state/focient-store.tsx';
 
 describe('FoCient PWA & Web Notification System Test Suite', () => {
   it('1. PWA Web App Manifest is valid and configured with standalone display', () => {
@@ -238,19 +238,32 @@ describe('FoCient PWA & Web Notification System Test Suite', () => {
     assert.ok(tipLow.body.includes('santai'));
   });
 
-  it('12. Browser Tab Notification Counter strictly guards against showing on logout / unauthenticated landing page', () => {
+  it('12. Browser Tab Title strictly follows [nama page] - FoCient format and FoCient on landing without bell icons', () => {
     const storeCode = fs.readFileSync(
       new URL('../src/state/focient-store.tsx', import.meta.url),
       'utf8'
     );
 
-    // 1. Guarding tab title synchronization: MUST check isAuthenticated
-    assert.ok(
-      storeCode.includes('if (isAuthenticated && unreadNotificationCount > 0)'),
-      'Tab title sync effect must require both isAuthenticated and unreadNotificationCount > 0'
+    // 1. Guarding against bell icon / notification emoji in tab title
+    assert.equal(
+      storeCode.includes('🔔'),
+      false,
+      'document.title must never contain bell emoji (🔔) or alert icons'
     );
 
-    // 2. Logout must explicitly clear notifications, local storage, and reset document.title
+    // 2. Tab title synchronization must reset to FoCient for landing page and logout
+    assert.ok(
+      storeCode.includes("document.title = 'FoCient';"),
+      'logout() and landing page must reset document.title to clean default FoCient'
+    );
+
+    // 3. Tab title must follow "[nama page] - FoCient" pattern
+    assert.ok(
+      storeCode.includes('`${pageName} - FoCient`'),
+      'Tab title must format as [nama page] - FoCient'
+    );
+
+    // 4. Logout must explicitly clear notifications, local storage, and reset document.title
     assert.ok(
       storeCode.includes('setNotifications([]);'),
       'logout() must reset notifications state to empty array'
@@ -259,32 +272,80 @@ describe('FoCient PWA & Web Notification System Test Suite', () => {
       storeCode.includes("window.localStorage.removeItem('focient_notifications');"),
       'logout() must remove focient_notifications from localStorage'
     );
-    assert.ok(
-      storeCode.includes("document.title = 'FoCient';"),
-      'logout() must reset document.title to clean default on logout'
-    );
 
-    // 3. Auto-scheduler interval must be guarded by isAuthenticated
+    // 5. Auto-scheduler interval must be guarded by isAuthenticated
     const normalizedStoreCode = storeCode.replace(/\r\n/g, '\n');
     assert.ok(
       normalizedStoreCode.includes('if (!isAuthenticated) {\n      scheduledTaskRemindersRef.current.clear();\n      return;\n    }'),
       'Auto-scheduler interval must abort immediately if user is not authenticated'
     );
 
-    // 4. Test title logic directly
-    const computeTabTitle = (isAuthenticated: boolean, unreadCount: number) => {
-      const baseTitle = 'FoCient';
-      if (isAuthenticated && unreadCount > 0) {
-        return `(${unreadCount}) FoCient`;
-      }
-      return baseTitle;
-    };
+    // 6. Test resolveDocumentTitle directly across all app pages
+    // Landing page: strictly FoCient
+    assert.equal(resolveDocumentTitle({ authView: 'landing', isAuthenticated: false }), 'FoCient');
+    assert.equal(resolveDocumentTitle({ pathname: '/', isAuthenticated: false }), 'FoCient');
+    assert.equal(resolveDocumentTitle({ authView: 'welcome', isAuthenticated: false }), 'FoCient');
 
-    assert.equal(computeTabTitle(true, 7), '(7) FoCient');
-    assert.equal(computeTabTitle(true, 0), 'FoCient');
-    // When logged out, even if there were unread notifications in memory/cache, title must NEVER display counter
-    assert.equal(computeTabTitle(false, 7), 'FoCient');
-    assert.equal(computeTabTitle(false, 0), 'FoCient');
+    // Main authenticated pages: [nama page] - FoCient
+    assert.equal(
+      resolveDocumentTitle({ authView: 'dashboard', activeNavTab: 'dashboard', language: 'id', isAuthenticated: true }),
+      'Dashboard - FoCient'
+    );
+    assert.equal(
+      resolveDocumentTitle({ authView: 'dashboard', activeNavTab: 'plan', language: 'id', isAuthenticated: true }),
+      'Rencana Hari Ini - FoCient'
+    );
+    assert.equal(
+      resolveDocumentTitle({ authView: 'dashboard', activeNavTab: 'plan', language: 'en', isAuthenticated: true }),
+      "Today's Plan - FoCient"
+    );
+    assert.equal(
+      resolveDocumentTitle({ authView: 'dashboard', activeNavTab: 'tasks', language: 'id', isAuthenticated: true }),
+      'Daftar Tugas - FoCient'
+    );
+    assert.equal(
+      resolveDocumentTitle({ authView: 'dashboard', activeNavTab: 'tasks', language: 'en', isAuthenticated: true }),
+      'Tasks - FoCient'
+    );
+    assert.equal(
+      resolveDocumentTitle({ authView: 'dashboard', activeNavTab: 'reschedule', language: 'id', isAuthenticated: true }),
+      'Penyesuaian Jadwal - FoCient'
+    );
+    assert.equal(
+      resolveDocumentTitle({ authView: 'dashboard', activeNavTab: 'reschedule', language: 'en', isAuthenticated: true }),
+      'Reschedule - FoCient'
+    );
+    assert.equal(
+      resolveDocumentTitle({ authView: 'dashboard', activeNavTab: 'insights', language: 'id', isAuthenticated: true }),
+      'Refleksi - FoCient'
+    );
+    assert.equal(
+      resolveDocumentTitle({ authView: 'dashboard', activeNavTab: 'insights', language: 'en', isAuthenticated: true }),
+      'Insights - FoCient'
+    );
+    assert.equal(
+      resolveDocumentTitle({ authView: 'dashboard', activeNavTab: 'settings', language: 'id', isAuthenticated: true }),
+      'Pengaturan - FoCient'
+    );
+    assert.equal(
+      resolveDocumentTitle({ authView: 'dashboard', activeNavTab: 'settings', language: 'en', isAuthenticated: true }),
+      'Settings - FoCient'
+    );
+
+    // Auth & Onboarding sub-pages
+    assert.equal(resolveDocumentTitle({ authView: 'login', language: 'id' }), 'Masuk - FoCient');
+    assert.equal(resolveDocumentTitle({ authView: 'login', language: 'en' }), 'Log In - FoCient');
+    assert.equal(resolveDocumentTitle({ authView: 'register', language: 'id' }), 'Daftar - FoCient');
+    assert.equal(resolveDocumentTitle({ authView: 'register', language: 'en' }), 'Sign Up - FoCient');
+    assert.equal(resolveDocumentTitle({ authView: 'forgotPassword', language: 'id' }), 'Lupa Kata Sandi - FoCient');
+    assert.equal(resolveDocumentTitle({ authView: 'resetPassword', language: 'id' }), 'Reset Kata Sandi - FoCient');
+    assert.equal(resolveDocumentTitle({ authView: 'otp', language: 'id' }), 'Verifikasi OTP - FoCient');
+    assert.equal(resolveDocumentTitle({ authView: 'onboarding', language: 'id' }), 'Onboarding - FoCient');
+
+    // Direct pathname mapping
+    assert.equal(resolveDocumentTitle({ pathname: '/tasks', language: 'id', isAuthenticated: true }), 'Daftar Tugas - FoCient');
+    assert.equal(resolveDocumentTitle({ pathname: '/settings', language: 'id', isAuthenticated: true }), 'Pengaturan - FoCient');
+    assert.equal(resolveDocumentTitle({ pathname: '/login', language: 'id' }), 'Masuk - FoCient');
   });
 
   it('13. Notification Center CTA Navigation Contract reliably routes to tasks, plan, reschedule, insights, settings & dashboard', () => {
