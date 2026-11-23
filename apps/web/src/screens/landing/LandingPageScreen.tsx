@@ -19,7 +19,6 @@ import {
   ChevronUpIcon,
   SunIcon,
   MoonIcon,
-  ActivityIcon,
 } from '../../components/icons';
 import { FoCientWordmark } from '../../components/brand/FoCientWordmark';
 
@@ -251,6 +250,15 @@ export const LandingPageScreen: React.FC = () => {
               <span>{language === 'id' ? 'Daftar' : 'Sign Up'}</span>
             </button>
 
+            {/* Quick Demo CTA */}
+            <button
+              type="button"
+              onClick={loginAsGuest}
+              className="hidden sm:inline-flex px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] text-slate-700 font-bold text-xs shadow-2xs transition-all"
+            >
+              <span>{language === 'id' ? 'Demo' : 'Demo'}</span>
+            </button>
+
             {/* Mobile Hamburger Button */}
             <button
               type="button"
@@ -321,9 +329,9 @@ export const LandingPageScreen: React.FC = () => {
                   setIsMobileMenuOpen(false);
                   setAuthView('login');
                 }}
-                className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-700 text-center font-bold text-xs"
+                className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-700 text-center font-bold text-xs hover:bg-slate-50 transition-colors"
               >
-                {language === 'id' ? 'Masuk ke Akun' : 'Log In'}
+                {language === 'id' ? 'Masuk' : 'Log In'}
               </button>
               <button
                 type="button"
@@ -331,9 +339,19 @@ export const LandingPageScreen: React.FC = () => {
                   setIsMobileMenuOpen(false);
                   setAuthView('register');
                 }}
-                className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-center font-bold text-xs"
+                className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-center font-bold text-xs transition-colors"
               >
                 <span>{language === 'id' ? 'Daftar' : 'Sign Up'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  loginAsGuest();
+                }}
+                className="w-full py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-center font-bold text-xs transition-colors"
+              >
+                <span>{language === 'id' ? 'Demo' : 'Demo'}</span>
               </button>
             </div>
           </div>
@@ -391,9 +409,8 @@ export const LandingPageScreen: React.FC = () => {
                       {language === 'id' ? 'Sesi Fokus Hari Ini' : 'Today\'s Focus Session'}
                     </span>
                   </div>
-                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 tabular-nums flex items-center gap-1">
-                    <ActivityIcon size="xs" />
-                    <span>{language === 'id' ? '65% Pas' : '65% Optimal'}</span>
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 tabular-nums">
+                    {language === 'id' ? '65% Pas' : '65% Optimal'}
                   </span>
                 </div>
 
@@ -889,16 +906,13 @@ export const LandingPageScreen: React.FC = () => {
                       {simulatedPercent}%
                     </div>
                   </div>
-                  <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 transition-colors ${
+                  <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border transition-colors ${
                     simulatedPercent > 90 ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                   }`}>
-                    <ActivityIcon size="xs" />
-                    <span>
-                      {simulatedPercent > 90
-                        ? (language === 'id' ? 'Mulai Padat' : 'Near Capacity')
-                        : (language === 'id' ? 'Pas & Sehat' : 'Optimal')}{' '}
-                      ({simulatedMinutes}m / 480m)
-                    </span>
+                    {simulatedPercent > 90
+                      ? (language === 'id' ? 'Mulai Padat' : 'Near Capacity')
+                      : (language === 'id' ? 'Pas & Sehat' : 'Optimal')}{' '}
+                    ({simulatedMinutes}m / 480m)
                   </span>
                 </div>
 

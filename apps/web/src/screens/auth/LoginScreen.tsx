@@ -8,7 +8,6 @@ import { ArrowLeftIcon, AlertCircleIcon, EyeIcon, EyeOffIcon } from '../../compo
 export const LoginScreen: React.FC = () => {
   const {
     login,
-    loginAsGuest,
     setAuthView,
     language,
   } = useFocient();
@@ -58,10 +57,6 @@ export const LoginScreen: React.FC = () => {
     } else {
       setAuthView('landing');
     }
-  };
-
-  const handleGuestSignIn = () => {
-    loginAsGuest();
   };
 
   return (
@@ -163,17 +158,6 @@ export const LoginScreen: React.FC = () => {
             <span>{language === 'id' ? 'Masuk' : 'Log In'}</span>
           </button>
         </form>
-
-        {/* Optional Quick Demo for Developers */}
-        <div className="mt-3 text-center">
-          <button
-            type="button"
-            onClick={handleGuestSignIn}
-            className="text-xs font-normal text-slate-400 hover:text-slate-600 transition-colors"
-          >
-            {language === 'id' ? 'Mode Cepat: Masuk sebagai Tamu' : 'Quick Demo: Guest Session'}
-          </button>
-        </div>
 
         {/* 4. Footer Link Switch */}
         <p className="text-center text-xs text-slate-500 mt-6 pt-4 border-t border-slate-100">
