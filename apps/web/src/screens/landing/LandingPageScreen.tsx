@@ -422,9 +422,9 @@ export const LandingPageScreen: React.FC = () => {
                         {language === 'id' ? '#1 Prioritas' : '#1 Priority'}
                       </span>
                       <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full shrink-0 bg-[#7C3AED]" />
+                        <span className="w-2 h-2 rounded-full shrink-0 bg-[#2563EB]" />
                         <span className="text-xs font-semibold text-slate-600">
-                          {language === 'id' ? 'Strategis' : 'Strategic'}
+                          {language === 'id' ? 'Fokus' : 'Focus'}
                         </span>
                       </div>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
@@ -438,12 +438,12 @@ export const LandingPageScreen: React.FC = () => {
 
                   <div>
                     <h3 className="text-lg font-extrabold text-slate-900">
-                      {language === 'id' ? 'Review Desain Aplikasi' : 'Review App Design'}
+                      {language === 'id' ? 'Selesaikan Laporan Mingguan' : 'Complete Weekly Report'}
                     </h3>
                     <p className="text-xs text-slate-500 mt-1">
                       {language === 'id'
-                        ? 'Selesaikan draft awal sebelum makan siang.'
-                        : 'Finish the initial draft before lunch.'}
+                        ? 'Selesaikan draf laporan kerja sebelum makan siang.'
+                        : 'Finish the initial report draft before lunch.'}
                     </p>
                   </div>
 
@@ -717,9 +717,9 @@ export const LandingPageScreen: React.FC = () => {
                         {language === 'id' ? '#1 Prioritas' : '#1 Priority'}
                       </span>
                       <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full shrink-0 bg-[#0284C7]" />
+                        <span className="w-2 h-2 rounded-full shrink-0 bg-[#2563EB]" />
                         <span className="text-xs font-semibold text-slate-600">
-                          {language === 'id' ? 'Eksekusi' : 'Execution'}
+                          {language === 'id' ? 'Fokus' : 'Focus'}
                         </span>
                       </div>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
@@ -813,7 +813,7 @@ export const LandingPageScreen: React.FC = () => {
                 }`}>
                   <div className="font-bold text-slate-900 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#7C3AED]" />
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#0284C7]" />
                       <span>{language === 'id' ? 'Diskusi Tim' : 'Team Sync'}</span>
                     </div>
                     {isFeature2Rebalanced && (

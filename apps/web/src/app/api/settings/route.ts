@@ -68,7 +68,7 @@ export async function GET(request: Request) {
         name: dbUser.name,
         username: dbUser.username || dbUser.name,
         email: dbUser.email,
-        roleArchetype: dbUser.roleArchetype || 'Software Engineer',
+        roleArchetype: dbUser.roleArchetype || 'General',
         occupancy: dbUser.occupancy || dbUser.roleArchetype || 'General',
         workingRhythm: dbUser.workingRhythm || 'Steady Pacer',
         schedulingStyle: dbUser.schedulingStyle || 'Structured',

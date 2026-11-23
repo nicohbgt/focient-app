@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, code, name = '', password = '', roleArchetype = 'Software Engineer' } = body;
+    const { email, code, name = '', password = '', roleArchetype = 'General' } = body;
 
     if (!email || typeof email !== 'string' || !email.includes('@')) {
       return NextResponse.json(

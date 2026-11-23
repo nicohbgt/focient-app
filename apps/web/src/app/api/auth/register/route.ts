@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, password = '', roleArchetype = 'Software Engineer' } = body;
+    const { name, email, password = '', roleArchetype = 'General' } = body;
 
     // 1. Validation Contracts
     if (!name || typeof name !== 'string' || name.trim().length < 2) {

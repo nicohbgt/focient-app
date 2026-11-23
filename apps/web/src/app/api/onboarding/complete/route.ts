@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const {
       job,
-      roleArchetype = job || 'Software Engineer',
+      roleArchetype = job || 'General',
       occupancy = job || roleArchetype || 'General',
       workHoursLimit = 8.0,
       startWorkTime = '09:00',

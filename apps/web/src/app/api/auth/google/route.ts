@@ -47,7 +47,7 @@ export async function GET(request: Request) {
             name: 'Google FoCient User',
             email: cleanEmail,
             passwordHash: 'GOOGLE_OAUTH_ACCOUNT',
-            roleArchetype: 'Software Engineer',
+            roleArchetype: 'General',
             workHourStart: '09:00',
             workHourEnd: '17:00',
             dailyCapacityMinutes: 480,

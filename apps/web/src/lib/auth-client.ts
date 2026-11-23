@@ -28,6 +28,7 @@ export interface UserSession {
   weekStartDay?: 'monday' | 'sunday';
   rescheduleTimeSavedMinutes?: number;
   isOnboardingCompleted?: boolean;
+  categories?: any[];
 }
 
 export interface AuthResponse {

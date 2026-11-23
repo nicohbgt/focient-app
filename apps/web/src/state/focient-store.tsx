@@ -310,149 +310,149 @@ const prevDateStr = formatCurrentDate(new Date(Date.now() - 86400000 * 2), 'en')
 export const kSampleTasks: MobileTask[] = [
   {
     id: 't-1',
-    title: 'Create the Annual OKR',
-    durationMinutes: 25,
+    title: 'Complete Weekly Report',
+    durationMinutes: 45,
     priority: 'top3',
     energyLevel: 'high',
     status: 'todo',
-    categoryName: 'Strategic',
-    categoryColor: '#7C3AED',
-    restMinutes: 20,
+    categoryName: 'Focus',
+    categoryColor: '#2563EB',
+    restMinutes: 15,
     dateDisplay: monDateStr,
-    startHourDisplay: '10:00',
+    startHourDisplay: '09:30',
     focusType: 'High',
     needRestAfter: true,
   },
   {
     id: 't-2',
-    title: 'Design Architecture Monorepo',
-    durationMinutes: 45,
+    title: 'Team Sync & Schedule Alignment',
+    durationMinutes: 30,
     priority: 'top3',
-    energyLevel: 'high',
+    energyLevel: 'medium',
     status: 'todo',
-    categoryName: 'Execution',
+    categoryName: 'Sync',
     categoryColor: '#0284C7',
-    restMinutes: 15,
+    restMinutes: 10,
     dateDisplay: wedDateStr,
     startHourDisplay: '11:00',
-    focusType: 'High',
+    focusType: 'Medium',
     needRestAfter: true,
   },
   {
     id: 't-3',
-    title: 'Finalize Security Audit',
-    durationMinutes: 33,
+    title: 'Organize Key Documents & Records',
+    durationMinutes: 30,
     priority: 'top3',
-    energyLevel: 'high',
+    energyLevel: 'low',
     status: 'todo',
-    categoryName: 'Execution',
-    categoryColor: '#0284C7',
-    restMinutes: 15,
+    categoryName: 'Admin',
+    categoryColor: '#64748B',
+    restMinutes: 10,
     dateDisplay: tueDateStr,
     startHourDisplay: '13:00',
-    focusType: 'High',
+    focusType: 'Low',
     needRestAfter: true,
   },
   {
     id: 't-4',
-    title: 'Meeting Client Sync',
+    title: 'Department Coordination Meeting',
     durationMinutes: 30,
     priority: 'normal',
     energyLevel: 'medium',
     status: 'todo',
-    categoryName: 'Meeting',
-    categoryColor: '#B45309',
+    categoryName: 'Sync',
+    categoryColor: '#0284C7',
     restMinutes: 10,
     dateDisplay: thuDateStr,
     startHourDisplay: '14:00',
-    focusType: 'Low',
+    focusType: 'Medium',
     needRestAfter: true,
   },
   {
     id: 't-5',
-    title: 'Implement Color Palette Token',
-    durationMinutes: 25,
+    title: 'Prepare Presentation Slides',
+    durationMinutes: 35,
     priority: 'normal',
-    energyLevel: 'medium',
+    energyLevel: 'high',
     status: 'todo',
-    categoryName: 'Execution',
-    categoryColor: '#0284C7',
+    categoryName: 'Focus',
+    categoryColor: '#2563EB',
     restMinutes: 10,
     dateDisplay: thuDateStr,
-    startHourDisplay: '14:30',
-    focusType: 'Medium',
+    startHourDisplay: '14:40',
+    focusType: 'High',
     needRestAfter: true,
   },
   {
     id: 't-6',
-    title: 'Review PRs & Code Cleanliness',
+    title: 'Follow-up Email & Message Triage',
     durationMinutes: 25,
     priority: 'normal',
-    energyLevel: 'medium',
+    energyLevel: 'low',
     status: 'todo',
-    categoryName: 'Execution',
-    categoryColor: '#0284C7',
+    categoryName: 'Admin',
+    categoryColor: '#64748B',
     restMinutes: 10,
     dateDisplay: friDateStr,
     startHourDisplay: '15:30',
-    focusType: 'Medium',
+    focusType: 'Low',
     needRestAfter: true,
   },
   {
     id: 't-7',
-    title: 'Buffer Rest Check & Rhythm Sync',
-    durationMinutes: 25,
+    title: 'Draft Monthly Activity Summary',
+    durationMinutes: 30,
     priority: 'normal',
     energyLevel: 'medium',
     status: 'todo',
-    categoryName: 'Strategic',
-    categoryColor: '#7C3AED',
+    categoryName: 'Focus',
+    categoryColor: '#2563EB',
     restMinutes: 10,
     dateDisplay: wedDateStr,
     startHourDisplay: '16:00',
-    focusType: 'Low',
+    focusType: 'High',
     needRestAfter: true,
     isRecurring: false,
   },
   {
     id: 't-8',
-    title: 'Update API Contract DTOs',
+    title: 'Sort Invoices & Expense Receipts',
     durationMinutes: 20,
     priority: 'normal',
-    energyLevel: 'medium',
+    energyLevel: 'low',
     status: 'todo',
-    categoryName: 'Execution',
-    categoryColor: '#0284C7',
+    categoryName: 'Admin',
+    categoryColor: '#64748B',
     restMinutes: 10,
     dateDisplay: tueDateStr,
     startHourDisplay: '16:30',
-    focusType: 'Medium',
+    focusType: 'Low',
     needRestAfter: true,
   },
   {
     id: 't-9',
-    title: 'Message to best friend',
-    durationMinutes: 15,
+    title: 'Lunch Break & Relaxing Walk',
+    durationMinutes: 45,
     priority: 'low',
     energyLevel: 'low',
     status: 'todo',
     categoryName: 'Personal',
     categoryColor: '#059669',
-    restMinutes: 5,
+    restMinutes: 0,
     dateDisplay: thuDateStr,
-    startHourDisplay: '14:30',
+    startHourDisplay: '12:00',
     focusType: 'Low',
     needRestAfter: false,
   },
   {
     id: 't-10',
-    title: 'Clean email inbox & triage',
+    title: 'Clean Desktop Workspace & Files',
     durationMinutes: 15,
     priority: 'low',
     energyLevel: 'low',
     status: 'todo',
-    categoryName: 'Operation',
-    categoryColor: '#0D9488',
+    categoryName: 'Admin',
+    categoryColor: '#64748B',
     restMinutes: 5,
     dateDisplay: monDateStr,
     startHourDisplay: '17:00',
@@ -462,7 +462,7 @@ export const kSampleTasks: MobileTask[] = [
   // Recent tasks matching mockups
   {
     id: 't-oct3-1',
-    title: '30min Incline Walking Cardio',
+    title: 'Morning Walk & Light Stretching',
     durationMinutes: 30,
     priority: 'normal',
     energyLevel: 'medium',
@@ -472,33 +472,33 @@ export const kSampleTasks: MobileTask[] = [
     restMinutes: 10,
     dateDisplay: prevDateStr,
     startHourDisplay: '08:30',
-    focusType: 'Medium',
+    focusType: 'Low',
     needRestAfter: true,
   },
   {
     id: 't-oct3-2',
-    title: '45min Leg Day - Strength',
-    durationMinutes: 45,
+    title: 'Review Weekly Expenses & Budget',
+    durationMinutes: 30,
     priority: 'normal',
-    energyLevel: 'high',
+    energyLevel: 'low',
     status: 'completed',
-    categoryName: 'Personal',
-    categoryColor: '#059669',
-    restMinutes: 15,
+    categoryName: 'Admin',
+    categoryColor: '#64748B',
+    restMinutes: 10,
     dateDisplay: prevDateStr,
     startHourDisplay: '09:15',
-    focusType: 'High',
+    focusType: 'Low',
     needRestAfter: true,
   },
   {
     id: 't-oct3-3',
     title: 'Project Progress Discussion',
-    durationMinutes: 60,
+    durationMinutes: 45,
     priority: 'top3',
     energyLevel: 'high',
-    status: 'todo',
-    categoryName: 'Meeting',
-    categoryColor: '#B45309',
+    status: 'completed',
+    categoryName: 'Sync',
+    categoryColor: '#0284C7',
     restMinutes: 10,
     dateDisplay: prevDateStr,
     startHourDisplay: '11:40',
@@ -507,13 +507,13 @@ export const kSampleTasks: MobileTask[] = [
   },
   {
     id: 't-oct3-4',
-    title: 'Design Team Weekly Check-in',
+    title: 'Team Weekly Check-in',
     durationMinutes: 30,
     priority: 'top3',
     energyLevel: 'medium',
     status: 'todo',
-    categoryName: 'Meeting',
-    categoryColor: '#B45309',
+    categoryName: 'Sync',
+    categoryColor: '#0284C7',
     restMinutes: 10,
     dateDisplay: prevDateStr,
     startHourDisplay: '13:00',
@@ -522,13 +522,13 @@ export const kSampleTasks: MobileTask[] = [
   },
   {
     id: 't-oct3-5',
-    title: 'Product Flow UX Review',
+    title: 'Draft Core Proposal Document',
     durationMinutes: 40,
     priority: 'normal',
-    energyLevel: 'medium',
+    energyLevel: 'high',
     status: 'todo',
-    categoryName: 'Strategic',
-    categoryColor: '#7C3AED',
+    categoryName: 'Focus',
+    categoryColor: '#2563EB',
     restMinutes: 10,
     dateDisplay: prevDateStr,
     startHourDisplay: '14:30',
@@ -540,26 +540,26 @@ export const kSampleTasks: MobileTask[] = [
 export const kSampleBacklog: BacklogTaskItem[] = [
   {
     id: 'backlog-1',
-    title: 'Audit token color contrast for AAA standard',
+    title: 'Plan Next Quarter Key Milestones',
     durationMinutes: 45,
-    categoryName: 'Strategic',
-    categoryColor: '#7C3AED',
+    categoryName: 'Focus',
+    categoryColor: '#2563EB',
     focusType: 'High',
   },
   {
     id: 'backlog-2',
-    title: 'Draft User Onboarding Documentation',
+    title: 'Draft User Guide Documentation',
     durationMinutes: 30,
-    categoryName: 'Execution',
+    categoryName: 'Sync',
     categoryColor: '#0284C7',
     focusType: 'Medium',
   },
   {
     id: 'backlog-3',
-    title: 'Optimize SVG icons for light bundle',
+    title: 'Archive Completed Project Folders',
     durationMinutes: 20,
-    categoryName: 'Operation',
-    categoryColor: '#0D9488',
+    categoryName: 'Admin',
+    categoryColor: '#64748B',
     focusType: 'Low',
   },
 ];
@@ -1874,9 +1874,10 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         }))
       );
       setCategoryBudgets([
-        { name: 'Strategic', allocatedMinutes: 0, colorHex: '#7C3AED' },
-        { name: 'Execution', allocatedMinutes: 0, colorHex: '#0284C7' },
-        { name: 'Meeting', allocatedMinutes: 0, colorHex: '#B45309' },
+        { name: language === 'id' ? 'Fokus' : 'Focus', allocatedMinutes: 0, colorHex: '#2563EB' },
+        { name: language === 'id' ? 'Komunikasi' : 'Sync', allocatedMinutes: 0, colorHex: '#0284C7' },
+        { name: language === 'id' ? 'Administrasi' : 'Admin', allocatedMinutes: 0, colorHex: '#64748B' },
+        { name: language === 'id' ? 'Pribadi' : 'Personal', allocatedMinutes: 0, colorHex: '#059669' },
       ]);
       setRebalanceProposal(null);
     } else {
@@ -1892,20 +1893,20 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         }))
       );
       setCategoryBudgets([
-        { name: 'Strategic', allocatedMinutes: 150, maxMinutes: 180, colorHex: '#7C3AED' },
-        { name: 'Execution', allocatedMinutes: 180, maxMinutes: 240, colorHex: '#0284C7' },
-        { name: 'Meeting', allocatedMinutes: 90, maxMinutes: 120, colorHex: '#B45309' },
-        { name: 'Personal', allocatedMinutes: 60, maxMinutes: 90, colorHex: '#059669' },
+        { name: language === 'id' ? 'Fokus' : 'Focus', allocatedMinutes: 150, maxMinutes: 180, colorHex: '#2563EB' },
+        { name: language === 'id' ? 'Komunikasi' : 'Sync', allocatedMinutes: 90, maxMinutes: 120, colorHex: '#0284C7' },
+        { name: language === 'id' ? 'Administrasi' : 'Admin', allocatedMinutes: 60, maxMinutes: 90, colorHex: '#64748B' },
+        { name: language === 'id' ? 'Pribadi' : 'Personal', allocatedMinutes: 60, maxMinutes: 90, colorHex: '#059669' },
       ]);
       setRebalanceProposal({
         id: 'reb-1',
-        title: 'Design Architecture Monorepo',
-        previousSchedule: 'Wednesday, 14:00 - 15:00',
-        newSchedule: 'Thursday, 10:00 - 11:00 (Buffer: 15m)',
+        title: language === 'id' ? 'Selesaikan Laporan Mingguan' : 'Complete Weekly Report',
+        previousSchedule: language === 'id' ? 'Rabu, 14:00 - 15:00' : 'Wednesday, 14:00 - 15:00',
+        newSchedule: language === 'id' ? 'Kamis, 10:00 - 11:00 (Jeda: 15m)' : 'Thursday, 10:00 - 11:00 (Buffer: 15m)',
         taskDurationMinutes: 45,
         restDurationMinutes: 15,
-        categoryName: 'Execution',
-        categoryColor: '#0284C7',
+        categoryName: language === 'id' ? 'Fokus' : 'Focus',
+        categoryColor: '#2563EB',
       });
     }
   }, [emptyStateMode]);
@@ -1981,6 +1982,10 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
   }, [language, loadSettingsFromDb, refreshTasksFromDb]);
 
   const loginAsGuest = useCallback(async () => {
+    const isId = language === 'id';
+    const guestId = `usr_guest_${Date.now()}`;
+    const generalCategories = isId ? kOccupancyCategoryTemplatesId.General : kOccupancyCategoryTemplates.General;
+
     try {
       const res = await fetch('/api/auth/demo', { method: 'POST' });
       if (res.ok) {
@@ -1988,38 +1993,262 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         if (data.token && data.user) {
           const guestUser: UserSession = {
             ...data.user,
+            roleArchetype: 'General',
+            occupancy: 'General',
+            categories: generalCategories,
             isOnboardingCompleted: true,
           };
           authClient.setSession(data.token, guestUser);
           setUser(guestUser);
           setIsAuthenticated(true);
+          setSelectedOccupancy('General');
+          setCategories(generalCategories);
           setActiveNavTab('dashboard');
           setAuthView('dashboard');
           setOnboardingStep(5);
-          showToast(language === 'id' ? 'Masuk sebagai Mode Tamu' : 'Signed in with Guest Session', 'info');
+          showToast(isId ? 'Masuk sebagai Mode Tamu (Profil Umum)' : 'Signed in with Guest Session (General Role)', 'info');
           return;
         }
       }
     } catch {}
 
-    const guestId = `usr_guest_${Date.now()}`;
     const guestSession: UserSession = {
       id: guestId,
-      name: language === 'id' ? 'Tamu FoCient' : 'FoCient Guest',
+      name: isId ? 'Tamu FoCient' : 'FoCient Guest',
       email: `guest_${Date.now()}@demo.focient.local`,
+      roleArchetype: 'General',
+      occupancy: 'General',
+      workingRhythm: 'Steady Pacer',
+      schedulingStyle: 'Structured',
       workHourStart: '09:00',
       workHourEnd: '17:00',
+      startWorkTime: '09:00',
+      endWorkTime: '17:00',
       dailyCapacityMinutes: 480,
+      restTimePerTask: 10,
       provider: 'guest',
       isOnboardingCompleted: true,
+      categories: generalCategories,
     };
+
     authClient.setSession(`focient_token_${Date.now()}`, guestSession);
     setUser(guestSession);
     setIsAuthenticated(true);
+    setSelectedOccupancy('General');
+    setCategories(generalCategories);
+    setStartHour('09:00');
+    setEndHour('17:00');
+    setSelectedRhythm('Steady Pacer');
+    setSelectedStyle('Structured');
+    setRestMinutesPerTask(10);
+
+    const todayStr = formatCurrentDate(new Date(), 'en');
+    const demoTasks: MobileTask[] = isId
+      ? [
+          {
+            id: `t-demo-1-${Date.now()}`,
+            title: 'Selesaikan Laporan Mingguan',
+            durationMinutes: 45,
+            priority: 'top3',
+            energyLevel: 'high',
+            status: 'todo',
+            categoryName: 'Fokus',
+            categoryColor: '#2563EB',
+            restMinutes: 10,
+            dateDisplay: todayStr,
+            startHourDisplay: '09:30',
+            focusType: 'High',
+            needRestAfter: true,
+          },
+          {
+            id: `t-demo-2-${Date.now()}`,
+            title: 'Koordinasi Tim & Diskusi Jadwal',
+            durationMinutes: 30,
+            priority: 'top3',
+            energyLevel: 'medium',
+            status: 'todo',
+            categoryName: 'Komunikasi',
+            categoryColor: '#0284C7',
+            restMinutes: 10,
+            dateDisplay: todayStr,
+            startHourDisplay: '11:00',
+            focusType: 'Medium',
+            needRestAfter: true,
+          },
+          {
+            id: `t-demo-3-${Date.now()}`,
+            title: 'Rapikan Dokumen & Arsip Kerja',
+            durationMinutes: 30,
+            priority: 'top3',
+            energyLevel: 'low',
+            status: 'todo',
+            categoryName: 'Administrasi',
+            categoryColor: '#64748B',
+            restMinutes: 10,
+            dateDisplay: todayStr,
+            startHourDisplay: '14:00',
+            focusType: 'Low',
+            needRestAfter: true,
+          },
+          {
+            id: `t-demo-4-${Date.now()}`,
+            title: 'Jalan Santai & Istirahat Siang',
+            durationMinutes: 45,
+            priority: 'normal',
+            energyLevel: 'low',
+            status: 'completed',
+            categoryName: 'Pribadi',
+            categoryColor: '#059669',
+            restMinutes: 0,
+            dateDisplay: todayStr,
+            startHourDisplay: '12:00',
+            focusType: 'Low',
+            needRestAfter: false,
+          },
+          {
+            id: `t-demo-5-${Date.now()}`,
+            title: 'Cek Email & Tindak Lanjut Pesan',
+            durationMinutes: 20,
+            priority: 'normal',
+            energyLevel: 'low',
+            status: 'todo',
+            categoryName: 'Administrasi',
+            categoryColor: '#64748B',
+            restMinutes: 5,
+            dateDisplay: todayStr,
+            startHourDisplay: '15:00',
+            focusType: 'Low',
+            needRestAfter: false,
+          },
+        ]
+      : [
+          {
+            id: `t-demo-1-${Date.now()}`,
+            title: 'Complete Weekly Report',
+            durationMinutes: 45,
+            priority: 'top3',
+            energyLevel: 'high',
+            status: 'todo',
+            categoryName: 'Focus',
+            categoryColor: '#2563EB',
+            restMinutes: 10,
+            dateDisplay: todayStr,
+            startHourDisplay: '09:30',
+            focusType: 'High',
+            needRestAfter: true,
+          },
+          {
+            id: `t-demo-2-${Date.now()}`,
+            title: 'Team Sync & Schedule Alignment',
+            durationMinutes: 30,
+            priority: 'top3',
+            energyLevel: 'medium',
+            status: 'todo',
+            categoryName: 'Sync',
+            categoryColor: '#0284C7',
+            restMinutes: 10,
+            dateDisplay: todayStr,
+            startHourDisplay: '11:00',
+            focusType: 'Medium',
+            needRestAfter: true,
+          },
+          {
+            id: `t-demo-3-${Date.now()}`,
+            title: 'Organize Key Documents & Records',
+            durationMinutes: 30,
+            priority: 'top3',
+            energyLevel: 'low',
+            status: 'todo',
+            categoryName: 'Admin',
+            categoryColor: '#64748B',
+            restMinutes: 10,
+            dateDisplay: todayStr,
+            startHourDisplay: '14:00',
+            focusType: 'Low',
+            needRestAfter: true,
+          },
+          {
+            id: `t-demo-4-${Date.now()}`,
+            title: 'Lunch Break & Relaxing Walk',
+            durationMinutes: 45,
+            priority: 'normal',
+            energyLevel: 'low',
+            status: 'completed',
+            categoryName: 'Personal',
+            categoryColor: '#059669',
+            restMinutes: 0,
+            dateDisplay: todayStr,
+            startHourDisplay: '12:00',
+            focusType: 'Low',
+            needRestAfter: false,
+          },
+          {
+            id: `t-demo-5-${Date.now()}`,
+            title: 'Clean Email Inbox & Follow-ups',
+            durationMinutes: 20,
+            priority: 'normal',
+            energyLevel: 'low',
+            status: 'todo',
+            categoryName: 'Admin',
+            categoryColor: '#64748B',
+            restMinutes: 5,
+            dateDisplay: todayStr,
+            startHourDisplay: '15:00',
+            focusType: 'Low',
+            needRestAfter: false,
+          },
+        ];
+
+    setTasks(demoTasks);
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(`focient_web_tasks_${guestId}`, JSON.stringify(demoTasks));
+      } catch {}
+    }
+
+    const demoBacklog: BacklogTaskItem[] = isId
+      ? [
+          {
+            id: 'backlog-1',
+            title: 'Rencanakan Agenda Pekan Depan',
+            durationMinutes: 30,
+            categoryName: 'Fokus',
+            categoryColor: '#2563EB',
+            focusType: 'High',
+          },
+          {
+            id: 'backlog-2',
+            title: 'Arsip Catatan Rapat Bulanan',
+            durationMinutes: 25,
+            categoryName: 'Administrasi',
+            categoryColor: '#64748B',
+            focusType: 'Low',
+          },
+        ]
+      : [
+          {
+            id: 'backlog-1',
+            title: 'Plan Next Week Key Milestones',
+            durationMinutes: 30,
+            categoryName: 'Focus',
+            categoryColor: '#2563EB',
+            focusType: 'High',
+          },
+          {
+            id: 'backlog-2',
+            title: 'Archive Monthly Meeting Notes',
+            durationMinutes: 25,
+            categoryName: 'Admin',
+            categoryColor: '#64748B',
+            focusType: 'Low',
+          },
+        ];
+    setBacklogTasks(demoBacklog);
+
     setOnboardingStep(5);
     setActiveNavTab('dashboard');
     setAuthView('dashboard');
-    showToast(language === 'id' ? 'Masuk sebagai Mode Tamu' : 'Signed in with Guest Session', 'info');
+    showToast(isId ? 'Masuk sebagai Mode Tamu (Profil Umum)' : 'Signed in with Guest Session (General Role)', 'info');
   }, [language, showToast]);
 
   const loginWithGoogle = useCallback(
@@ -2513,8 +2742,8 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     const updatedUser: UserSession = {
       ...baseUser,
       name: onboardingUsername || baseUser.name,
-      roleArchetype: selectedOccupancy || baseUser.roleArchetype || 'Software Engineer',
-      occupancy: selectedOccupancy || baseUser.occupancy || 'Software Engineer',
+      roleArchetype: selectedOccupancy || baseUser.roleArchetype || 'General',
+      occupancy: selectedOccupancy || baseUser.occupancy || 'General',
       workingRhythm: selectedRhythm || baseUser.workingRhythm || 'Early Bird',
       schedulingStyle: selectedStyle || baseUser.schedulingStyle || 'Structured',
       startWorkTime: startHour || baseUser.workHourStart || '09:00',
@@ -2549,9 +2778,9 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
 
     // 2. Background persistence to server / DB
     const payload = {
-      job: selectedOccupancy || user?.roleArchetype || 'Software Engineer',
-      roleArchetype: selectedOccupancy || user?.roleArchetype || 'Software Engineer',
-      occupancy: selectedOccupancy || user?.roleArchetype || 'Software Engineer',
+      job: selectedOccupancy || user?.roleArchetype || 'General',
+      roleArchetype: selectedOccupancy || user?.roleArchetype || 'General',
+      occupancy: selectedOccupancy || user?.roleArchetype || 'General',
       workHoursLimit: computedCapacity / 60 || 8,
       startWorkTime: startHour || '09:00',
       endWorkTime: endHour || '17:00',
