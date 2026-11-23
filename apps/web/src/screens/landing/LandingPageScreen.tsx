@@ -420,10 +420,10 @@ export const LandingPageScreen: React.FC = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-xl font-extrabold text-slate-900">
+                    <h3 className="text-lg font-extrabold text-slate-900">
                       {language === 'id' ? 'Review Desain Aplikasi' : 'Review App Design'}
                     </h3>
-                    <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       {language === 'id'
                         ? 'Selesaikan draft awal sebelum makan siang.'
                         : 'Finish the initial draft before lunch.'}
@@ -443,7 +443,7 @@ export const LandingPageScreen: React.FC = () => {
                       >
                         {isTimerRunning ? <PauseIcon size="sm" /> : <PlayIcon size="sm" />}
                       </button>
-                      <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums tracking-tight">
+                      <div className="text-2xl font-extrabold text-slate-900 tabular-nums tracking-wider">
                         {formatTimer(timerSeconds)}
                       </div>
                     </div>
@@ -459,7 +459,7 @@ export const LandingPageScreen: React.FC = () => {
                   </div>
 
                   {/* Rest Buffer Callout */}
-                  <div className="flex items-center gap-2.5 p-3 rounded-xl bg-teal-50 border border-teal-200 text-teal-900 text-xs sm:text-sm font-semibold">
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-900 text-xs font-semibold">
                     <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
                     <span>
                       {language === 'id'
@@ -489,53 +489,53 @@ export const LandingPageScreen: React.FC = () => {
           3. PHILOSOPHY OF GUILT-FREE JOURNEY SECTION + 3 STATS CARDS
       ────────────────────────────────────────────────────────────── */}
       <section id="philosophy" className="relative overflow-hidden min-h-[calc(100vh-4rem)] min-h-[calc(100dvh-4rem)] flex items-center justify-center border-b border-slate-200 bg-white py-16 lg:py-24 scroll-mt-16">
-        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-7">
-          <div className="space-y-3">
-            <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-blue-600 block">
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
+          <div className="space-y-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-600 block">
               {language === 'id' ? 'Nilai Kami' : 'Our Value'}
             </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
               {language === 'id' ? 'Kerja Lebih Tenang Tanpa Beban' : 'Work Calmly Without the Guilt'}
             </h2>
-            <p className="text-base sm:text-lg font-semibold text-slate-700">
+            <p className="text-sm sm:text-base font-semibold text-blue-600">
               {language === 'id' ? 'Pendekatan baru agar fokus harianmu lebih seimbang' : 'A balanced approach to your daily focus'}
             </p>
           </div>
 
-          <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-3xl mx-auto">
+          <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-3xl mx-auto">
             {language === 'id'
               ? 'Aplikasi to-do biasa sering bikin stres dengan daftar panjang dan tanda merah menakutkan saat ada tugas yang belum selesai. Di FoCient, kami tahu energimu ada batasnya. Di sini, kamu diajak kerja teratur, selalu ada jeda istirahat, dan geser jadwal itu hal wajar, bukan tanda kegagalan.'
               : 'Traditional to-do apps often stress you out with endless lists and alarming red marks. In FoCient, we understand that energy has limits. Work at a comfortable pace, take built-in breaks, and reschedule anytime without guilt.'}
           </p>
 
           {/* 3 Metric / Milestone Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-6 text-left max-w-4xl mx-auto">
-            <div className="p-6 sm:p-7 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-2.5">
-              <span className="text-3xl sm:text-4xl font-extrabold text-blue-600 tabular-nums block">0</span>
-              <h4 className="text-sm sm:text-base font-bold text-slate-900">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 text-left max-w-3xl mx-auto">
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+              <span className="text-3xl font-extrabold text-blue-600 tabular-nums">0</span>
+              <h4 className="text-xs font-bold text-slate-900">
                 {language === 'id' ? 'Tanpa Tanda Merah' : 'Zero Red Badges'}
               </h4>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <p className="text-[11px] text-slate-500">
                 {language === 'id' ? 'Bebas dari warna merah panik dan notifikasi yang bikin cemas.' : 'Zero panic red badges or accusatory copy.'}
               </p>
             </div>
 
-            <div className="p-6 sm:p-7 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-2.5">
-              <span className="text-3xl sm:text-4xl font-extrabold text-purple-600 tabular-nums block">10m</span>
-              <h4 className="text-sm sm:text-base font-bold text-slate-900">
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+              <span className="text-3xl font-extrabold text-purple-600 tabular-nums">10m</span>
+              <h4 className="text-xs font-bold text-slate-900">
                 {language === 'id' ? 'Ada Waktu Santai' : 'Built-in Breaks'}
               </h4>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <p className="text-[11px] text-slate-500">
                 {language === 'id' ? 'Otomatis ada jeda istirahat setelah setiap tugas beres.' : 'Scheduled automatically between focus blocks.'}
               </p>
             </div>
 
-            <div className="p-6 sm:p-7 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-2.5">
-              <span className="text-3xl sm:text-4xl font-extrabold text-amber-600 tabular-nums block">100%</span>
-              <h4 className="text-sm sm:text-base font-bold text-slate-900">
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+              <span className="text-3xl font-extrabold text-amber-600 tabular-nums">100%</span>
+              <h4 className="text-xs font-bold text-slate-900">
                 {language === 'id' ? 'Jadwal Fleksibel' : 'Flexible Schedule'}
               </h4>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <p className="text-[11px] text-slate-500">
                 {language === 'id' ? 'Bisa geser tugas kapan saja kalau ada urusan mendadak.' : 'Reschedule anytime without stress.'}
               </p>
             </div>
@@ -547,15 +547,15 @@ export const LandingPageScreen: React.FC = () => {
           4. THE REAL BURNOUT PROBLEM vs FOCIENT SOLUTION (COMPARISON - 1 SCREEN HERO)
       ────────────────────────────────────────────────────────────── */}
       <section id="comparison" className="relative overflow-hidden min-h-[calc(100vh-4rem)] min-h-[calc(100dvh-4rem)] flex items-center justify-center border-b border-slate-200 bg-[#F8FAFC] py-16 lg:py-24 scroll-mt-16">
-        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 lg:space-y-10 relative z-10">
-          <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-blue-600 block">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 lg:space-y-8 relative z-10">
+          <div className="text-center space-y-2 max-w-2xl mx-auto">
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-600 block">
               {language === 'id' ? 'Perbandingan' : 'Comparison'}
             </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
               {language === 'id' ? 'To-Do List Biasa vs FoCient' : 'Traditional To-Do Apps vs FoCient'}
             </h2>
-            <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600">
               {language === 'id'
                 ? 'Kenapa to-do list biasa sering bikin stres, dan bagaimana FoCient bikin kerjamu lebih tenang.'
                 : 'Why regular to-do lists leave you exhausted, and how FoCient helps you stay at ease.'}
@@ -564,23 +564,23 @@ export const LandingPageScreen: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
             {/* Left Card: The Old Way (Burnout & Guilt Cycle) */}
-            <div className="p-7 sm:p-8 lg:p-9 rounded-3xl bg-rose-50/50 border-2 border-rose-200 shadow-sm space-y-6 flex flex-col justify-between hover:shadow-md transition-shadow">
-              <div className="space-y-4">
+            <div className="p-6 sm:p-7 rounded-3xl bg-rose-50/50 border-2 border-rose-200 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-rose-700">
+                  <span className="text-xs font-bold uppercase tracking-wider text-rose-700">
                     {language === 'id' ? 'Cara Lama' : 'The Old Way'}
                   </span>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-rose-950 tracking-tight">
+                <h3 className="text-lg sm:text-xl font-extrabold text-rose-950">
                   {language === 'id' ? 'To-Do List Biasa' : 'Traditional To-Do Apps'}
                 </h3>
-                <p className="text-sm sm:text-base text-rose-900/80 leading-relaxed">
+                <p className="text-xs text-rose-800 leading-relaxed">
                   {language === 'id'
                     ? 'Daftar tugas panjang tanpa henti yang bikin cepat jenuh dan cemas.'
                     : 'Endless task lists that make you feel overwhelmed and anxious.'}
                 </p>
 
-                <div className="space-y-3.5 pt-2 text-sm sm:text-base">
+                <div className="space-y-2.5 pt-1 text-xs">
                   {[
                     language === 'id' ? 'Tanda merah menyala yang bikin panik saat tugas belum selesai.' : 'Alarming red badges that cause unnecessary panic.',
                     language === 'id' ? 'Tugas menumpuk sampai bingung harus mulai dari mana.' : 'Infinite tasks piling up with no idea where to start.',
@@ -588,8 +588,8 @@ export const LandingPageScreen: React.FC = () => {
                     language === 'id' ? 'Geser jadwal terasa seperti sebuah kegagalan.' : 'Rescheduling a task feels like failing.',
                     language === 'id' ? 'Ngerjain banyak hal sekaligus sampai fokus berantakan.' : 'Scattered multitasking that ruins your attention.',
                   ].map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-3 text-rose-950 font-medium leading-relaxed">
-                      <span className="w-5 h-5 rounded-full bg-rose-200 text-rose-800 flex items-center justify-center shrink-0 mt-0.5">
+                    <div key={idx} className="flex items-start gap-2.5 text-rose-900 font-medium leading-snug">
+                      <span className="w-4 h-4 rounded-full bg-rose-200 text-rose-800 flex items-center justify-center shrink-0 mt-0.5">
                         <XIcon size="xs" />
                       </span>
                       <span>{item}</span>
@@ -598,29 +598,29 @@ export const LandingPageScreen: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3.5 sm:p-4 rounded-2xl bg-rose-100/70 border border-rose-200 text-xs sm:text-sm text-rose-950 font-semibold text-center tracking-wide">
+              <div className="p-3 rounded-xl bg-rose-100/60 border border-rose-200 text-[11px] text-rose-900 font-semibold text-center">
                 {language === 'id' ? 'Hasil: Pikiran capek, gampang stres, dan burnout.' : 'Outcome: Mental exhaustion, frustration, and burnout.'}
               </div>
             </div>
 
             {/* Right Card: The FoCient Solution (Calm Cognitive Flow) */}
-            <div className="p-7 sm:p-8 lg:p-9 rounded-3xl bg-blue-50/50 border-2 border-blue-200 shadow-sm space-y-6 flex flex-col justify-between hover:border-blue-300 hover:shadow-md transition-all">
-              <div className="space-y-4">
+            <div className="p-6 sm:p-7 rounded-3xl bg-blue-50/50 border-2 border-blue-200 shadow-sm space-y-4 flex flex-col justify-between hover:border-blue-300 hover:shadow-md transition-all">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-blue-700">
+                  <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
                     {language === 'id' ? 'Cara FoCient' : 'The FoCient Solution'}
                   </span>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-blue-950 tracking-tight">
+                <h3 className="text-lg sm:text-xl font-extrabold text-blue-950">
                   {language === 'id' ? 'Fokus Santai & Teratur' : 'Calm & Steady Flow'}
                 </h3>
-                <p className="text-sm sm:text-base text-blue-900/80 leading-relaxed">
+                <p className="text-xs text-blue-800 leading-relaxed">
                   {language === 'id'
                     ? 'Selesaikan pekerjaan satu per satu sesuai energimu tanpa rasa bersalah.'
                     : 'Get things done comfortably with flexible, calm scheduling.'}
                 </p>
 
-                <div className="space-y-3.5 pt-2 text-sm sm:text-base">
+                <div className="space-y-2.5 pt-1 text-xs">
                   {[
                     language === 'id' ? 'Pengingat ramah warna oranye yang tidak bikin panik.' : 'Gentle amber reminders for adjustments without guilt.',
                     language === 'id' ? 'Fokus ke 3 tugas utama tiap hari biar tidak pusing.' : 'Top 3 daily priorities so you always know what matters.',
@@ -628,8 +628,8 @@ export const LandingPageScreen: React.FC = () => {
                     language === 'id' ? 'Jadwal otomatis menyesuaikan kalau ada agenda yang mundur.' : 'Automatically shifts tasks when schedules change.',
                     language === 'id' ? 'Jeda istirahat otomatis setelah setiap sesi fokus.' : 'Automated 10–30 min breaks after every work session.',
                   ].map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-3 text-slate-800 font-medium leading-relaxed">
-                      <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 mt-0.5">
+                    <div key={idx} className="flex items-start gap-2.5 text-slate-800 font-medium leading-snug">
+                      <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 mt-0.5">
                         <CheckIcon size="xs" />
                       </span>
                       <span>{item}</span>
@@ -638,7 +638,7 @@ export const LandingPageScreen: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3.5 sm:p-4 rounded-2xl bg-blue-100/80 border border-blue-200 text-xs sm:text-sm text-blue-950 font-bold text-center tracking-wide">
+              <div className="p-3 rounded-xl bg-blue-100/70 border border-blue-200 text-[11px] text-blue-950 font-bold text-center">
                 {language === 'id' ? 'Hasil: Kerja beres, pikiran tenang, waktu istirahat aman.' : 'Outcome: Consistent output, calm mind, and protected rest.'}
               </div>
             </div>
@@ -654,27 +654,27 @@ export const LandingPageScreen: React.FC = () => {
       <section id="features" className="relative overflow-hidden min-h-[calc(100vh-4rem)] min-h-[calc(100dvh-4rem)] flex items-center justify-center border-b border-slate-200 bg-white py-16 lg:py-24 scroll-mt-16">
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            <div className="lg:col-span-6 space-y-6">
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            <div className="lg:col-span-6 space-y-5">
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 {language === 'id'
                   ? 'Fokus Satu Tugas Sampai Selesai'
                   : 'Focus on One Task at a Time'}
               </h3>
-              <p className="text-base text-slate-600 leading-relaxed">
+              <p className="text-sm text-slate-600 leading-relaxed">
                 {language === 'id'
                   ? 'Lupakan kebiasaan buka banyak tab dan pindah-pindah kerjaan yang bikin kepala pusing. FoCient mengarahkan fokusmu ke satu tugas aktif di layar, lengkap dengan timer santai dan waktu istirahat.'
                   : 'Stop jumping between tasks and losing focus. FoCient spotlights just one task at a time, complete with a clean timer and automatic break times.'}
               </p>
-              <div className="space-y-3.5 text-sm sm:text-base text-slate-700 font-medium">
-                <div className="flex items-center gap-3">
+              <div className="space-y-2.5 text-xs text-slate-700 font-semibold">
+                <div className="flex items-center gap-2">
                   <CheckIcon size="xs" className="text-blue-600 shrink-0" />
                   <span>{language === 'id' ? 'Satu tugas utama yang jadi fokus di layar' : 'One spotlighted task at a time'}</span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <CheckIcon size="xs" className="text-blue-600 shrink-0" />
                   <span>{language === 'id' ? 'Maksimal 3 tugas prioritas per hari biar tidak kewalahan' : 'Max 3 main priorities a day so you never feel overwhelmed'}</span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <CheckIcon size="xs" className="text-blue-600 shrink-0" />
                   <span>{language === 'id' ? 'Bebas gangguan dan notifikasi berisik' : 'Distraction-free ambient workspace'}</span>
                 </div>
@@ -682,7 +682,7 @@ export const LandingPageScreen: React.FC = () => {
             </div>
 
             <div className="lg:col-span-6">
-              <div className="p-6 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200 shadow-sm space-y-4 hover:shadow-md transition-shadow">
+              <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200 shadow-sm space-y-4 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-500">
                   <span>{language === 'id' ? 'FOKUS HARI INI' : 'TODAY\'S FOCUS'}</span>
                   <span className="text-blue-600 flex items-center gap-1.5">
@@ -690,7 +690,7 @@ export const LandingPageScreen: React.FC = () => {
                     <span>{language === 'id' ? 'SEDANG BERJALAN' : 'IN PROGRESS'}</span>
                   </span>
                 </div>
-                <div className="p-5 rounded-2xl bg-white border-2 border-blue-600 shadow-sm space-y-3.5">
+                <div className="p-4 rounded-2xl bg-white border-2 border-blue-600 shadow-sm space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 rounded-md border border-blue-600 bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -713,23 +713,23 @@ export const LandingPageScreen: React.FC = () => {
                       {language === 'id' ? '+10m jeda istirahat' : '+10m break'}
                     </span>
                   </div>
-                  <div className="text-base sm:text-lg font-bold text-slate-900">
+                  <div className="text-base font-bold text-slate-900">
                     {language === 'id' ? 'Bereskan Laporan Mingguan' : 'Finish Weekly Report'}
                   </div>
-                  <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 text-xs">
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
                     <span className="text-slate-500 font-medium flex items-center gap-1.5">
                       <ClockIcon size="xs" />
                       <span>10:00 - 10:45 (45m)</span>
                     </span>
-                    <span className="font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 tabular-nums">
+                    <span className="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 tabular-nums">
                       {language === 'id' ? '25:00 fokus' : '25:00 focus'}
                     </span>
                   </div>
                 </div>
 
                 {/* Rest Interval Indicator identical to main TaskListScreen */}
-                <div className="flex items-center gap-2.5 pl-3 text-xs text-teal-700 font-semibold">
-                  <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+                <div className="flex items-center gap-2 pl-2 text-xs text-teal-700 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" />
                   <span>
                     {language === 'id'
                       ? 'Istirahat 10 menit otomatis dijadwalkan setelah tugas ini'
@@ -746,27 +746,27 @@ export const LandingPageScreen: React.FC = () => {
       <section id="feature-2" className="relative overflow-hidden min-h-[calc(100vh-4rem)] min-h-[calc(100dvh-4rem)] flex items-center justify-center border-b border-slate-200 bg-[#F8FAFC] py-16 lg:py-24 scroll-mt-16">
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            <div className="lg:col-span-6 lg:order-2 space-y-6">
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            <div className="lg:col-span-6 lg:order-2 space-y-5">
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 {language === 'id'
                   ? 'Jadwal Bergeser? Tenang, Otomatis Menyesuaikan'
                   : 'Schedule Shifted? Easily Adjust in One Tap'}
               </h3>
-              <p className="text-base text-slate-600 leading-relaxed">
+              <p className="text-sm text-slate-600 leading-relaxed">
                 {language === 'id'
                   ? 'Rencana bisa berubah kapan saja. Meeting molor atau ada urusan mendadak itu hal biasa. FoCient otomatis menggeser jadwal tugas berikutnya dengan jeda istirahat yang pas, tanpa tanda merah dan tanpa rasa bersalah.'
                   : 'Life happens. Meetings run long and unexpected things pop up. FoCient automatically shifts your next tasks with healthy rest breaks, with no alarming red alerts and no guilt.'}
               </p>
-              <div className="space-y-3.5 text-sm sm:text-base text-slate-700 font-medium">
-                <div className="flex items-center gap-3">
+              <div className="space-y-2.5 text-xs text-slate-700 font-semibold">
+                <div className="flex items-center gap-2">
                   <CheckIcon size="xs" className="text-amber-600 shrink-0" />
                   <span>{language === 'id' ? 'Warna oranye hangat yang ramah, bukan merah yang bikin panik' : 'Gentle warm amber alerts instead of stressful reds'}</span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <CheckIcon size="xs" className="text-amber-600 shrink-0" />
                   <span>{language === 'id' ? 'Saran geser waktu 10–25 menit yang otomatis pas' : 'Automatic 10–25 min buffer shift suggestions'}</span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <CheckIcon size="xs" className="text-amber-600 shrink-0" />
                   <span>{language === 'id' ? 'Tinggal klik "Nanti Dulu" atau "Sesuaikan Sekarang"' : 'One click to "Keep Schedule" or "Adjust Now"'}</span>
                 </div>
@@ -774,16 +774,16 @@ export const LandingPageScreen: React.FC = () => {
             </div>
 
             <div className="lg:col-span-6 lg:order-1">
-              <div className="p-6 sm:p-8 rounded-3xl bg-amber-50/80 border border-amber-200 shadow-sm space-y-5 hover:shadow-md transition-shadow">
-                <div className="flex items-start gap-3">
-                  <div className="p-2.5 rounded-xl bg-amber-100 text-amber-800 shrink-0">
+              <div className="p-6 rounded-3xl bg-amber-50/70 border border-amber-200 shadow-sm space-y-4 hover:shadow-md transition-shadow">
+                <div className="flex items-start gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-100 text-amber-800 shrink-0">
                     <AlertTriangleIcon size="sm" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-amber-900">
+                    <h4 className="text-xs font-bold text-amber-900">
                       {language === 'id' ? 'Ada Jadwal yang Bertabrakan' : 'Schedule Overlap Detected'}
                     </h4>
-                    <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                    <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
                       {language === 'id'
                         ? 'Jadwal "Review Tugas" dan "Diskusi Tim" bertabrakan. Yuk rapikan jadwalmu agar tetap santai tanpa rasa bersalah.'
                         : 'Schedule overlap detected between "Task Review" and "Team Sync". Adjust now to stay calm and guilt-free.'}
@@ -791,7 +791,7 @@ export const LandingPageScreen: React.FC = () => {
                   </div>
                 </div>
 
-                <div className={`p-4 rounded-xl bg-white border transition-all duration-300 space-y-2 text-xs sm:text-sm ${
+                <div className={`p-4 rounded-xl bg-white border transition-all duration-300 space-y-2 text-xs ${
                   isFeature2Rebalanced ? 'border-emerald-300 ring-2 ring-emerald-100' : 'border-amber-200'
                 }`}>
                   <div className="font-bold text-slate-900 flex items-center justify-between">
@@ -814,7 +814,7 @@ export const LandingPageScreen: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2.5 text-xs font-bold pt-1">
+                <div className="flex justify-end gap-2 text-xs font-bold pt-1">
                   {isFeature2Rebalanced ? (
                     <button
                       type="button"
@@ -854,23 +854,23 @@ export const LandingPageScreen: React.FC = () => {
       <section id="feature-3" className="relative overflow-hidden min-h-[calc(100vh-4rem)] min-h-[calc(100dvh-4rem)] flex items-center justify-center border-b border-slate-200 bg-white py-16 lg:py-24 scroll-mt-16">
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            <div className="lg:col-span-6 space-y-6">
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            <div className="lg:col-span-6 space-y-5">
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 {language === 'id'
                   ? 'Ketahui Batas Beban Kerja Harianmu'
                   : 'Know Your Daily Workload Limit'}
               </h3>
-              <p className="text-base text-slate-600 leading-relaxed">
+              <p className="text-sm text-slate-600 leading-relaxed">
                 {language === 'id'
                   ? 'Kapasitas harianmu dihitung dari jam mulai dan selesai kerja yang kamu tentukan. Kalau tugasmu sudah mulai penuh, FoCient akan memberi tahu dengan warna ramah agar sisa tugas bisa dipindah ke hari esok.'
                   : 'Your daily capacity is based on your own working hours. If your day gets too packed, FoCient gives a gentle nod to move extra tasks to tomorrow.'}
               </p>
-              <div className="space-y-3.5 text-sm sm:text-base text-slate-700 font-medium">
-                <div className="flex items-center gap-3">
+              <div className="space-y-2.5 text-xs text-slate-700 font-semibold">
+                <div className="flex items-center gap-2">
                   <CheckIcon size="xs" className="text-teal-600 shrink-0" />
                   <span>{language === 'id' ? 'Disesuaikan dengan jam mulai dan selesai kerjamu' : 'Matches the work start and end hours you choose'}</span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <CheckIcon size="xs" className="text-teal-600 shrink-0" />
                   <span>{language === 'id' ? 'Warna berganti perlahan tanpa tanda merah yang bikin cemas' : 'Gentle color transitions without any stressful red badges'}</span>
                 </div>
@@ -878,18 +878,18 @@ export const LandingPageScreen: React.FC = () => {
             </div>
 
             <div className="lg:col-span-6">
-              <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-5 hover:shadow-md transition-shadow">
+              <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-5 hover:shadow-md transition-shadow">
                 {/* Header matching main app Today Workload card */}
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xs font-semibold text-slate-500 block mb-0.5">
                       {language === 'id' ? 'Beban Kerja Hari Ini' : 'Today Workload'}
                     </span>
-                    <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 tabular-nums">
+                    <div className="text-2xl font-extrabold text-slate-900 tabular-nums">
                       {simulatedPercent}%
                     </div>
                   </div>
-                  <span className={`text-xs font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 transition-colors ${
+                  <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 transition-colors ${
                     simulatedPercent > 90 ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                   }`}>
                     <ActivityIcon size="xs" />
@@ -965,23 +965,23 @@ export const LandingPageScreen: React.FC = () => {
       <section id="feature-4" className="relative overflow-hidden min-h-[calc(100vh-4rem)] min-h-[calc(100dvh-4rem)] flex items-center justify-center border-b border-slate-200 bg-[#F8FAFC] py-16 lg:py-24 scroll-mt-16">
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            <div className="lg:col-span-6 lg:order-2 space-y-6">
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            <div className="lg:col-span-6 lg:order-2 space-y-5">
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 {language === 'id'
                   ? 'Kerja Sesuai Waktu Segarmu'
                   : 'Work When You Are at Your Best'}
               </h3>
-              <p className="text-base text-slate-600 leading-relaxed">
+              <p className="text-sm text-slate-600 leading-relaxed">
                 {language === 'id'
                   ? 'Setiap orang punya jam paling produktif yang berbeda. Kerjakan tugas berat saat energimu sedang di puncak, dan simpan urusan ringan saat energi mulai turun.'
                   : 'Everyone has different peak hours. Do your toughest thinking when your energy is highest, and save easy chores for when you feel tired.'}
               </p>
-              <div className="space-y-3.5 text-sm sm:text-base text-slate-700 font-medium">
-                <div className="flex items-center gap-3">
+              <div className="space-y-2.5 text-xs text-slate-700 font-semibold">
+                <div className="flex items-center gap-2">
                   <CheckIcon size="xs" className="text-purple-600 shrink-0" />
                   <span>{language === 'id' ? '3 pilihan ritme: Pagi (Early Bird), Siang (Steady Pacer), atau Malam (Night Owl)' : '3 rhythm choices: Early Bird, Steady Pacer, or Night Owl'}</span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <CheckIcon size="xs" className="text-purple-600 shrink-0" />
                   <span>{language === 'id' ? 'Jam mulai dan selesai kerja otomatis menyesuaikan pilihanmu' : 'Work start and end times automatically adjust to your pace'}</span>
                 </div>
@@ -989,32 +989,32 @@ export const LandingPageScreen: React.FC = () => {
             </div>
 
             <div className="lg:col-span-6 lg:order-1">
-              <div className="p-6 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200 shadow-sm space-y-5 hover:shadow-md transition-shadow">
-                <div className="grid grid-cols-3 gap-2.5">
+              <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200 shadow-sm space-y-4 hover:shadow-md transition-shadow">
+                <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'early' as const, label: language === 'id' ? 'Pagi' : 'Early Bird', time: '06:00 - 14:00', icon: <SunIcon size="sm" className="text-amber-500 mx-auto mb-1.5" /> },
-                    { id: 'steady' as const, label: language === 'id' ? 'Normal' : 'Steady Pacer', time: '09:00 - 17:00', icon: <ClockIcon size="sm" className="text-blue-500 mx-auto mb-1.5" /> },
-                    { id: 'night' as const, label: language === 'id' ? 'Malam' : 'Night Owl', time: '14:00 - 22:00', icon: <MoonIcon size="sm" className="text-indigo-500 mx-auto mb-1.5" /> },
+                    { id: 'early' as const, label: language === 'id' ? 'Pagi' : 'Early Bird', time: '06:00 - 14:00', icon: <SunIcon size="sm" className="text-amber-500 mx-auto mb-1" /> },
+                    { id: 'steady' as const, label: language === 'id' ? 'Normal' : 'Steady Pacer', time: '09:00 - 17:00', icon: <ClockIcon size="sm" className="text-blue-500 mx-auto mb-1" /> },
+                    { id: 'night' as const, label: language === 'id' ? 'Malam' : 'Night Owl', time: '14:00 - 22:00', icon: <MoonIcon size="sm" className="text-indigo-500 mx-auto mb-1" /> },
                   ].map((c) => (
                     <button
                       key={c.id}
                       type="button"
                       onClick={() => setActiveChronotype(c.id)}
-                      className={`p-3.5 sm:p-4 rounded-2xl text-center border transition-all cursor-pointer ${
+                      className={`p-3 rounded-2xl text-center border transition-all cursor-pointer ${
                         activeChronotype === c.id
                           ? 'bg-white border-purple-500 shadow-sm text-purple-900 font-bold ring-2 ring-purple-100'
                           : 'bg-white/60 border-slate-200 text-slate-600 hover:bg-white'
                       }`}
                     >
                       <div>{c.icon}</div>
-                      <div className="text-xs sm:text-sm">{c.label}</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">{c.time}</div>
+                      <div className="text-xs">{c.label}</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{c.time}</div>
                     </button>
                   ))}
                 </div>
 
-                <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 text-xs sm:text-sm space-y-2">
-                  <div className="font-bold text-slate-900 flex items-center gap-2">
+                <div className="p-4 rounded-2xl bg-white border border-slate-200 text-xs space-y-2">
+                  <div className="font-bold text-slate-900 flex items-center gap-1.5">
                     {activeChronotype === 'early' && (
                       <>
                         <SunIcon size="xs" className="text-amber-500 shrink-0" />
@@ -1046,7 +1046,7 @@ export const LandingPageScreen: React.FC = () => {
                       </>
                     )}
                   </div>
-                  <p className="text-slate-500 text-xs leading-relaxed">
+                  <p className="text-slate-500 text-[11px] leading-relaxed">
                     {language === 'id'
                       ? 'FoCient akan bantu taruh tugas penting di jam-jam penuh energi ini.'
                       : 'FoCient helps schedule high-priority tasks during your peak hours.'}
@@ -1062,23 +1062,23 @@ export const LandingPageScreen: React.FC = () => {
       <section id="feature-5" className="relative overflow-hidden min-h-[calc(100vh-4rem)] min-h-[calc(100dvh-4rem)] flex items-center justify-center border-b border-slate-200 bg-white py-16 lg:py-24 scroll-mt-16">
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            <div className="lg:col-span-6 space-y-6">
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            <div className="lg:col-span-6 space-y-5">
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 {language === 'id'
                   ? 'Lihat Hasil Mingguanmu dengan Tenang'
                   : 'Check Your Weekly Progress Without Stress'}
               </h3>
-              <p className="text-base text-slate-600 leading-relaxed">
+              <p className="text-sm text-slate-600 leading-relaxed">
                 {language === 'id'
                   ? 'Tidak ada hitungan "streak" atau hukuman kalau kamu libur. FoCient memperlihatkan seberapa baik kamu menjaga waktu istirahat dan menjaga pikiran tetap segar sepanjang minggu.'
                   : 'No toxic streaks or punishment for taking days off. FoCient shows how well you took care of rest breaks and kept your mind clear throughout the week.'}
               </p>
-              <div className="space-y-3.5 text-sm sm:text-base text-slate-700 font-medium">
-                <div className="flex items-center gap-3">
+              <div className="space-y-2.5 text-xs text-slate-700 font-semibold">
+                <div className="flex items-center gap-2">
                   <CheckIcon size="xs" className="text-emerald-600 shrink-0" />
                   <span>{language === 'id' ? 'Pantau beban kerja 7 hari tanpa rasa bersalah' : 'View your 7-day workload distribution without guilt'}</span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <CheckIcon size="xs" className="text-emerald-600 shrink-0" />
                   <span>{language === 'id' ? 'Lihat total waktu istirahat yang berhasil kamu nikmati' : 'See your total restorative rest time protected'}</span>
                 </div>
@@ -1086,23 +1086,14 @@ export const LandingPageScreen: React.FC = () => {
             </div>
 
             <div className="lg:col-span-6">
-              <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-5 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm sm:text-base font-bold text-slate-900">
-                      {language === 'id' ? 'Distribusi Beban Kerja Mingguan' : 'Weekly Workload Distribution'}
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {language === 'id' ? 'Pantauan kapasitas 7 hari' : '7-day capacity monitoring'}
-                    </p>
-                  </div>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700">
-                    {language === 'id' ? 'Ritme Sehat' : 'Healthy Pace'}
-                  </span>
+              <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                  <span>{language === 'id' ? 'BEBAN KERJA MINGGU INI' : 'WEEKLY WORKLOAD'}</span>
+                  <span className="text-emerald-600">{language === 'id' ? 'RITME SEHAT' : 'HEALTHY PACE'}</span>
                 </div>
 
                 {/* 7-Day Mini Chart with Interactive Clickable Day Bars */}
-                <div className="grid grid-cols-7 gap-2 pt-2 items-end h-32">
+                <div className="grid grid-cols-7 gap-2 pt-2 items-end h-28">
                   {[
                     { day: 'Sen', fullDay: language === 'id' ? 'Senin' : 'Monday', pct: 65, buffer: language === 'id' ? '1j' : '1.0h' },
                     { day: 'Sel', fullDay: language === 'id' ? 'Selasa' : 'Tuesday', pct: 70, buffer: language === 'id' ? '1j 10m' : '1.2h' },
@@ -1115,13 +1106,13 @@ export const LandingPageScreen: React.FC = () => {
                     <div
                       key={i}
                       onClick={() => setSelectedDayIndex(i)}
-                      className="flex flex-col items-center gap-1.5 h-full justify-end cursor-pointer group"
+                      className="flex flex-col items-center gap-1 h-full justify-end cursor-pointer group"
                       title={`${d.fullDay}: ${d.pct}% workload, ${d.buffer} rest buffer`}
                     >
-                      <span className={`text-[11px] font-semibold tabular-nums transition-colors ${selectedDayIndex === i ? 'text-blue-600 font-bold' : 'text-slate-400 group-hover:text-slate-700'}`}>
+                      <span className={`text-[10px] transition-colors tabular-nums ${selectedDayIndex === i ? 'text-blue-600 font-bold' : 'text-slate-400 group-hover:text-slate-700'}`}>
                         {d.pct}%
                       </span>
-                      <div className={`w-full rounded-t-md h-20 flex items-end overflow-hidden transition-all ${
+                      <div className={`w-full rounded-t-md h-16 flex items-end overflow-hidden transition-all ${
                         selectedDayIndex === i ? 'bg-blue-100 ring-2 ring-blue-500' : 'bg-slate-100 group-hover:bg-slate-200'
                       }`}>
                         <div
@@ -1131,7 +1122,7 @@ export const LandingPageScreen: React.FC = () => {
                           style={{ height: `${d.pct}%` }}
                         />
                       </div>
-                      <span className={`text-xs font-bold transition-colors ${selectedDayIndex === i ? 'text-blue-700' : 'text-slate-600'}`}>
+                      <span className={`text-[11px] font-bold transition-colors ${selectedDayIndex === i ? 'text-blue-700' : 'text-slate-600'}`}>
                         {d.day}
                       </span>
                     </div>
@@ -1144,7 +1135,7 @@ export const LandingPageScreen: React.FC = () => {
                     <span className="text-[11px] text-slate-500 block">
                       {language === 'id' ? 'Total Fokus' : 'Total Focus'}
                     </span>
-                    <span className="text-sm font-extrabold text-slate-900 tabular-nums">
+                    <span className="text-xs font-bold text-slate-900 tabular-nums">
                       24j 15m
                     </span>
                   </div>
@@ -1152,7 +1143,7 @@ export const LandingPageScreen: React.FC = () => {
                     <span className="text-[11px] text-slate-500 block">
                       {language === 'id' ? 'Total Istirahat' : 'Total Rest'}
                     </span>
-                    <span className="text-sm font-extrabold text-emerald-600 tabular-nums">
+                    <span className="text-xs font-bold text-emerald-600 tabular-nums">
                       6j 30m
                     </span>
                   </div>
@@ -1160,7 +1151,7 @@ export const LandingPageScreen: React.FC = () => {
                     <span className="text-[11px] text-slate-500 block">
                       {language === 'id' ? 'Tugas Beres' : 'Done Tasks'}
                     </span>
-                    <span className="text-sm font-extrabold text-slate-900 tabular-nums">
+                    <span className="text-xs font-bold text-slate-900 tabular-nums">
                       18
                     </span>
                   </div>
@@ -1175,7 +1166,7 @@ export const LandingPageScreen: React.FC = () => {
                         : (language === 'id' ? 'Ritme harian seimbang tanpa kelelahan berlebih.' : 'Sustainable daily pace with protected rest buffers.')}
                     </span>
                   </div>
-                  <span className="text-xs text-emerald-700 font-bold tabular-nums shrink-0">
+                  <span className="text-[11px] text-emerald-700 font-bold tabular-nums shrink-0">
                     {language === 'id' ? '100% Pas' : '100% Balanced'}
                   </span>
                 </div>
@@ -1191,15 +1182,15 @@ export const LandingPageScreen: React.FC = () => {
       <section id="how-it-works" className="relative overflow-hidden min-h-[calc(100vh-4rem)] min-h-[calc(100dvh-4rem)] flex items-center justify-center border-b border-slate-200 bg-[#F8FAFC] py-16 lg:py-24 scroll-mt-16">
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-blue-600 block">
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-600 block">
               {language === 'id' ? 'Cara Pakai' : 'How It Works'}
             </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
               {language === 'id'
                 ? '3 Langkah Sederhana Menuju Kerja Tenang'
                 : '3 Simple Steps to Calm Productivity'}
             </h2>
-            <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
+            <p className="text-sm text-slate-600">
               {language === 'id'
                 ? 'Mulai rasakan kerja lebih santai dalam kurang dari 2 menit.'
                 : 'Start experiencing calm focus in less than 2 minutes.'}
@@ -1208,17 +1199,17 @@ export const LandingPageScreen: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             {/* Left Column: 3 Steps + CTA Button */}
-            <div className="lg:col-span-6 space-y-5">
+            <div className="lg:col-span-6 space-y-6">
               {/* Step 1 */}
-              <div className="flex items-start gap-4 sm:gap-5 p-6 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
-                <div className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-extrabold flex items-center justify-center shrink-0 text-base shadow-2xs">
+              <div className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
+                <div className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-extrabold flex items-center justify-center shrink-0 text-sm shadow-2xs">
                   1
                 </div>
                 <div>
-                  <h4 className="text-base sm:text-lg font-bold text-slate-900">
+                  <h4 className="text-sm font-bold text-slate-900">
                     {language === 'id' ? 'Langkah 1: Tentukan Jam Kerja & Waktu Istirahat' : 'Step 1: Set Your Work Hours & Breaks'}
                   </h4>
-                  <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                     {language === 'id'
                       ? 'Tentukan jam mulai kerja, jam selesai, dan berapa lama kamu ingin istirahat di sela tugas.'
                       : 'Set your ideal work hours and choose how much rest buffer you need between tasks.'}
@@ -1227,15 +1218,15 @@ export const LandingPageScreen: React.FC = () => {
               </div>
 
               {/* Step 2 */}
-              <div className="flex items-start gap-4 sm:gap-5 p-6 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
-                <div className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-extrabold flex items-center justify-center shrink-0 text-base shadow-2xs">
+              <div className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
+                <div className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-extrabold flex items-center justify-center shrink-0 text-sm shadow-2xs">
                   2
                 </div>
                 <div>
-                  <h4 className="text-base sm:text-lg font-bold text-slate-900">
+                  <h4 className="text-sm font-bold text-slate-900">
                     {language === 'id' ? 'Langkah 2: Tentukan 3 Tugas Utama Hari Ini' : 'Step 2: Choose 3 Main Tasks for Today'}
                   </h4>
-                  <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                     {language === 'id'
                       ? 'Pilih 3 hal paling penting yang ingin kamu selesaikan hari ini. Tugas lainnya disimpan rapi di backlog.'
                       : 'Pick only the 3 key priorities for today. Keep the rest safely tucked away in your calm backlog.'}
@@ -1244,15 +1235,15 @@ export const LandingPageScreen: React.FC = () => {
               </div>
 
               {/* Step 3 */}
-              <div className="flex items-start gap-4 sm:gap-5 p-6 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
-                <div className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-extrabold flex items-center justify-center shrink-0 text-base shadow-2xs">
+              <div className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
+                <div className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-extrabold flex items-center justify-center shrink-0 text-sm shadow-2xs">
                   3
                 </div>
                 <div>
-                  <h4 className="text-base sm:text-lg font-bold text-slate-900">
+                  <h4 className="text-sm font-bold text-slate-900">
                     {language === 'id' ? 'Langkah 3: Jalani Santai & Sesuaikan Kapan Saja' : 'Step 3: Flow Smoothly & Adjust Anytime'}
                   </h4>
-                  <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                     {language === 'id'
                       ? 'Kerjakan tugas satu per satu. Kalau rencanamu bergeser, tinggal sesuaikan jadwal dalam satu klik.'
                       : 'Execute in single-task flow. If your day shifts, easily adjust your schedule in one click.'}
@@ -1274,24 +1265,24 @@ export const LandingPageScreen: React.FC = () => {
 
             {/* Right Column: Visual Journey Preview Card */}
             <div className="lg:col-span-6">
-              <div className="p-8 sm:p-9 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-6 text-center">
+              <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-6 text-center">
                 <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
                   <CheckIcon size="md" />
                 </div>
-                <div className="space-y-2.5">
-                  <h3 className="text-2xl font-extrabold text-slate-900">
+                <div className="space-y-2">
+                  <h3 className="text-xl font-extrabold text-slate-900">
                     {language === 'id' ? 'Kerja Beres, Pikiran Tenang' : 'Work Done, Mind at Ease'}
                   </h3>
-                  <p className="text-sm text-slate-600 max-w-sm mx-auto leading-relaxed">
+                  <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
                     {language === 'id'
                       ? 'Semua tugas penting hari ini beres tanpa lembur. Waktunya santai dan nikmati waktu luangmu.'
                       : 'All planned focus blocks completed without overwork. Time to enjoy your evening guilt-free.'}
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 flex items-center justify-between">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 flex items-center justify-between">
                   <span>{language === 'id' ? 'Ritme Kerja Seimbang' : 'Balanced Rhythm'}</span>
-                  <span className="text-emerald-700 font-bold flex items-center gap-1.5">
+                  <span className="text-emerald-700 font-bold flex items-center gap-1">
                     <CheckIcon size="xs" />
                     <span>{language === 'id' ? '100% Pas' : '100% Balanced'}</span>
                   </span>
