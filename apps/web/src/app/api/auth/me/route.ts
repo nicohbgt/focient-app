@@ -52,7 +52,7 @@ export async function GET(request: Request) {
   const start = isOnboarding ? (fullUser.startWorkTime || fullUser.workHourStart || '') : (fullUser.startWorkTime || fullUser.workHourStart || '09:00');
   const end = isOnboarding ? (fullUser.endWorkTime || fullUser.workHourEnd || '') : (fullUser.endWorkTime || fullUser.workHourEnd || '17:00');
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     success: true,
     user: {
       id: fullUser.id,
