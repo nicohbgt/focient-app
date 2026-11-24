@@ -18,7 +18,7 @@ export const MarketingHeader: React.FC = () => {
     setIsDemoLoading(true);
     try {
       await loginAsGuest();
-      router.push('/today');
+      router.push('/dashboard');
     } finally {
       setIsDemoLoading(false);
     }

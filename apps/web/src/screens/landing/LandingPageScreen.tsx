@@ -47,7 +47,7 @@ export const LandingPageScreen: React.FC<LandingPageScreenProps> = ({ hideHeader
 
   const handleLoginAsGuest = async () => {
     await loginAsGuest();
-    router.push('/today');
+    router.push('/dashboard');
   };
 
   const handleNavigateLogin = () => {
@@ -258,7 +258,7 @@ export const LandingPageScreen: React.FC<LandingPageScreenProps> = ({ hideHeader
             {/* Quick Demo CTA */}
             <button
               type="button"
-              onClick={loginAsGuest}
+              onClick={handleLoginAsGuest}
               className="hidden sm:inline-flex px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] text-slate-700 font-bold text-xs shadow-2xs transition-all"
             >
               <span>{language === 'id' ? 'Demo' : 'Demo'}</span>
@@ -267,7 +267,7 @@ export const LandingPageScreen: React.FC<LandingPageScreenProps> = ({ hideHeader
             {/* Login Link */}
             <button
               type="button"
-              onClick={() => setAuthView('login')}
+              onClick={handleNavigateLogin}
               className="hidden sm:inline-flex px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
             >
               {language === 'id' ? 'Masuk' : 'Log In'}
@@ -348,9 +348,9 @@ export const LandingPageScreen: React.FC<LandingPageScreenProps> = ({ hideHeader
             <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   setIsMobileMenuOpen(false);
-                  loginAsGuest();
+                  await handleLoginAsGuest();
                 }}
                 className="w-full py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-center font-bold text-xs transition-colors"
               >
@@ -360,7 +360,7 @@ export const LandingPageScreen: React.FC<LandingPageScreenProps> = ({ hideHeader
                 type="button"
                 onClick={() => {
                   setIsMobileMenuOpen(false);
-                  setAuthView('login');
+                  handleNavigateLogin();
                 }}
                 className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-700 text-center font-bold text-xs hover:bg-slate-50 transition-colors"
               >
@@ -1364,7 +1364,7 @@ export const LandingPageScreen: React.FC<LandingPageScreenProps> = ({ hideHeader
                 <li>
                   <button
                     type="button"
-                    onClick={loginAsGuest}
+                    onClick={handleLoginAsGuest}
                     className="hover:text-white transition-colors"
                   >
                     {language === 'id' ? 'Coba Demo' : 'Try Demo'}

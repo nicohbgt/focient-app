@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useFoCientI18n } from '../i18n/I18nContext.js';
 import { useFocient } from '../../state/focient-store.js';
 import {
@@ -27,6 +28,7 @@ interface PaletteActionItem {
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
+  const router = useRouter();
   const { copywriting, locale } = useFoCientI18n();
   const store = useFocient();
 
@@ -60,6 +62,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen: propIsOp
         shortcutBadge: 'G D',
         onSelect: () => {
           store.safeNavigate('dashboard');
+          router.push('/dashboard');
           handleClose();
         },
       },
@@ -72,6 +75,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen: propIsOp
         shortcutBadge: 'G P',
         onSelect: () => {
           store.safeNavigate('plan');
+          router.push('/today');
           handleClose();
         },
       },
@@ -84,6 +88,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen: propIsOp
         shortcutBadge: 'G T',
         onSelect: () => {
           store.safeNavigate('tasks');
+          router.push('/tasks');
           handleClose();
         },
       },
@@ -96,6 +101,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen: propIsOp
         shortcutBadge: 'G R',
         onSelect: () => {
           store.safeNavigate('reschedule');
+          router.push('/today');
           handleClose();
         },
       },
@@ -108,6 +114,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen: propIsOp
         shortcutBadge: 'G I',
         onSelect: () => {
           store.safeNavigate('insights');
+          router.push('/insights');
           handleClose();
         },
       },
@@ -125,6 +132,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen: propIsOp
         shortcutBadge: 'G S',
         onSelect: () => {
           store.safeNavigate('settings');
+          router.push('/settings');
           handleClose();
         },
       },

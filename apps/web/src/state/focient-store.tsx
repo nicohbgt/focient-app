@@ -861,7 +861,9 @@ export function resolveDocumentTitle({
     pageName = 'Onboarding';
   } else {
     // 4. Main app authenticated screens / tabs
-    if (activeNavTab === 'plan' || cleanPath.startsWith('/plan') || cleanPath.startsWith('/today')) {
+    if (activeNavTab === 'dashboard' || cleanPath.startsWith('/dashboard')) {
+      pageName = 'Dashboard';
+    } else if (activeNavTab === 'plan' || cleanPath.startsWith('/plan') || cleanPath.startsWith('/today')) {
       pageName = language === 'en' ? "Today's Plan" : 'Rencana Hari Ini';
     } else if (activeNavTab === 'tasks' || cleanPath.startsWith('/tasks')) {
       pageName = language === 'en' ? 'Tasks' : 'Daftar Tugas';

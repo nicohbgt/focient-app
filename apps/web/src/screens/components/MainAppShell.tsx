@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useFocient, ActiveNavTab } from '../../state/focient-store.js';
 import {
@@ -75,7 +76,8 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
 
   const pathname = usePathname();
 
-  const isTodayActive = pathname === '/today' || pathname.startsWith('/today') || pathname === '/dashboard' || pathname === '/plan';
+  const isDashboardActive = pathname === '/dashboard' || pathname.startsWith('/dashboard');
+  const isTodayActive = pathname === '/today' || pathname.startsWith('/today') || pathname === '/plan';
   const isTasksActive = pathname.startsWith('/tasks');
   const isInsightsActive = pathname.startsWith('/insights');
   const isSettingsActive = pathname.startsWith('/settings');
@@ -86,6 +88,9 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
 
   // Active Screen Titles for Header dynamically based on URL pathname
   const getScreenTitle = () => {
+    if (isDashboardActive) {
+      return language === 'id' ? 'Beranda' : 'Dashboard';
+    }
     if (isTasksActive) {
       return language === 'id' ? 'Daftar Tugas' : 'Task List';
     }
@@ -100,6 +105,15 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
 
   // Nav Items configured for SideNavBar organism with canonical URLs
   const sideNavItems: SideNavItem[] = [
+    {
+      id: 'dashboard',
+      label: language === 'id' ? 'Beranda' : 'Dashboard',
+      href: '/dashboard',
+      icon: <LayoutDashboardIcon size="sm" />,
+      active: isDashboardActive,
+      badgeCount: 0,
+      onClick: () => safeNavigate('dashboard'),
+    },
     {
       id: 'plan',
       label: language === 'id' ? 'Rencana Hari Ini' : "Today's Plan",
@@ -134,7 +148,7 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
       icon: (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
       ),
       active: isSettingsActive,
@@ -334,27 +348,27 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
         aria-label="Mobile Navigation"
       >
         {/* Dashboard Tab */}
-        <button
-          type="button"
+        <Link
+          href="/dashboard"
           onClick={() => safeNavigate('dashboard')}
           className={`flex flex-col items-center justify-center min-w-[48px] min-h-[48px] text-[11px] font-medium transition-transform active:scale-95 ${
-            activeNavTab === 'dashboard' ? 'text-blue-600 font-semibold' : 'text-slate-500'
+            isDashboardActive ? 'text-blue-600 font-semibold' : 'text-slate-500'
           }`}
           aria-label="Dashboard"
         >
           <LayoutDashboardIcon size="sm" />
           <span className="mt-0.5">{language === 'id' ? 'Beranda' : 'Home'}</span>
-          {activeNavTab === 'dashboard' && (
+          {isDashboardActive && (
             <span className="w-1 h-1 rounded-full bg-blue-600 mt-0.5" aria-hidden="true" />
           )}
-        </button>
+        </Link>
 
         {/* Plan Tab */}
-        <button
-          type="button"
+        <Link
+          href="/today"
           onClick={() => safeNavigate('plan')}
           className={`flex flex-col items-center justify-center min-w-[48px] min-h-[48px] text-[11px] font-medium transition-transform active:scale-95 relative ${
-            activeNavTab === 'plan' || activeNavTab === 'reschedule' ? 'text-blue-600 font-semibold' : 'text-slate-500'
+            isTodayActive ? 'text-blue-600 font-semibold' : 'text-slate-500'
           }`}
           aria-label="Today Plan"
         >
@@ -367,10 +381,10 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
             )}
           </div>
           <span className="mt-0.5">{language === 'id' ? 'Rencana' : 'Plan'}</span>
-          {(activeNavTab === 'plan' || activeNavTab === 'reschedule') && (
+          {isTodayActive && (
             <span className="w-1 h-1 rounded-full bg-blue-600 mt-0.5" aria-hidden="true" />
           )}
-        </button>
+        </Link>
 
         {/* Central Add Task Action Button (48px hit target with tactility) */}
         <button
@@ -383,11 +397,11 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
         </button>
 
         {/* Task List Tab */}
-        <button
-          type="button"
+        <Link
+          href="/tasks"
           onClick={() => safeNavigate('tasks')}
           className={`flex flex-col items-center justify-center min-w-[48px] min-h-[48px] text-[11px] font-medium transition-transform active:scale-95 relative ${
-            activeNavTab === 'tasks' ? 'text-blue-600 font-semibold' : 'text-slate-500'
+            isTasksActive ? 'text-blue-600 font-semibold' : 'text-slate-500'
           }`}
           aria-label="Tasks"
         >
@@ -400,26 +414,26 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
             )}
           </div>
           <span className="mt-0.5">{language === 'id' ? 'Tugas' : 'Tasks'}</span>
-          {activeNavTab === 'tasks' && (
+          {isTasksActive && (
             <span className="w-1 h-1 rounded-full bg-blue-600 mt-0.5" aria-hidden="true" />
           )}
-        </button>
+        </Link>
 
         {/* Insights Tab */}
-        <button
-          type="button"
+        <Link
+          href="/insights"
           onClick={() => safeNavigate('insights')}
           className={`flex flex-col items-center justify-center min-w-[48px] min-h-[48px] text-[11px] font-medium transition-transform active:scale-95 ${
-            activeNavTab === 'insights' ? 'text-blue-600 font-semibold' : 'text-slate-500'
+            isInsightsActive ? 'text-blue-600 font-semibold' : 'text-slate-500'
           }`}
           aria-label="Insights"
         >
           <ActivityIcon size="sm" />
           <span className="mt-0.5">{language === 'id' ? 'Refleksi' : 'Insights'}</span>
-          {activeNavTab === 'insights' && (
+          {isInsightsActive && (
             <span className="w-1 h-1 rounded-full bg-blue-600 mt-0.5" aria-hidden="true" />
           )}
-        </button>
+        </Link>
       </nav>
 
       {/* Global Command Palette, Notification Center & Context Preservation Dialog */}

@@ -13,7 +13,7 @@ export default function GuidancePage() {
 
   const handleDemo = async () => {
     await loginAsGuest();
-    router.push('/today');
+    router.push('/dashboard');
   };
 
   const steps = [

@@ -12,7 +12,7 @@ export const MarketingFooter: React.FC = () => {
 
   const handleDemoClick = async () => {
     await loginAsGuest();
-    router.push('/today');
+    router.push('/dashboard');
   };
 
   return (

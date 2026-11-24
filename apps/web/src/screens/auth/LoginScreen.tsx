@@ -40,7 +40,7 @@ export const LoginScreen: React.FC = () => {
         if (user && !user.isOnboardingCompleted) {
           router.push('/onboarding');
         } else {
-          router.push('/today');
+          router.push('/dashboard');
         }
       } else {
         setError(language === 'id' ? 'Email atau kata sandi tidak sesuai' : 'Invalid email or password');

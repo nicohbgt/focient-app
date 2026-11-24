@@ -12,7 +12,7 @@ export default function AboutPage() {
 
   const handleDemo = async () => {
     await loginAsGuest();
-    router.push('/today');
+    router.push('/dashboard');
   };
 
   return (
