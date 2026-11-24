@@ -86,23 +86,6 @@ export const LoginScreen: React.FC = () => {
           </div>
         )}
 
-        {/* 1. Google SSO Sign-In */}
-        <div className="mb-4">
-          <GoogleSignInButton mode="login" />
-        </div>
-
-        {/* Divider */}
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-white px-2 text-slate-400 font-medium">
-              {language === 'id' ? 'atau gunakan email' : 'or continue with email'}
-            </span>
-          </div>
-        </div>
-
         {/* Essential Form: Email & Password */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -168,6 +151,23 @@ export const LoginScreen: React.FC = () => {
             <span>{language === 'id' ? 'Masuk' : 'Log In'}</span>
           </button>
         </form>
+
+        {/* Divider */}
+        <div className="relative my-5">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-white px-2 text-slate-400 font-medium">
+              {language === 'id' ? 'atau lanjutkan dengan Google' : 'or continue with Google'}
+            </span>
+          </div>
+        </div>
+
+        {/* Google SSO Sign-In */}
+        <div>
+          <GoogleSignInButton mode="login" />
+        </div>
 
         {/* Footer Link Switch */}
         <p className="text-center text-xs text-slate-500 mt-6 pt-4 border-t border-slate-100">

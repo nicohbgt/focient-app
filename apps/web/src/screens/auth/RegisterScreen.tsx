@@ -141,23 +141,6 @@ export const RegisterScreen: React.FC = () => {
           </div>
         )}
 
-        {/* 1. Social Auth (Google Sign-In) */}
-        <div className="mb-4">
-          <GoogleSignInButton mode="register" />
-        </div>
-
-        {/* Divider */}
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-white px-2 text-slate-400 font-medium">
-              {language === 'id' ? 'atau daftar dengan email' : 'or register with email'}
-            </span>
-          </div>
-        </div>
-
         {/* Essential Form: Name, Email & Password */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -230,6 +213,23 @@ export const RegisterScreen: React.FC = () => {
             <span>{language === 'id' ? 'Buat Akun' : 'Create Account'}</span>
           </button>
         </form>
+
+        {/* Divider */}
+        <div className="relative my-5">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-white px-2 text-slate-400 font-medium">
+              {language === 'id' ? 'atau lanjutkan dengan Google' : 'or continue with Google'}
+            </span>
+          </div>
+        </div>
+
+        {/* Social Auth (Google Sign-In) */}
+        <div>
+          <GoogleSignInButton mode="register" />
+        </div>
 
         {/* Legal Microcopy */}
         <p className="text-center text-xs text-slate-500 leading-relaxed mt-4">

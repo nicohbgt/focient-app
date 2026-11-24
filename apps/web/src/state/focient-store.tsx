@@ -834,10 +834,10 @@ export function resolveDocumentTitle({
   const cleanPath = (pathname || '').toLowerCase();
 
   // 2. Landing page exception: strictly 'FoCient' without page name
-  if (authView === 'landing' || authView === 'welcome') {
+  if (cleanPath === '/' || cleanPath === '/welcome') {
     return 'FoCient';
   }
-  if (!authView && (cleanPath === '/' || cleanPath === '/welcome')) {
+  if (authView === 'landing' || authView === 'welcome') {
     return 'FoCient';
   }
 

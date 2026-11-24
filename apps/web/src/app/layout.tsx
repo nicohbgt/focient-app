@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import '../components/components.css';
 import { HorizontalScrollManager } from '../components/primitive/HorizontalScrollManager';
+import { TabTitleSynchronizer } from '../components/TabTitleSynchronizer';
 import { FocientProvider } from '../state/focient-store';
 
 export const metadata: Metadata = {
@@ -43,6 +44,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-neutral-canvas text-neutral-text font-sans antialiased">
         <FocientProvider>
           <HorizontalScrollManager />
+          <TabTitleSynchronizer />
           {children}
         </FocientProvider>
       </body>
