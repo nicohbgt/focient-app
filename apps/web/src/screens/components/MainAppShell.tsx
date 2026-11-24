@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useFocient, ActiveNavTab } from '../../state/focient-store.js';
 import {
   LayoutDashboardIcon,
@@ -72,76 +73,71 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
     }
   };
 
+  const pathname = usePathname();
+
+  const isTodayActive = pathname === '/today' || pathname.startsWith('/today') || pathname === '/dashboard' || pathname === '/plan';
+  const isTasksActive = pathname.startsWith('/tasks');
+  const isInsightsActive = pathname.startsWith('/insights');
+  const isSettingsActive = pathname.startsWith('/settings');
+
   // Workload percentage calculation (dynamically tailored to user's schedule window)
   const capacityMinutes = calculateCapacityMinutes(user?.workHourStart || '09:00', user?.workHourEnd || '17:00');
   const workloadPercent = Math.min(100, Math.round((allocatedMinutes / capacityMinutes) * 100));
 
-  // Active Screen Titles for Header
-  const getScreenTitle = (tab: ActiveNavTab) => {
-    switch (tab) {
-      case 'dashboard':
-        return language === 'id' ? 'Beranda' : 'Dashboard';
-      case 'plan':
-        return language === 'id' ? 'Rencana Hari Ini' : "Today's Plan";
-      case 'tasks':
-        return language === 'id' ? 'Daftar Tugas' : 'Task List';
-      case 'reschedule':
-        return language === 'id' ? 'Penyesuaian Adaptif' : 'Adaptive Reschedule';
-      case 'insights':
-        return language === 'id' ? 'Refleksi' : 'Insights & Reflection';
-      case 'settings':
-        return language === 'id' ? 'Pengaturan' : 'Settings';
-      case 'addTask':
-        return language === 'id' ? 'Tambah Tugas' : 'Add Task';
-      default:
-        return 'FoCient';
+  // Active Screen Titles for Header dynamically based on URL pathname
+  const getScreenTitle = () => {
+    if (isTasksActive) {
+      return language === 'id' ? 'Daftar Tugas' : 'Task List';
     }
+    if (isInsightsActive) {
+      return language === 'id' ? 'Refleksi' : 'Insights & Reflection';
+    }
+    if (isSettingsActive) {
+      return language === 'id' ? 'Pengaturan' : 'Settings';
+    }
+    return language === 'id' ? 'Rencana Hari Ini' : "Today's Plan";
   };
 
-  // Nav Items configured for SideNavBar organism
+  // Nav Items configured for SideNavBar organism with canonical URLs
   const sideNavItems: SideNavItem[] = [
-    {
-      id: 'dashboard',
-      label: language === 'id' ? 'Beranda' : 'Dashboard',
-      icon: <LayoutDashboardIcon size="sm" />,
-      active: activeNavTab === 'dashboard',
-      badgeCount: 0,
-      onClick: () => safeNavigate('dashboard'),
-    },
     {
       id: 'plan',
       label: language === 'id' ? 'Rencana Hari Ini' : "Today's Plan",
+      href: '/today',
       icon: <SparklesIcon size="sm" />,
-      active: activeNavTab === 'plan' || activeNavTab === 'reschedule',
+      active: isTodayActive,
       badgeCount: badgeCounts.todayPlan + badgeCounts.reschedule,
       onClick: () => safeNavigate('plan'),
     },
     {
       id: 'tasks',
       label: language === 'id' ? 'Daftar Tugas' : 'Task List',
+      href: '/tasks',
       icon: <CalendarIcon size="sm" />,
-      active: activeNavTab === 'tasks',
+      active: isTasksActive,
       badgeCount: badgeCounts.tasks,
       onClick: () => safeNavigate('tasks'),
     },
     {
       id: 'insights',
       label: language === 'id' ? 'Refleksi' : 'Insights',
+      href: '/insights',
       icon: <ActivityIcon size="sm" />,
-      active: activeNavTab === 'insights',
+      active: isInsightsActive,
       badgeCount: badgeCounts.insights,
       onClick: () => safeNavigate('insights'),
     },
     {
       id: 'settings',
       label: language === 'id' ? 'Pengaturan' : 'Settings',
+      href: '/settings',
       icon: (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="3" />
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
       ),
-      active: activeNavTab === 'settings',
+      active: isSettingsActive,
       badgeCount: 0,
       onClick: () => safeNavigate('settings'),
     },
@@ -187,7 +183,7 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
             {/* Left: Active Screen Title */}
             <div className="flex items-center gap-4">
               <h1 className="text-lg lg:text-xl font-extrabold text-slate-900 tracking-tight">
-                {getScreenTitle(activeNavTab)}
+                {getScreenTitle()}
               </h1>
             </div>
 

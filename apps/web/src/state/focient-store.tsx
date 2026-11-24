@@ -841,9 +841,13 @@ export function resolveDocumentTitle({
     return 'FoCient';
   }
 
-  // 3. Auth views / pages
+  // 3. Auth views / pages & marketing pages
   let pageName = '';
-  if (authView === 'login' || cleanPath.startsWith('/login') || cleanPath.startsWith('/auth/login')) {
+  if (cleanPath.startsWith('/about')) {
+    pageName = language === 'en' ? 'About Us' : 'Tentang Kami';
+  } else if (cleanPath.startsWith('/guidance')) {
+    pageName = language === 'en' ? 'Guidance' : 'Panduan';
+  } else if (authView === 'login' || cleanPath.startsWith('/login') || cleanPath.startsWith('/auth/login')) {
     pageName = language === 'en' ? 'Log In' : 'Masuk';
   } else if (authView === 'register' || cleanPath.startsWith('/register') || cleanPath.startsWith('/auth/register')) {
     pageName = language === 'en' ? 'Sign Up' : 'Daftar';

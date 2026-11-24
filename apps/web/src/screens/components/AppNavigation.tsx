@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useFocient } from '../../state/focient-store.js';
 import {
   LayoutDashboardIcon,
@@ -18,6 +20,11 @@ import { NotificationCenterModal } from './NotificationCenterModal.js';
 import { getAvatarInitial } from '../../lib/utils.js';
 
 export const AppNavigation: React.FC = () => {
+  const pathname = usePathname();
+  const isTodayActive = pathname === '/today' || pathname.startsWith('/today') || pathname === '/dashboard' || pathname === '/plan';
+  const isTasksActive = pathname.startsWith('/tasks');
+  const isInsightsActive = pathname.startsWith('/insights');
+
   const {
     activeNavTab,
     safeNavigate,
@@ -78,12 +85,14 @@ export const AppNavigation: React.FC = () => {
             : 'border-slate-200 shadow-none'
         }`}
       >
-        <div
+        <Link
+          href="/today"
           className="flex items-center cursor-pointer py-1"
-          onClick={() => safeNavigate('dashboard')}
+          onClick={() => safeNavigate('plan')}
+          aria-label="FoCient"
         >
           <FoCientWordmark height={16} className="transition-opacity hover:opacity-85" />
-        </div>
+        </Link>
 
         <div className="flex items-center gap-1.5">
           {/* Notification Button */}
@@ -204,28 +213,12 @@ export const AppNavigation: React.FC = () => {
         }`}
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}
       >
-        {/* Dashboard Tab */}
-        <button
-          type="button"
-          onClick={() => safeNavigate('dashboard')}
-          className={`flex flex-col items-center justify-center min-w-[48px] min-h-[48px] text-[11px] font-medium transition-transform active:scale-95 ${
-            activeNavTab === 'dashboard' ? 'text-blue-600 font-semibold' : 'text-slate-500'
-          }`}
-          aria-label="Dashboard"
-        >
-          <LayoutDashboardIcon size="sm" />
-          <span className="mt-0.5">{language === 'id' ? 'Beranda' : 'Home'}</span>
-          {activeNavTab === 'dashboard' && (
-            <span className="w-1 h-1 rounded-full bg-blue-600 mt-0.5" aria-hidden="true" />
-          )}
-        </button>
-
-        {/* Plan Tab */}
-        <button
-          type="button"
+        {/* Today Plan Tab */}
+        <Link
+          href="/today"
           onClick={() => safeNavigate('plan')}
           className={`flex flex-col items-center justify-center min-w-[48px] min-h-[48px] text-[11px] font-medium transition-transform active:scale-95 relative ${
-            activeNavTab === 'plan' ? 'text-blue-600 font-semibold' : 'text-slate-500'
+            isTodayActive ? 'text-blue-600 font-semibold' : 'text-slate-500'
           }`}
           aria-label="Today Plan"
         >
@@ -238,10 +231,10 @@ export const AppNavigation: React.FC = () => {
             )}
           </div>
           <span className="mt-0.5">{language === 'id' ? 'Rencana' : 'Plan'}</span>
-          {activeNavTab === 'plan' && (
+          {isTodayActive && (
             <span className="w-1 h-1 rounded-full bg-blue-600 mt-0.5" aria-hidden="true" />
           )}
-        </button>
+        </Link>
 
         {/* Central Add Task Action Button (48px hit target with tactility) */}
         <button
@@ -254,11 +247,11 @@ export const AppNavigation: React.FC = () => {
         </button>
 
         {/* Task List Tab */}
-        <button
-          type="button"
+        <Link
+          href="/tasks"
           onClick={() => safeNavigate('tasks')}
           className={`flex flex-col items-center justify-center min-w-[48px] min-h-[48px] text-[11px] font-medium transition-transform active:scale-95 relative ${
-            activeNavTab === 'tasks' ? 'text-blue-600 font-semibold' : 'text-slate-500'
+            isTasksActive ? 'text-blue-600 font-semibold' : 'text-slate-500'
           }`}
           aria-label="Tasks"
         >
@@ -271,26 +264,26 @@ export const AppNavigation: React.FC = () => {
             )}
           </div>
           <span className="mt-0.5">{language === 'id' ? 'Tugas' : 'Tasks'}</span>
-          {activeNavTab === 'tasks' && (
+          {isTasksActive && (
             <span className="w-1 h-1 rounded-full bg-blue-600 mt-0.5" aria-hidden="true" />
           )}
-        </button>
+        </Link>
 
         {/* Insights Tab */}
-        <button
-          type="button"
+        <Link
+          href="/insights"
           onClick={() => safeNavigate('insights')}
           className={`flex flex-col items-center justify-center min-w-[48px] min-h-[48px] text-[11px] font-medium transition-transform active:scale-95 ${
-            activeNavTab === 'insights' ? 'text-blue-600 font-semibold' : 'text-slate-500'
+            isInsightsActive ? 'text-blue-600 font-semibold' : 'text-slate-500'
           }`}
           aria-label="Insights"
         >
           <SparklesIcon size="sm" />
           <span className="mt-0.5">{language === 'id' ? 'Refleksi' : 'Insights'}</span>
-          {activeNavTab === 'insights' && (
+          {isInsightsActive && (
             <span className="w-1 h-1 rounded-full bg-blue-600 mt-0.5" aria-hidden="true" />
           )}
-        </button>
+        </Link>
       </nav>
 
       {/* Global Command Palette, Notification Center & Context Preservation Dialog */}

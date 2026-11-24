@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import '../components/components.css';
 import { HorizontalScrollManager } from '../components/primitive/HorizontalScrollManager';
+import { FocientProvider } from '../state/focient-store';
 
 export const metadata: Metadata = {
   title: 'FoCient',
@@ -40,8 +41,10 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-neutral-canvas text-neutral-text font-sans antialiased">
-        <HorizontalScrollManager />
-        {children}
+        <FocientProvider>
+          <HorizontalScrollManager />
+          {children}
+        </FocientProvider>
       </body>
     </html>
   );

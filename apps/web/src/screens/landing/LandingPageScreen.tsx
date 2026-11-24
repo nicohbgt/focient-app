@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useFocient } from '../../state/focient-store';
 import {
   SparklesIcon,
@@ -22,7 +24,12 @@ import {
 } from '../../components/icons';
 import { FoCientWordmark } from '../../components/brand/FoCientWordmark';
 
-export const LandingPageScreen: React.FC = () => {
+export interface LandingPageScreenProps {
+  hideHeaderFooter?: boolean;
+}
+
+export const LandingPageScreen: React.FC<LandingPageScreenProps> = ({ hideHeaderFooter = false }) => {
+  const router = useRouter();
   const {
     language,
     setLanguage,
@@ -32,6 +39,24 @@ export const LandingPageScreen: React.FC = () => {
     setInspectorView,
     setIsTermsOpen,
   } = useFocient();
+
+  const handleStartOnboarding = () => {
+    startOnboarding();
+    router.push('/register');
+  };
+
+  const handleLoginAsGuest = async () => {
+    await loginAsGuest();
+    router.push('/today');
+  };
+
+  const handleNavigateLogin = () => {
+    router.push('/login');
+  };
+
+  const handleNavigateRegister = () => {
+    router.push('/register');
+  };
 
   // Active section tracking state
   const [activeSection, setActiveSection] = useState<string>('hero');
@@ -159,10 +184,8 @@ export const LandingPageScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900 scroll-smooth">
-      {/* ─────────────────────────────────────────────────────────────
-          1. TOP NAVIGATION BAR (STICKY & ELEVATED WITH BACKDROP BLUR)
-      ────────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-all">
+      {!hideHeaderFooter && (
+        <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Brand Wordmark (Standalone & Spacious) */}
           <div
@@ -357,6 +380,7 @@ export const LandingPageScreen: React.FC = () => {
           </div>
         )}
       </header>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
           2. HERO SECTION (HEADLINE + PARAGRAPH + CTA + APP MOCKUP - 1 SCREEN HERO)
@@ -390,7 +414,7 @@ export const LandingPageScreen: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
                 <button
                   type="button"
-                  onClick={startOnboarding}
+                  onClick={handleStartOnboarding}
                   className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-sm shadow-xs hover:shadow-sm transition-all text-center"
                 >
                   <span>{language === 'id' ? 'Mulai Sekarang' : 'Get Started'}</span>
@@ -1269,7 +1293,7 @@ export const LandingPageScreen: React.FC = () => {
               <div className="pt-2">
                 <button
                   type="button"
-                  onClick={startOnboarding}
+                  onClick={handleStartOnboarding}
                   className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-sm shadow-focient-3 transition-all text-center"
                 >
                   <span>{language === 'id' ? 'Mulai Sekarang' : 'Get Started'}</span>
@@ -1310,7 +1334,8 @@ export const LandingPageScreen: React.FC = () => {
       {/* ─────────────────────────────────────────────────────────────
           7. FOOTER SECTION (LINKS, MISSION, WCAG COMPLIANCE & LEGAL)
       ────────────────────────────────────────────────────────────── */}
-      <footer className="bg-slate-950 text-slate-400 py-16 border-t border-slate-800 text-xs">
+      {!hideHeaderFooter && (
+        <footer className="bg-slate-950 text-slate-400 py-16 border-t border-slate-800 text-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             {/* Col 1 & 2: Brand & Mission */}
@@ -1436,6 +1461,7 @@ export const LandingPageScreen: React.FC = () => {
           </div>
         </div>
       </footer>
+      )}
     </div>
   );
 };

@@ -107,18 +107,24 @@ test('FoCient Browser End-to-End & WCAG AAA Accessibility Suite (P1 Quality & CI
   });
 
   await t.test('7. Browser Navigation Journey Component Export Integrity', async () => {
-    // Check that all route directories exist and have corresponding page.tsx files
+    // Check that all canonical route directories exist and have corresponding page.tsx files
     const routePages = [
-      'auth/login/page.tsx',
-      'auth/register/page.tsx',
+      '(auth)/login/page.tsx',
+      '(auth)/register/page.tsx',
       'auth/forgot-password/page.tsx',
       'auth/reset-password/page.tsx',
-      'onboarding/page.tsx',
+      '(app)/onboarding/page.tsx',
+      '(app)/today/page.tsx',
       'dashboard/page.tsx',
-      'tasks/page.tsx',
+      '(app)/tasks/page.tsx',
+      '(app)/tasks/[id]/page.tsx',
       'plan/page.tsx',
       'rescheduling/page.tsx',
-      'insights/page.tsx',
+      '(app)/insights/page.tsx',
+      '(app)/settings/page.tsx',
+      '(marketing)/page.tsx',
+      '(marketing)/about/page.tsx',
+      '(marketing)/guidance/page.tsx',
     ];
 
     for (const route of routePages) {

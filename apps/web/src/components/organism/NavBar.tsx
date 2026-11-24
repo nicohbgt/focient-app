@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { useFoCientI18n, LanguageSwitcher } from '../i18n/I18nContext.js';
 import { Badge } from '../primitive/Badge.js';
 import { SearchIcon, BellIcon, SunIcon, PlusIcon } from '../icons/index.js';
@@ -189,6 +190,7 @@ export interface SideNavItem {
   active?: boolean;
   badgeCount?: number;
   shortcutHint?: string;
+  href?: string;
   onClick?: () => void;
 }
 
@@ -285,30 +287,56 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
 
         {/* Navigation Items */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={item.onClick}
-              className={[
-                'focient-nav-item',
-                item.active ? 'focient-nav-item--active' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              data-tooltip={collapsed ? item.label : undefined}
-              title={collapsed ? item.label : undefined}
-              aria-label={item.label}
-            >
-              <span className="focient-nav-item-icon">{item.icon}</span>
-              {!collapsed && <span className="focient-nav-item-label">{item.label}</span>}
-              {!collapsed && typeof item.badgeCount === 'number' && item.badgeCount > 0 && (
-                <span className={['focient-nav-item-badge', item.active ? 'focient-nav-item-badge--active' : ''].filter(Boolean).join(' ')}>
-                  {item.badgeCount}
-                </span>
-              )}
-            </button>
-          ))}
+          {items.map((item) => {
+            const content = (
+              <>
+                <span className="focient-nav-item-icon">{item.icon}</span>
+                {!collapsed && <span className="focient-nav-item-label">{item.label}</span>}
+                {!collapsed && typeof item.badgeCount === 'number' && item.badgeCount > 0 && (
+                  <span className={['focient-nav-item-badge', item.active ? 'focient-nav-item-badge--active' : ''].filter(Boolean).join(' ')}>
+                    {item.badgeCount}
+                  </span>
+                )}
+              </>
+            );
+
+            const className = [
+              'focient-nav-item',
+              item.active ? 'focient-nav-item--active' : '',
+            ]
+              .filter(Boolean)
+              .join(' ');
+
+            if (item.href) {
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  onClick={item.onClick}
+                  className={className}
+                  data-tooltip={collapsed ? item.label : undefined}
+                  title={collapsed ? item.label : undefined}
+                  aria-label={item.label}
+                >
+                  {content}
+                </Link>
+              );
+            }
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={item.onClick}
+                className={className}
+                data-tooltip={collapsed ? item.label : undefined}
+                title={collapsed ? item.label : undefined}
+                aria-label={item.label}
+              >
+                {content}
+              </button>
+            );
+          })}
         </nav>
       </div>
 

@@ -1,10 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useFocient } from '../../state/focient-store';
 import { ArrowLeftIcon, AlertCircleIcon, EyeIcon, EyeOffIcon } from '../../components/icons';
+import { GoogleSignInButton } from './GoogleSignInButton';
 
 export const RegisterScreen: React.FC = () => {
+  const router = useRouter();
   const {
     register,
     cleanUser,
@@ -48,9 +52,7 @@ export const RegisterScreen: React.FC = () => {
       await cleanUser(email);
       const ok = await register(name, email, password, true);
       if (ok) {
-        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
-          window.location.href = '/onboarding';
-        }
+        router.push('/onboarding');
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Gagal membersihkan user testing.';
@@ -80,9 +82,7 @@ export const RegisterScreen: React.FC = () => {
     try {
       const ok = await register(name, email, password);
       if (ok) {
-        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
-          window.location.href = '/onboarding';
-        }
+        router.push('/onboarding');
       } else {
         setError(language === 'id' ? 'Gagal mendaftar. Silakan coba kembali.' : 'Registration failed. Please try again.');
       }
@@ -94,87 +94,82 @@ export const RegisterScreen: React.FC = () => {
     }
   };
 
-  const handleNavigateToLogin = () => {
-    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
-      window.location.href = '/auth/login';
-    } else {
-      setAuthView('login');
-    }
-  };
-
-  const handleNavigateBack = () => {
-    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
-      window.location.href = '/';
-    } else {
-      setAuthView('landing');
-    }
-  };
-
   return (
     <div className="min-h-full flex flex-col justify-center px-4 py-8 max-w-[420px] mx-auto w-full animate-fade-in font-sans">
       {/* Top Back Nav */}
       <div className="mb-4">
-        <button
-          type="button"
-          onClick={handleNavigateBack}
+        <Link
+          href="/"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
         >
           <ArrowLeftIcon size="xs" />
           <span>{language === 'id' ? 'Kembali' : 'Back'}</span>
-        </button>
+        </Link>
       </div>
 
-      {/* Single Authentication Card */}
+      {/* Single Registration Card */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">
-            {language === 'id' ? 'Mulai ruang fokus barumu' : 'Start your focus space'}
+            {language === 'id' ? 'Mulai bersama FoCient' : 'Get started with FoCient'}
           </h1>
           <p className="text-sm text-slate-500 font-normal leading-relaxed">
             {language === 'id'
-              ? 'Daftar sekarang untuk mulai atur fokus dan jadwalmu.'
-              : 'Sign up to start organizing your daily focus.'}
+              ? 'Daftar akun untuk simpan dan sinkronkan fokus harianmu.'
+              : 'Sign up to keep your daily focus in sync across devices.'}
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
+          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <AlertCircleIcon size="xs" className="shrink-0" />
               <span>{error}</span>
             </div>
-            {isEmailConflict && isDevMode && (
-              <div className="mt-2 pt-2 border-t border-red-200/60 flex items-center justify-between gap-2">
-                <span className="text-[11px] text-red-600 font-normal">
-                  {language === 'id' ? 'Akun testing terdeteksi di database.' : 'Testing account detected in database.'}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleDevCleanAndRetry}
-                  disabled={isCleaning}
-                  className="text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-lg transition-colors border border-amber-300 shrink-0"
-                >
-                  {isCleaning
-                    ? (language === 'id' ? 'Membersihkan...' : 'Cleaning...')
-                    : '[Dev Mode] Hapus akun ini & daftar ulang'}
-                </button>
-              </div>
+            {isEmailConflict && (
+              <button
+                type="button"
+                onClick={handleDevCleanAndRetry}
+                disabled={isCleaning}
+                className="mt-1 self-start px-2.5 py-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-800 text-[11px] font-semibold transition-colors disabled:opacity-50"
+              >
+                {isCleaning
+                  ? (language === 'id' ? 'Membersihkan...' : 'Cleaning...')
+                  : (language === 'id' ? 'Reset Email Testing & Lanjut' : 'Reset Test Email & Continue')}
+              </button>
             )}
           </div>
         )}
 
-        {/* Essential Manual Form: Name, Email, Password */}
+        {/* 1. Social Auth (Google Sign-In) */}
+        <div className="mb-4">
+          <GoogleSignInButton mode="register" />
+        </div>
+
+        {/* Divider */}
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-white px-2 text-slate-400 font-medium">
+              {language === 'id' ? 'atau daftar dengan email' : 'or register with email'}
+            </span>
+          </div>
+        </div>
+
+        {/* Essential Form: Name, Email & Password */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1.5" htmlFor="reg-name">
+            <label className="block text-xs font-medium text-slate-700 mb-1.5" htmlFor="register-name">
               {language === 'id' ? 'Nama Lengkap' : 'Full Name'}
             </label>
             <input
-              id="reg-name"
+              id="register-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={language === 'id' ? 'Nama lengkapmu' : 'Your full name'}
+              placeholder="e.g. Alex Pratama"
               required
               autoComplete="name"
               className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
@@ -182,11 +177,11 @@ export const RegisterScreen: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1.5" htmlFor="reg-email">
+            <label className="block text-xs font-medium text-slate-700 mb-1.5" htmlFor="register-email">
               {language === 'id' ? 'Alamat Email' : 'Email Address'}
             </label>
             <input
-              id="reg-email"
+              id="register-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -198,16 +193,16 @@ export const RegisterScreen: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1.5" htmlFor="reg-password">
+            <label className="block text-xs font-medium text-slate-700 mb-1.5" htmlFor="register-password">
               {language === 'id' ? 'Kata Sandi' : 'Password'}
             </label>
             <div className="relative">
               <input
-                id="reg-password"
+                id="register-password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={language === 'id' ? 'Minimal 6 karakter' : 'At least 6 characters'}
+                placeholder="Minimal 6 karakter"
                 required
                 autoComplete="new-password"
                 className="w-full h-11 px-3.5 pr-10 rounded-xl border border-slate-300 text-sm font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
@@ -236,7 +231,7 @@ export const RegisterScreen: React.FC = () => {
           </button>
         </form>
 
-        {/* 4. Legal Microcopy: Implicit Agreement */}
+        {/* Legal Microcopy */}
         <p className="text-center text-xs text-slate-500 leading-relaxed mt-4">
           {language === 'id' ? (
             <>
@@ -281,16 +276,15 @@ export const RegisterScreen: React.FC = () => {
           )}
         </p>
 
-        {/* 5. Footer Link Switch */}
+        {/* Footer Link Switch */}
         <p className="text-center text-xs text-slate-500 mt-6 pt-4 border-t border-slate-100">
           {language === 'id' ? 'Sudah punya akun? ' : 'Already have an account? '}
-          <button
-            type="button"
-            onClick={handleNavigateToLogin}
+          <Link
+            href="/login"
             className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
           >
             {language === 'id' ? 'Masuk' : 'Log In'}
-          </button>
+          </Link>
         </p>
       </div>
     </div>

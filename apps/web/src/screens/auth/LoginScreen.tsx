@@ -1,15 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useFocient } from '../../state/focient-store';
-import { authClient } from '../../lib/auth-client';
 import { ArrowLeftIcon, AlertCircleIcon, EyeIcon, EyeOffIcon } from '../../components/icons';
+import { GoogleSignInButton } from './GoogleSignInButton';
 
 export const LoginScreen: React.FC = () => {
+  const router = useRouter();
   const {
     login,
     setAuthView,
     language,
+    user,
   } = useFocient();
 
   const [email, setEmail] = useState('');
@@ -33,8 +37,14 @@ export const LoginScreen: React.FC = () => {
     setIsLoading(true);
     try {
       const ok = await login(email, password);
-      if (ok && typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
-        window.location.href = '/';
+      if (ok) {
+        if (user && !user.isOnboardingCompleted) {
+          router.push('/onboarding');
+        } else {
+          router.push('/today');
+        }
+      } else {
+        setError(language === 'id' ? 'Email atau kata sandi tidak sesuai' : 'Invalid email or password');
       }
     } catch {
       setError(language === 'id' ? 'Email atau kata sandi tidak sesuai' : 'Invalid email or password');
@@ -43,34 +53,17 @@ export const LoginScreen: React.FC = () => {
     }
   };
 
-  const handleNavigateToRegister = () => {
-    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
-      window.location.href = '/auth/register';
-    } else {
-      setAuthView('register');
-    }
-  };
-
-  const handleNavigateBack = () => {
-    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
-      window.location.href = '/';
-    } else {
-      setAuthView('landing');
-    }
-  };
-
   return (
     <div className="min-h-full flex flex-col justify-center px-4 py-8 max-w-[420px] mx-auto w-full animate-fade-in font-sans">
       {/* Top Back Nav */}
       <div className="mb-4">
-        <button
-          type="button"
-          onClick={handleNavigateBack}
+        <Link
+          href="/"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
         >
           <ArrowLeftIcon size="xs" />
           <span>{language === 'id' ? 'Kembali' : 'Back'}</span>
-        </button>
+        </Link>
       </div>
 
       {/* Single Authentication Card */}
@@ -92,6 +85,23 @@ export const LoginScreen: React.FC = () => {
             <span>{error}</span>
           </div>
         )}
+
+        {/* 1. Google SSO Sign-In */}
+        <div className="mb-4">
+          <GoogleSignInButton mode="login" />
+        </div>
+
+        {/* Divider */}
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-white px-2 text-slate-400 font-medium">
+              {language === 'id' ? 'atau gunakan email' : 'or continue with email'}
+            </span>
+          </div>
+        </div>
 
         {/* Essential Form: Email & Password */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -159,16 +169,15 @@ export const LoginScreen: React.FC = () => {
           </button>
         </form>
 
-        {/* 4. Footer Link Switch */}
+        {/* Footer Link Switch */}
         <p className="text-center text-xs text-slate-500 mt-6 pt-4 border-t border-slate-100">
           {language === 'id' ? 'Belum punya akun? ' : "Don't have an account? "}
-          <button
-            type="button"
-            onClick={handleNavigateToRegister}
+          <Link
+            href="/register"
             className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
           >
             {language === 'id' ? 'Daftar' : 'Sign Up'}
-          </button>
+          </Link>
         </p>
       </div>
     </div>
