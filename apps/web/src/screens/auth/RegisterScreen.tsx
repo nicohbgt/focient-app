@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useFocient } from '../../state/focient-store';
 import { ArrowLeftIcon, AlertCircleIcon, EyeIcon, EyeOffIcon } from '../../components/icons';
-import { GoogleSignInButton } from './GoogleSignInButton';
 
 export const RegisterScreen: React.FC = () => {
   const router = useRouter();
@@ -213,23 +212,6 @@ export const RegisterScreen: React.FC = () => {
             <span>{language === 'id' ? 'Buat Akun' : 'Create Account'}</span>
           </button>
         </form>
-
-        {/* Divider */}
-        <div className="relative my-5">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-white px-2 text-slate-400 font-medium">
-              {language === 'id' ? 'atau lanjutkan dengan Google' : 'or continue with Google'}
-            </span>
-          </div>
-        </div>
-
-        {/* Social Auth (Google Sign-In) */}
-        <div>
-          <GoogleSignInButton mode="register" />
-        </div>
 
         {/* Legal Microcopy */}
         <p className="text-center text-xs text-slate-500 leading-relaxed mt-4">
