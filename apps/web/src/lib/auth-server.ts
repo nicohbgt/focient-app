@@ -106,6 +106,11 @@ export interface LocalUserRecord {
   name: string;
   username: string;
   passwordHash: string;
+  role?: 'USER' | 'INTERNAL_OPERATOR' | 'SUPERADMIN';
+  subscriptionTier?: 'FREE' | 'FOUNDERS_PASS' | 'PRO_MONTHLY';
+  subscriptionExpiresAt?: string | null;
+  founderPassClaimNumber?: number | null;
+  timeToFirstPlanSeconds?: number;
   roleArchetype: string;
   occupancy: string;
   workingRhythm: string;
@@ -161,6 +166,7 @@ export interface LocalTaskRecord {
   isRecurring?: boolean;
   recurrencePattern?: string | null;
   recurrenceDays?: any;
+  completedAt?: string | null;
   createdAt: string;
 }
 
@@ -180,6 +186,8 @@ export interface LocalDbSchema {
   tasks: LocalTaskRecord[];
   categories: LocalCategoryRecord[];
   notifications: LocalNotificationRecord[];
+  workloads?: any[];
+  rescheduleLogs?: any[];
 }
 
 /**
@@ -192,6 +200,8 @@ export function readLocalDb(): LocalDbSchema {
   let tasks: LocalTaskRecord[] = [];
   let categories: LocalCategoryRecord[] = [];
   let notifications: LocalNotificationRecord[] = [];
+  let workloads: any[] = [];
+  let rescheduleLogs: any[] = [];
 
   for (const candidate of candidates) {
     try {
@@ -221,6 +231,12 @@ export function readLocalDb(): LocalDbSchema {
         if (Array.isArray(parsed.notifications) && parsed.notifications.length > notifications.length) {
           notifications = parsed.notifications;
         }
+        if (Array.isArray(parsed.workloads) && parsed.workloads.length > workloads.length) {
+          workloads = parsed.workloads;
+        }
+        if (Array.isArray(parsed.rescheduleLogs) && parsed.rescheduleLogs.length > rescheduleLogs.length) {
+          rescheduleLogs = parsed.rescheduleLogs;
+        }
       }
     } catch {
       // ignore
@@ -233,6 +249,8 @@ export function readLocalDb(): LocalDbSchema {
     tasks,
     categories,
     notifications,
+    workloads,
+    rescheduleLogs,
   };
 }
 
@@ -551,6 +569,15 @@ export function generateToken(): string {
 }
 
 /**
+ * Creates tamper-proof HMAC signature for stealth RBAC verification in Next.js middleware
+ */
+export function createRoleSignature(role: string, token: string): string {
+  const secret = process.env.JWT_SECRET || process.env.AUTH_SALT || 'focient_secure_salt_2026';
+  const data = `${role}:${token.substring(0, 16)}`;
+  return crypto.createHmac('sha256', secret).update(data).digest('hex');
+}
+
+/**
  * Hash session token for secure database storage
  */
 export function hashToken(token: string): string {
@@ -625,6 +652,10 @@ export async function verifySession(token: string) {
             id: session.user.id,
             name: session.user.name,
             email: session.user.email,
+            role: ((session.user as any).role as 'USER' | 'INTERNAL_OPERATOR' | 'SUPERADMIN') || 'USER',
+            subscriptionTier: ((session.user as any).subscriptionTier as 'FREE' | 'FOUNDERS_PASS' | 'PRO_MONTHLY') || 'FREE',
+            subscriptionExpiresAt: (session.user as any).subscriptionExpiresAt ? (session.user as any).subscriptionExpiresAt.toISOString() : null,
+            founderPassClaimNumber: (session.user as any).founderPassClaimNumber ?? null,
             roleArchetype: session.user.roleArchetype || '',
             occupancy: session.user.occupancy || session.user.roleArchetype || '',
             workingRhythm: session.user.workingRhythm || '',
@@ -660,6 +691,10 @@ export async function verifySession(token: string) {
           id: localUser.id,
           name: localUser.name,
           email: localUser.email,
+          role: localUser.role || 'USER',
+          subscriptionTier: localUser.subscriptionTier || 'FREE',
+          subscriptionExpiresAt: localUser.subscriptionExpiresAt || null,
+          founderPassClaimNumber: localUser.founderPassClaimNumber ?? null,
           roleArchetype: localUser.roleArchetype || '',
           occupancy: localUser.occupancy || localUser.roleArchetype || '',
           workingRhythm: localUser.workingRhythm || '',
@@ -776,5 +811,289 @@ export function deleteNotificationFromLocalDb(userId: string, id: string): boole
     return true;
   }
   return false;
+}
+
+/**
+ * Admin Operational Helpers (PostgreSQL + Local DB Fallback)
+ */
+export async function getAllUsersForAdmin() {
+  if (isDbAvailable()) {
+    try {
+      const users = await withDbTimeout(
+        prisma.user.findMany({
+          orderBy: { createdAt: 'desc' },
+          include: {
+            tasks: {
+              select: {
+                id: true,
+                status: true,
+                createdAt: true,
+                completedAt: true,
+                focusType: true,
+                restMinutes: true,
+              },
+            },
+            workloads: true,
+            rescheduleAuditLogs: true,
+          },
+        }),
+        1000
+      );
+      if (users && users.length > 0) {
+        return users.map((u) => {
+          const totalTasks = u.tasks.length;
+          const completedTasks = u.tasks.filter((t) => t.status === 'COMPLETED').length;
+          const deepFocusTasks = u.tasks.filter((t) => (t.focusType || '').toLowerCase() === 'high').length;
+          const routineTasks = u.tasks.filter((t) => (t.focusType || '').toLowerCase() !== 'high').length;
+          const silentBufferTasks = u.tasks.filter((t) => (t.restMinutes ?? 0) >= 10).length;
+          const firstTask = [...u.tasks].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
+          const timeToFirstPlanSeconds =
+            u.timeToFirstPlanSeconds ||
+            (firstTask ? Math.max(0, Math.round((new Date(firstTask.createdAt).getTime() - new Date(u.createdAt).getTime()) / 1000)) : null);
+
+          return {
+            id: u.id,
+            email: u.email,
+            name: u.name,
+            username: u.username,
+            role: (u.role as string) || 'USER',
+            subscriptionTier: (u.subscriptionTier as string) || 'FREE',
+            subscriptionExpiresAt: u.subscriptionExpiresAt ? u.subscriptionExpiresAt.toISOString() : null,
+            founderPassClaimNumber: u.founderPassClaimNumber ?? null,
+            isOnboardingCompleted: u.isOnboardingCompleted,
+            roleArchetype: u.roleArchetype || 'General',
+            occupancy: u.occupancy || 'General',
+            timeToFirstPlanSeconds,
+            createdAt: u.createdAt.toISOString(),
+            totalTasks,
+            completedTasks,
+            deepFocusTasks,
+            routineTasks,
+            silentBufferTasks,
+            rescheduleCount: u.rescheduleAuditLogs.length,
+            workloadDays: u.workloads.length,
+          };
+        });
+      }
+    } catch (err) {
+      handleDbError(err);
+    }
+  }
+
+  // Fallback to local DB
+  const localDb = readLocalDb();
+  return localDb.users.map((u) => {
+    const userTasks = localDb.tasks.filter((t) => t.userId === u.id);
+    const totalTasks = userTasks.length;
+    const completedTasks = userTasks.filter((t) => t.status === 'COMPLETED').length;
+    const deepFocusTasks = userTasks.filter((t) => (t.focusType || '').toLowerCase() === 'high').length;
+    const routineTasks = userTasks.filter((t) => (t.focusType || '').toLowerCase() !== 'high').length;
+    const silentBufferTasks = userTasks.filter((t) => (t.restMinutes ?? 0) >= 10).length;
+    const firstTask = [...userTasks].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
+    const timeToFirstPlanSeconds =
+      u.timeToFirstPlanSeconds ||
+      (firstTask ? Math.max(0, Math.round((new Date(firstTask.createdAt).getTime() - new Date(u.createdAt).getTime()) / 1000)) : null);
+
+    return {
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      username: u.username,
+      role: (u.role as string) || 'USER',
+      subscriptionTier: (u.subscriptionTier as string) || 'FREE',
+      subscriptionExpiresAt: u.subscriptionExpiresAt || null,
+      founderPassClaimNumber: u.founderPassClaimNumber ?? null,
+      isOnboardingCompleted: u.isOnboardingCompleted,
+      roleArchetype: u.roleArchetype || 'General',
+      occupancy: u.occupancy || 'General',
+      timeToFirstPlanSeconds,
+      createdAt: u.createdAt,
+      totalTasks,
+      completedTasks,
+      deepFocusTasks,
+      routineTasks,
+      silentBufferTasks,
+      rescheduleCount: 0,
+      workloadDays: totalTasks > 0 ? 1 : 0,
+    };
+  });
+}
+
+export async function getUserDetailForAdmin(id: string) {
+  let userRecord: any = null;
+  let tasks: any[] = [];
+  let rescheduleAuditLogs: any[] = [];
+  let workloads: any[] = [];
+
+  if (isDbAvailable()) {
+    try {
+      const u = await withDbTimeout(
+        prisma.user.findUnique({
+          where: { id },
+          include: {
+            tasks: { orderBy: { createdAt: 'desc' } },
+            workloads: { orderBy: { date: 'desc' } },
+            rescheduleAuditLogs: { orderBy: { appliedAt: 'desc' } },
+          },
+        }),
+        1000
+      );
+      if (u) {
+        userRecord = u;
+        tasks = u.tasks;
+        workloads = u.workloads;
+        rescheduleAuditLogs = u.rescheduleAuditLogs;
+      }
+    } catch (err) {
+      handleDbError(err);
+    }
+  }
+
+  if (!userRecord) {
+    const localDb = readLocalDb();
+    const localUser = localDb.users.find((u) => u.id === id);
+    if (!localUser) return null;
+    userRecord = localUser;
+    tasks = localDb.tasks.filter((t) => t.userId === id);
+    workloads = (localDb.workloads || []).filter((w: any) => w.userId === id);
+    rescheduleAuditLogs = (localDb.rescheduleLogs || []).filter((r: any) => r.userId === id);
+  }
+
+  return {
+    user: {
+      id: userRecord.id,
+      email: userRecord.email,
+      name: userRecord.name,
+      username: userRecord.username,
+      role: (userRecord.role as string) || 'USER',
+      subscriptionTier: (userRecord.subscriptionTier as string) || 'FREE',
+      subscriptionExpiresAt: userRecord.subscriptionExpiresAt
+        ? typeof userRecord.subscriptionExpiresAt === 'string'
+          ? userRecord.subscriptionExpiresAt
+          : userRecord.subscriptionExpiresAt.toISOString()
+        : null,
+      founderPassClaimNumber: userRecord.founderPassClaimNumber ?? null,
+      isOnboardingCompleted: userRecord.isOnboardingCompleted,
+      roleArchetype: userRecord.roleArchetype || 'General',
+      occupancy: userRecord.occupancy || 'General',
+      workingRhythm: userRecord.workingRhythm || 'Early Bird',
+      schedulingStyle: userRecord.schedulingStyle || 'Structured',
+      dailyCapacityMinutes: userRecord.dailyCapacityMinutes || 480,
+      workHourStart: userRecord.workHourStart || '09:00',
+      workHourEnd: userRecord.workHourEnd || '17:00',
+      restTimePerTask: userRecord.restTimePerTask ?? 10,
+      createdAt: typeof userRecord.createdAt === 'string' ? userRecord.createdAt : userRecord.createdAt.toISOString(),
+    },
+    tasks: tasks.map((t) => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      durationMinutes: t.durationMinutes,
+      priority: t.priority,
+      focusType: t.focusType || 'Medium',
+      restMinutes: t.restMinutes ?? 10,
+      createdAt: typeof t.createdAt === 'string' ? t.createdAt : t.createdAt.toISOString(),
+      completedAt: t.completedAt ? (typeof t.completedAt === 'string' ? t.completedAt : t.completedAt.toISOString()) : null,
+    })),
+    rescheduleAuditLogs: rescheduleAuditLogs.map((l) => ({
+      id: l.id,
+      reasonMessage: l.reasonMessage,
+      appliedAt: typeof l.appliedAt === 'string' ? l.appliedAt : l.appliedAt.toISOString(),
+      previousStartTime: l.previousStartTime ? (typeof l.previousStartTime === 'string' ? l.previousStartTime : l.previousStartTime.toISOString()) : null,
+      newStartTime: l.newStartTime ? (typeof l.newStartTime === 'string' ? l.newStartTime : l.newStartTime.toISOString()) : null,
+    })),
+    workloads: workloads.map((w) => ({
+      date: w.date,
+      status: w.status,
+      capacityPercentage: w.capacityPercentage,
+      allocatedMinutes: w.allocatedMinutes,
+      capacityMinutes: w.capacityMinutes,
+    })),
+  };
+}
+
+export async function updateUserRoleByAdmin(id: string, role: 'USER' | 'INTERNAL_OPERATOR' | 'SUPERADMIN') {
+  const localDb = readLocalDb();
+  const userIdx = localDb.users.findIndex((u) => u.id === id);
+  if (userIdx >= 0) {
+    localDb.users[userIdx].role = role;
+    writeLocalDb(localDb);
+  }
+
+  if (isDbAvailable()) {
+    try {
+      await withDbTimeout(
+        prisma.user.update({
+          where: { id },
+          data: { role: role as any },
+        }),
+        1000
+      );
+    } catch (err) {
+      handleDbError(err);
+    }
+  }
+  return true;
+}
+
+export async function updateUserSubscriptionByAdmin(
+  id: string,
+  subscriptionTier: 'FREE' | 'FOUNDERS_PASS' | 'PRO_MONTHLY',
+  subscriptionExpiresAt?: string | null,
+  founderPassClaimNumber?: number | null
+) {
+  const localDb = readLocalDb();
+  const userIdx = localDb.users.findIndex((u) => u.id === id);
+  if (userIdx >= 0) {
+    localDb.users[userIdx].subscriptionTier = subscriptionTier;
+    localDb.users[userIdx].subscriptionExpiresAt = subscriptionExpiresAt || null;
+    if (founderPassClaimNumber !== undefined) {
+      localDb.users[userIdx].founderPassClaimNumber = founderPassClaimNumber;
+    }
+    writeLocalDb(localDb);
+  }
+
+  if (isDbAvailable()) {
+    try {
+      await withDbTimeout(
+        prisma.user.update({
+          where: { id },
+          data: {
+            subscriptionTier: subscriptionTier as any,
+            subscriptionExpiresAt: subscriptionExpiresAt ? new Date(subscriptionExpiresAt) : null,
+            ...(founderPassClaimNumber !== undefined ? { founderPassClaimNumber } : {}),
+          },
+        }),
+        1000
+      );
+    } catch (err) {
+      handleDbError(err);
+    }
+  }
+  return true;
+}
+
+export async function updateUserOnboardingByAdmin(id: string, isOnboardingCompleted: boolean) {
+  const localDb = readLocalDb();
+  const userIdx = localDb.users.findIndex((u) => u.id === id);
+  if (userIdx >= 0) {
+    localDb.users[userIdx].isOnboardingCompleted = isOnboardingCompleted;
+    writeLocalDb(localDb);
+  }
+
+  if (isDbAvailable()) {
+    try {
+      await withDbTimeout(
+        prisma.user.update({
+          where: { id },
+          data: { isOnboardingCompleted },
+        }),
+        1000
+      );
+    } catch (err) {
+      handleDbError(err);
+    }
+  }
+  return true;
 }
 

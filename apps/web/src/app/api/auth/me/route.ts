@@ -5,6 +5,7 @@ import {
   verifySession,
   findLocalUserById,
   getCategoriesFromLocalDb,
+  createRoleSignature,
 } from '../../../../lib/auth-server';
 
 export const dynamic = 'force-dynamic';
@@ -58,6 +59,14 @@ export async function GET(request: Request) {
       name: fullUser.name,
       username: fullUser.username || fullUser.name,
       email: fullUser.email,
+      role: fullUser.role || 'USER',
+      subscriptionTier: fullUser.subscriptionTier || 'FREE',
+      subscriptionExpiresAt: fullUser.subscriptionExpiresAt
+        ? typeof fullUser.subscriptionExpiresAt === 'string'
+          ? fullUser.subscriptionExpiresAt
+          : fullUser.subscriptionExpiresAt.toISOString()
+        : null,
+      founderPassClaimNumber: fullUser.founderPassClaimNumber ?? null,
       roleArchetype: fullUser.roleArchetype || '',
       occupancy: fullUser.occupancy || fullUser.roleArchetype || '',
       workingRhythm: fullUser.workingRhythm || '',
@@ -81,4 +90,37 @@ export async function GET(request: Request) {
       provider: 'credentials',
     },
   });
+
+  const userRole = (fullUser.role as string) || 'USER';
+  const roleSig = createRoleSignature(userRole, token);
+  const thirtyDays = 30 * 24 * 3600;
+
+  response.cookies.set({
+    name: 'focient_token',
+    value: token,
+    httpOnly: false,
+    path: '/',
+    maxAge: thirtyDays,
+    sameSite: 'lax',
+  });
+
+  response.cookies.set({
+    name: 'focient_role',
+    value: userRole,
+    httpOnly: false,
+    path: '/',
+    maxAge: thirtyDays,
+    sameSite: 'lax',
+  });
+
+  response.cookies.set({
+    name: 'focient_role_sig',
+    value: roleSig,
+    httpOnly: true,
+    path: '/',
+    maxAge: thirtyDays,
+    sameSite: 'lax',
+  });
+
+  return response;
 }

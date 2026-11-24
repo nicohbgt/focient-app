@@ -9,6 +9,10 @@ export interface UserSession {
   email: string;
   name: string;
   username?: string;
+  role?: 'USER' | 'INTERNAL_OPERATOR' | 'SUPERADMIN';
+  subscriptionTier?: 'FREE' | 'FOUNDERS_PASS' | 'PRO_MONTHLY';
+  subscriptionExpiresAt?: string | null;
+  founderPassClaimNumber?: number | null;
   workHourStart: string;
   workHourEnd: string;
   dailyCapacityMinutes: number;
@@ -52,15 +56,21 @@ const PENDING_REG_KEY = 'focient_pending_registration';
 export const authClient = {
   getToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem(TOKEN_KEY);
+    const local = localStorage.getItem(TOKEN_KEY);
+    if (local) return local;
+    const match = document.cookie.match(/focient_token=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
   },
 
   setSession(token: string, user: UserSession): void {
     if (typeof window === 'undefined') return;
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
-    // Also set cookie for server-side auth middleware
+    // Also set cookies for server-side auth middleware
     document.cookie = `focient_token=${encodeURIComponent(token)}; path=/; max-age=2592000; SameSite=Lax`;
+    if (user.role) {
+      document.cookie = `focient_role=${encodeURIComponent(user.role)}; path=/; max-age=2592000; SameSite=Lax`;
+    }
   },
 
   clearSession(): void {
@@ -68,6 +78,8 @@ export const authClient = {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     document.cookie = 'focient_token=; path=/; max-age=0; SameSite=Lax';
+    document.cookie = 'focient_role=; path=/; max-age=0; SameSite=Lax';
+    document.cookie = 'focient_role_sig=; path=/; max-age=0; SameSite=Lax';
   },
 
   getUser(): UserSession | null {

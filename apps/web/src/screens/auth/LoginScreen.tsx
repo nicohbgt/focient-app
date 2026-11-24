@@ -34,8 +34,17 @@ export const LoginScreen: React.FC = () => {
     setIsLoading(true);
     try {
       const ok = await login(email, password);
-      if (ok && typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
-        window.location.href = '/';
+      if (ok && typeof window !== 'undefined') {
+        const searchParams = new URLSearchParams(window.location.search);
+        const redirectUrl = searchParams.get('redirect');
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+        } else if (
+          window.location.pathname.startsWith('/auth') ||
+          window.location.pathname.startsWith('/login')
+        ) {
+          window.location.href = '/today';
+        }
       }
     } catch {
       setError(language === 'id' ? 'Email atau kata sandi tidak sesuai' : 'Invalid email or password');

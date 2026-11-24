@@ -63,11 +63,19 @@ export type MotivationType =
 
 export type EnergyLevel = 'LOW' | 'MEDIUM' | 'HIGH';
 
+export type UserRole = 'USER' | 'INTERNAL_OPERATOR' | 'SUPERADMIN';
+
+export type SubscriptionTier = 'FREE' | 'FOUNDERS_PASS' | 'PRO_MONTHLY';
+
 export interface UserProfileDto {
   id: string;
   email: string;
   name: string;
   username?: string;
+  role?: UserRole;
+  subscriptionTier?: SubscriptionTier;
+  subscriptionExpiresAt?: string | null;
+  founderPassClaimNumber?: number | null;
   occupancy?: string;
   workingRhythm?: string;
   schedulingStyle?: string;

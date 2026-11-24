@@ -10,6 +10,7 @@ import {
   isDbAvailable,
   withDbTimeout,
   handleDbError,
+  createRoleSignature,
 } from '../../../../lib/auth-server';
 
 export const dynamic = 'force-dynamic';
@@ -91,6 +92,14 @@ export async function POST(request: Request) {
       startWorkTime: start,
       endWorkTime: end,
       dailyCapacityMinutes: user.dailyCapacityMinutes || 480,
+      role: user.role || 'USER',
+      subscriptionTier: user.subscriptionTier || 'FREE',
+      subscriptionExpiresAt: user.subscriptionExpiresAt
+        ? typeof user.subscriptionExpiresAt === 'string'
+          ? user.subscriptionExpiresAt
+          : user.subscriptionExpiresAt.toISOString()
+        : null,
+      founderPassClaimNumber: user.founderPassClaimNumber ?? null,
       roleArchetype: user.roleArchetype || '',
       occupancy: user.occupancy || user.roleArchetype || '',
       workingRhythm: user.workingRhythm || '',
@@ -110,10 +119,31 @@ export async function POST(request: Request) {
       token,
     });
 
+    const roleValue = (user.role as string) || 'USER';
+    const roleSig = createRoleSignature(roleValue, token);
+
     response.cookies.set({
       name: 'focient_token',
       value: token,
       httpOnly: false,
+      path: '/',
+      expires: expiresAt,
+      sameSite: 'lax',
+    });
+
+    response.cookies.set({
+      name: 'focient_role',
+      value: roleValue,
+      httpOnly: false,
+      path: '/',
+      expires: expiresAt,
+      sameSite: 'lax',
+    });
+
+    response.cookies.set({
+      name: 'focient_role_sig',
+      value: roleSig,
+      httpOnly: true,
       path: '/',
       expires: expiresAt,
       sameSite: 'lax',

@@ -55,6 +55,18 @@ enum EnergyLevel {
   HIGH
 }
 
+enum UserRole {
+  USER
+  INTERNAL_OPERATOR
+  SUPERADMIN
+}
+
+enum SubscriptionTier {
+  FREE
+  FOUNDERS_PASS
+  PRO_MONTHLY
+}
+
 // D1: users
 model User {
   id                            String                @id @default(uuid())
@@ -62,6 +74,10 @@ model User {
   passwordHash                  String
   name                          String
   username                      String?
+  role                          UserRole              @default(USER)
+  subscriptionTier              SubscriptionTier      @default(FREE)
+  subscriptionExpiresAt         DateTime?
+  founderPassClaimNumber        Int?
   roleArchetype                 String?               @default("Software Engineer")
   occupancy                     String?               @default("General")
   workingRhythm                 String?               @default("Early Bird")
