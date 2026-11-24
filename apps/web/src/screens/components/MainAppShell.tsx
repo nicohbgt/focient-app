@@ -11,10 +11,8 @@ import {
   TagIcon,
   ActivityIcon,
   RefreshCcwIcon,
-  CheckCircleIcon,
   AlertTriangleIcon,
   BellIcon,
-  XIcon,
 } from '../../components/icons/index.js';
 import { SideNavBar, SideNavItem } from '../../components/organism/NavBar.js';
 import { CommandPalette } from '../../components/organism/CommandPalette.js';
@@ -46,8 +44,6 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
     isSidebarCollapsed,
     toggleSidebar,
     allocatedMinutes,
-    dbSyncStatus,
-    isLiveDbSync,
     refreshTasksFromDb,
     devicePreview,
     openNotificationPanel,
@@ -55,7 +51,6 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
   } = useFocient();
 
   const [isSyncing, setIsSyncing] = useState(false);
-  const [showSyncDetails, setShowSyncDetails] = useState(false);
 
   // Auth guard: If user is unauthenticated inside MainAppShell, redirect cleanly to /login
   React.useEffect(() => {
@@ -196,122 +191,16 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
               </h1>
             </div>
 
-            {/* Right: Real-Time DB Badge + Workload Indicator + Refresh + Lang + CTA */}
+            {/* Right: Refresh + Notification + CTA */}
             <div className="flex items-center gap-3">
-              {/* REAL-TIME DATABASE SYNC BADGE */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowSyncDetails(!showSyncDetails)}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all ${
-                    dbSyncStatus === 'connected'
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                      : dbSyncStatus === 'syncing'
-                      ? 'bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100'
-                      : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
-                  }`}
-                  title={
-                    language === 'id'
-                      ? dbSyncStatus === 'connected'
-                        ? 'Terhubung ke database (sinkron otomatis)'
-                        : dbSyncStatus === 'syncing'
-                        ? 'Sedang menyinkronkan data...'
-                        : 'Mode penyimpanan lokal'
-                      : dbSyncStatus === 'connected'
-                      ? 'Connected to PostgreSQL via Prisma & SSE Stream'
-                      : dbSyncStatus === 'syncing'
-                      ? 'Syncing with database...'
-                      : 'Local-First Cache Active'
-                  }
-                >
-                  {dbSyncStatus === 'connected' ? (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>{language === 'id' ? 'Sinkronisasi Aktif' : 'Live DB Sync'}</span>
-                    </>
-                  ) : dbSyncStatus === 'syncing' ? (
-                    <>
-                      <RefreshCcwIcon size="xs" className="animate-spin text-blue-600" />
-                      <span>{language === 'id' ? 'Menyinkronkan...' : 'Syncing...'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-amber-500" />
-                      <span>{language === 'id' ? 'Penyimpanan Lokal' : 'Local Cache'}</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Real-time DB Details Popover */}
-                {showSyncDetails && (
-                  <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-md border border-slate-200 p-4 z-50 text-xs animate-slide-up">
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 font-bold text-slate-800">
-                      <span>{language === 'id' ? 'Status Database & Real-Time' : 'Database & Real-Time Sync'}</span>
-                      <button
-                        type="button"
-                        onClick={() => setShowSyncDetails(false)}
-                        className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-                        aria-label={language === 'id' ? 'Tutup status sinkronisasi' : 'Close sync status'}
-                      >
-                        <XIcon size="xs" />
-                      </button>
-                    </div>
-
-                    <div className="space-y-2 text-slate-600 mb-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">{language === 'id' ? 'Koneksi:' : 'Connection:'}</span>
-                        <span className="font-semibold text-slate-800 flex items-center gap-1">
-                          <CheckCircleIcon size="xs" className="text-emerald-500" />
-                          Prisma / PostgreSQL
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">{language === 'id' ? 'Kanal Real-time:' : 'Stream Channel:'}</span>
-                        <span className="font-semibold text-slate-800">/api/realtime (SSE)</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">{language === 'id' ? 'Waktu Tanggap:' : 'Latency State:'}</span>
-                        <span className="font-semibold text-emerald-600">{language === 'id' ? '0ms (Lokal Langsung)' : '0ms (Local-First)'}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">{language === 'id' ? 'Status Server:' : 'Server Status:'}</span>
-                        <span
-                          className={`font-semibold ${
-                            dbSyncStatus === 'connected' ? 'text-emerald-600' : 'text-amber-600'
-                          }`}
-                        >
-                          {dbSyncStatus === 'connected'
-                            ? (language === 'id' ? 'Terhubung Aktif' : 'Actively Connected')
-                            : (language === 'id' ? 'Mode Cadangan Lokal' : 'Offline Fallback Mode')}
-                        </span>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleManualSync}
-                      disabled={isSyncing}
-                      className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all disabled:opacity-50"
-                    >
-                      <RefreshCcwIcon size="xs" className={isSyncing ? 'animate-spin' : ''} />
-                      <span>
-                        {isSyncing
-                          ? (language === 'id' ? 'Menyinkronkan...' : 'Syncing...')
-                          : (language === 'id' ? 'Sinkronkan Sekarang' : 'Sync Now')}
-                      </span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Refresh DB Action Button */}
+              {/* Refresh Action Button */}
               <button
                 type="button"
                 onClick={handleManualSync}
                 disabled={isSyncing}
                 className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
-                title={language === 'id' ? 'Segarkan dari Database' : 'Refresh from Database'}
-                aria-label="Refresh database"
+                title={language === 'id' ? 'Segarkan Data' : 'Refresh Data'}
+                aria-label={language === 'id' ? 'Segarkan data' : 'Refresh data'}
               >
                 <RefreshCcwIcon size="xs" className={isSyncing ? 'animate-spin text-blue-600' : ''} />
               </button>
@@ -383,30 +272,6 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
 
             {/* Mobile Header Actions */}
             <div className="flex items-center gap-2">
-              {/* Real-Time Sync Indicator Dot */}
-              <div
-                className={`w-2.5 h-2.5 rounded-full ${
-                  dbSyncStatus === 'connected'
-                    ? 'bg-emerald-500 animate-pulse'
-                    : dbSyncStatus === 'syncing'
-                    ? 'bg-blue-500 animate-spin'
-                    : 'bg-amber-500'
-                }`}
-                title={
-                  language === 'id'
-                    ? dbSyncStatus === 'connected'
-                      ? 'Sinkronisasi Aktif'
-                      : dbSyncStatus === 'syncing'
-                      ? 'Menyinkronkan...'
-                      : 'Penyimpanan Lokal'
-                    : dbSyncStatus === 'connected'
-                    ? 'Live DB Sync Active'
-                    : dbSyncStatus === 'syncing'
-                    ? 'Syncing DB...'
-                    : 'Local Cache'
-                }
-              />
-
               {/* Language Switcher */}
               <button
                 type="button"
