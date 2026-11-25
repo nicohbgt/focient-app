@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 import '../components/components.css';
 import { HorizontalScrollManager } from '../components/primitive/HorizontalScrollManager';
@@ -46,6 +47,7 @@ export default function RootLayout({
           <HorizontalScrollManager />
           <TabTitleSynchronizer />
           {children}
+          <Analytics />
         </FocientProvider>
       </body>
     </html>
