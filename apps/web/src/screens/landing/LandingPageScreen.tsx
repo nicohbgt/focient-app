@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useFocient } from '../../state/focient-store';
 import {
-  SparklesIcon,
   CheckIcon,
   XIcon,
   ClockIcon,
@@ -422,9 +421,8 @@ export const LandingPageScreen: React.FC<LandingPageScreenProps> = ({ hideHeader
                 <button
                   type="button"
                   onClick={handleLoginAsGuest}
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] text-slate-700 font-bold text-sm shadow-2xs transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] text-slate-700 font-bold text-sm shadow-2xs transition-all text-center flex items-center justify-center cursor-pointer"
                 >
-                  <SparklesIcon size="xs" className="text-blue-600" />
                   <span>{language === 'id' ? 'Coba Demo Interaktif' : 'Try Interactive Demo'}</span>
                 </button>
               </div>
