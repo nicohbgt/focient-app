@@ -12,8 +12,8 @@ export default function GuidancePage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const handleDemo = async () => {
-    await loginAsGuest();
-    router.push('/dashboard');
+    await loginAsGuest({ startOnboarding: true });
+    router.push('/onboarding');
   };
 
   const steps = [

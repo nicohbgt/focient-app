@@ -17,8 +17,8 @@ export const MarketingHeader: React.FC = () => {
   const handleDemoClick = async () => {
     setIsDemoLoading(true);
     try {
-      await loginAsGuest();
-      router.push('/dashboard');
+      await loginAsGuest({ startOnboarding: true });
+      router.push('/onboarding');
     } finally {
       setIsDemoLoading(false);
     }

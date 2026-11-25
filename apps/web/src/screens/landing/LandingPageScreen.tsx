@@ -46,8 +46,8 @@ export const LandingPageScreen: React.FC<LandingPageScreenProps> = ({ hideHeader
   };
 
   const handleLoginAsGuest = async () => {
-    await loginAsGuest();
-    router.push('/dashboard');
+    await loginAsGuest({ startOnboarding: true });
+    router.push('/onboarding');
   };
 
   const handleNavigateLogin = () => {
@@ -415,9 +415,17 @@ export const LandingPageScreen: React.FC<LandingPageScreenProps> = ({ hideHeader
                 <button
                   type="button"
                   onClick={handleStartOnboarding}
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-sm shadow-xs hover:shadow-sm transition-all text-center"
+                  className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-sm shadow-xs hover:shadow-sm transition-all text-center cursor-pointer"
                 >
                   <span>{language === 'id' ? 'Mulai Sekarang' : 'Get Started'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLoginAsGuest}
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] text-slate-700 font-bold text-sm shadow-2xs transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <SparklesIcon size="xs" className="text-blue-600" />
+                  <span>{language === 'id' ? 'Coba Demo Interaktif' : 'Try Interactive Demo'}</span>
                 </button>
               </div>
             </div>

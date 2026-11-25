@@ -11,8 +11,8 @@ export const MarketingFooter: React.FC = () => {
   const { language, setLanguage, loginAsGuest, setIsTermsOpen } = useFocient();
 
   const handleDemoClick = async () => {
-    await loginAsGuest();
-    router.push('/dashboard');
+    await loginAsGuest({ startOnboarding: true });
+    router.push('/onboarding');
   };
 
   return (

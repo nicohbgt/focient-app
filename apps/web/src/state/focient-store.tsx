@@ -580,7 +580,7 @@ interface FocientContextType {
   authView: AuthView;
   startOnboarding: () => void;
   login: (email: string, password?: string) => Promise<boolean>;
-  loginAsGuest: () => void;
+  loginAsGuest: (options?: { startOnboarding?: boolean } | React.MouseEvent | any) => Promise<void>;
   loginWithGoogle: (googleProfile?: { email: string; name: string; avatarUrl?: string }) => Promise<boolean>;
   startGoogleOAuth: (mode?: 'login' | 'register') => void;
   isGoogleAuthModalOpen: boolean;
@@ -2132,10 +2132,11 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     }
   }, [language, loadSettingsFromDb, refreshTasksFromDb]);
 
-  const loginAsGuest = useCallback(async () => {
+  const loginAsGuest = useCallback(async (options?: { startOnboarding?: boolean } | React.MouseEvent | any) => {
     const isId = language === 'id';
     const guestId = `usr_guest_${Date.now()}`;
     const generalCategories = isId ? kOccupancyCategoryTemplatesId.General : kOccupancyCategoryTemplates.General;
+    const shouldStartOnboarding = Boolean(options && typeof options === 'object' && 'startOnboarding' in options ? options.startOnboarding : true);
 
     try {
       const res = await fetch('/api/auth/demo', { method: 'POST' });
@@ -2147,17 +2148,32 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
             roleArchetype: 'General',
             occupancy: 'General',
             categories: generalCategories,
-            isOnboardingCompleted: true,
+            isOnboardingCompleted: !shouldStartOnboarding,
           };
           authClient.setSession(data.token, guestUser);
           setUser(guestUser);
           setIsAuthenticated(true);
           setSelectedOccupancy('General');
           setCategories(generalCategories);
-          setActiveNavTab('dashboard');
-          setAuthView('dashboard');
-          setOnboardingStep(5);
-          showToast(isId ? 'Masuk sebagai Mode Tamu (Profil Umum)' : 'Signed in with Guest Session (General Role)', 'info');
+          if (shouldStartOnboarding) {
+            setOnboardingStep(1);
+            setActiveNavTab('dashboard');
+            setAuthView('onboarding');
+          } else {
+            setActiveNavTab('dashboard');
+            setAuthView('dashboard');
+            setOnboardingStep(5);
+          }
+          showToast(
+            isId
+              ? shouldStartOnboarding
+                ? 'Masuk ke Demonstrasi Onboarding FoCient (5 Langkah)'
+                : 'Masuk sebagai Mode Tamu (Profil Umum)'
+              : shouldStartOnboarding
+              ? 'Entered FoCient Onboarding Demonstration (5 Steps)'
+              : 'Signed in with Guest Session (General Role)',
+            'info'
+          );
           return;
         }
       }
@@ -2178,7 +2194,7 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
       dailyCapacityMinutes: 480,
       restTimePerTask: 10,
       provider: 'guest',
-      isOnboardingCompleted: true,
+      isOnboardingCompleted: !shouldStartOnboarding,
       categories: generalCategories,
     };
 
@@ -2192,6 +2208,15 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
     setSelectedRhythm('Steady Pacer');
     setSelectedStyle('Structured');
     setRestMinutesPerTask(10);
+    if (shouldStartOnboarding) {
+      setOnboardingStep(1);
+      setActiveNavTab('dashboard');
+      setAuthView('onboarding');
+    } else {
+      setOnboardingStep(5);
+      setActiveNavTab('dashboard');
+      setAuthView('dashboard');
+    }
 
     const todayStr = formatCurrentDate(new Date(), 'en');
     const demoTasks: MobileTask[] = isId
@@ -2396,10 +2421,22 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         ];
     setBacklogTasks(demoBacklog);
 
-    setOnboardingStep(5);
-    setActiveNavTab('dashboard');
-    setAuthView('dashboard');
-    showToast(isId ? 'Masuk sebagai Mode Tamu (Profil Umum)' : 'Signed in with Guest Session (General Role)', 'info');
+    if (shouldStartOnboarding) {
+      setOnboardingStep(1);
+      setActiveNavTab('dashboard');
+      setAuthView('onboarding');
+      showToast(
+        isId
+          ? 'Masuk ke Demonstrasi Onboarding FoCient (5 Langkah)'
+          : 'Entered FoCient Onboarding Demonstration (5 Steps)',
+        'info'
+      );
+    } else {
+      setOnboardingStep(5);
+      setActiveNavTab('dashboard');
+      setAuthView('dashboard');
+      showToast(isId ? 'Masuk sebagai Mode Tamu (Profil Umum)' : 'Signed in with Guest Session (General Role)', 'info');
+    }
   }, [language, showToast]);
 
   const loginWithGoogle = useCallback(

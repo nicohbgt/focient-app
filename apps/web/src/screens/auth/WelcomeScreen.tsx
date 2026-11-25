@@ -111,7 +111,7 @@ export const WelcomeScreen: React.FC = () => {
         <div className="pt-2 text-center">
           <button
             type="button"
-            onClick={loginAsGuest}
+            onClick={() => loginAsGuest()}
             className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"
           >
             {language === 'id' ? 'Atau coba langsung demo Mode Tamu' : 'Or try immediate demo with Guest Session'}

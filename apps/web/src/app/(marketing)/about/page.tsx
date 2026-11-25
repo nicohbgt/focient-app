@@ -11,8 +11,8 @@ export default function AboutPage() {
   const { language, loginAsGuest } = useFocient();
 
   const handleDemo = async () => {
-    await loginAsGuest();
-    router.push('/dashboard');
+    await loginAsGuest({ startOnboarding: true });
+    router.push('/onboarding');
   };
 
   return (

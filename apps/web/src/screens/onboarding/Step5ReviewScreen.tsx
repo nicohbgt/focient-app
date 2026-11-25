@@ -1,11 +1,13 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useFocient } from '../../state/focient-store';
 import { ArrowLeftIcon, CheckCircleIcon, ClockIcon } from '../../components/icons';
 import { calculateCapacityMinutes } from '../../lib/date-utils';
 
 export const Step5ReviewScreen: React.FC = () => {
+  const router = useRouter();
   const {
     tasks,
     startHour,
@@ -156,8 +158,11 @@ export const Step5ReviewScreen: React.FC = () => {
         {/* Start Plan CTA */}
         <button
           type="button"
-          onClick={completeOnboarding}
-          className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold text-sm shadow-sm transition-all text-center"
+          onClick={async () => {
+            await completeOnboarding();
+            router.push('/dashboard');
+          }}
+          className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold text-sm shadow-sm transition-all text-center cursor-pointer"
         >
           <span>{language === 'id' ? 'Mulai' : 'Start Plan'}</span>
         </button>
