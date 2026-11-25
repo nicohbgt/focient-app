@@ -67,19 +67,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen: propIsOp
         },
       },
       {
-        id: 'nav-onboarding',
-        category: 'navigation',
-        title: locale === 'id' ? 'Tur Onboarding' : 'Onboarding Tour',
-        subtitle: locale === 'id' ? 'Demonstrasi wizard setup 5-langkah' : '5-step onboarding setup demo',
-        icon: <SparklesIcon size="sm" />,
-        shortcutBadge: 'G O',
-        onSelect: () => {
-          store.setOnboardingStep(1);
-          router.push('/onboarding');
-          handleClose();
-        },
-      },
-      {
         id: 'nav-plan',
         category: 'navigation',
         title: copywriting.navigation.todayPlan,

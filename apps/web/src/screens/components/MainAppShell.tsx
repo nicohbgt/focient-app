@@ -33,7 +33,6 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
     activeNavTab,
     safeNavigate,
     openAddTaskModal,
-    setOnboardingStep,
     language,
     user,
     isAuthenticated,
@@ -156,22 +155,6 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
       badgeCount: 0,
       onClick: () => safeNavigate('settings'),
     },
-    ...(user?.provider === 'guest'
-      ? [
-          {
-            id: 'onboarding-demo',
-            label: language === 'id' ? 'Tur Onboarding' : 'Onboarding Tour',
-            href: '/onboarding',
-            icon: <SparklesIcon size="sm" />,
-            active: pathname === '/onboarding',
-            badgeCount: 0,
-            onClick: () => {
-              setOnboardingStep(1);
-              safeNavigate('onboarding' as any);
-            },
-          },
-        ]
-      : []),
   ];
 
   // Pure responsive design for commercial release
@@ -220,19 +203,6 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
 
             {/* Right: Refresh + Notification + CTA */}
             <div className="flex items-center gap-3">
-              {/* Demo Mode Onboarding Tour Link */}
-              {user?.provider === 'guest' && (
-                <Link
-                  href="/onboarding"
-                  onClick={() => setOnboardingStep(1)}
-                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold transition-all shadow-2xs"
-                  title={language === 'id' ? 'Demonstrasi Setup Onboarding' : 'Onboarding Setup Demo'}
-                >
-                  <SparklesIcon size="xs" />
-                  <span>{language === 'id' ? 'Tur Onboarding' : 'Onboarding Tour'}</span>
-                </Link>
-              )}
-
               {/* Refresh Action Button */}
               <button
                 type="button"

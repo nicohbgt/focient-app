@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useFocient, MobileTask, RecurrencePattern } from '../../state/focient-store';
 import {
   BellIcon,
@@ -24,7 +23,6 @@ import { DatePickerField } from '../../components/primitive/DatePickerField';
 import { getAvatarInitial } from '../../lib/utils';
 
 export const DashboardScreen: React.FC = () => {
-  const router = useRouter();
   const {
     user,
     tasks,
@@ -38,7 +36,6 @@ export const DashboardScreen: React.FC = () => {
     resolveRescheduleNow,
     dismissRescheduleLater,
     setActiveNavTab,
-    setOnboardingStep,
     restMinutesPerTask,
     language,
     logout,
@@ -262,43 +259,6 @@ export const DashboardScreen: React.FC = () => {
           </button>
         </div>
       </div>
-
-      {/* Demo Mode Onboarding Interactive Tour Card */}
-      {user?.provider === 'guest' && (
-        <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-sky-50/90 border border-blue-200/90 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
-          <div className="flex items-start gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-              <SparklesIcon size="sm" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
-                  {language === 'id' ? 'Mode Demo' : 'Demo Mode'}
-                </span>
-                <h3 className="text-sm font-bold text-slate-900">
-                  {language === 'id' ? 'Demonstrasi Setup Onboarding FoCient' : 'FoCient Onboarding Setup Demo'}
-                </h3>
-              </div>
-              <p className="text-xs text-slate-600 mt-1 max-w-xl leading-relaxed">
-                {language === 'id'
-                  ? 'Lihat bagaimana wizard 5-langkah FoCient memandu penyesuaian peran kerja, ritme anti-burnout, alokasi kapasitas harian, dan isolasi 3 tugas fokus utama.'
-                  : 'Experience how the 5-step onboarding wizard guides role customization, anti-burnout rhythms, daily capacity limits, and Top 3 focus isolation.'}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setOnboardingStep(1);
-              router.push('/onboarding');
-            }}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-xs shadow-2xs transition-all text-center shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <span>{language === 'id' ? 'Coba Onboarding' : 'Try Onboarding'}</span>
-            <ChevronDownIcon size="xs" className="-rotate-90" />
-          </button>
-        </div>
-      )}
 
       {/* Responsive Workspace Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

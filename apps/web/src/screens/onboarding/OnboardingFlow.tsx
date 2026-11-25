@@ -17,7 +17,7 @@ export const OnboardingFlow: React.FC = () => {
     if (typeof window !== 'undefined' && window.location.pathname.startsWith('/onboarding')) {
       if (!isAuthenticated) {
         router.replace('/login');
-      } else if (user?.isOnboardingCompleted && user?.provider !== 'guest') {
+      } else if (user?.isOnboardingCompleted) {
         router.replace('/dashboard');
       }
     }
