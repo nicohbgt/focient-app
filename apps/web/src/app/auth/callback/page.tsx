@@ -47,6 +47,26 @@ function AuthCallbackContent() {
           }
         }
 
+        // 2.5 Hash Fragment Handler: If URL contains #access_token=...&refresh_token=...
+        if (!user && typeof window !== 'undefined' && window.location.hash) {
+          try {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const accessToken = hashParams.get('access_token');
+            const refreshToken = hashParams.get('refresh_token');
+            if (accessToken && refreshToken) {
+              const { data: hashData } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+              if (hashData?.user) {
+                user = hashData.user;
+              }
+            }
+          } catch (hashErr) {
+            console.warn('Hash session parse warning:', hashErr);
+          }
+        }
+
         // 3. Fallback to existing session check in storage / client
         if (!user) {
           const { data: sessionData } = await supabase.auth.getSession();

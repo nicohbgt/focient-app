@@ -6,39 +6,26 @@ import { prisma } from '@focient/database';
 const SALT = process.env.AUTH_SALT || 'focient_secure_salt_2026';
 const TOKEN_EXPIRY_DAYS = 30;
 
-let dbConnectionFailed = false;
 let lastDbCheckTime = 0;
-const DB_RECHECK_INTERVAL_MS = 30000;
 
 export function isDbAvailable(): boolean {
-  if (!process.env.DATABASE_URL) return false;
-  if (dbConnectionFailed) {
-    // Retry probing every 30 seconds
-    if (Date.now() - lastDbCheckTime > DB_RECHECK_INTERVAL_MS) {
-      dbConnectionFailed = false;
-      lastDbCheckTime = Date.now();
-      return true;
-    }
-    return false;
-  }
-  return true;
+  return Boolean(process.env.DATABASE_URL);
 }
 
 export function handleDbError(err: unknown) {
-  dbConnectionFailed = true;
   lastDbCheckTime = Date.now();
+  console.warn('Database operation warning/error:', err);
 }
 
 /**
- * Ensures Prisma queries execute within strict timeout (default 350ms).
- * If the database hangs or connection stalls, immediately fails fast
- * and routes to the local persistent store, guaranteeing <2s response times.
+ * Ensures Prisma queries execute within reasonable timeout (default 4000ms).
+ * Designed for serverless connection poolers to prevent stalls while avoiding
+ * premature timeouts during cold starts.
  */
-export async function withDbTimeout<T>(promise: Promise<T>, timeoutMs = 350): Promise<T> {
+export async function withDbTimeout<T>(promise: Promise<T>, timeoutMs = 4000): Promise<T> {
   let timer: NodeJS.Timeout | undefined;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timer = setTimeout(() => {
-      handleDbError(new Error('DATABASE_CONNECTION_TIMEOUT'));
       reject(new Error('DATABASE_CONNECTION_TIMEOUT'));
     }, timeoutMs);
   });
@@ -577,15 +564,18 @@ export async function createSession(userId: string, userAgent = 'Web Browser', i
 
   if (isDbAvailable()) {
     try {
-      await prisma.session.create({
-        data: {
-          userId,
-          tokenHash,
-          userAgent,
-          ipAddress,
-          expiresAt,
-        },
-      });
+      await withDbTimeout(
+        prisma.session.create({
+          data: {
+            userId,
+            tokenHash,
+            userAgent,
+            ipAddress,
+            expiresAt,
+          },
+        }),
+        4000
+      );
     } catch (error) {
       handleDbError(error);
       // Expected when PostgreSQL is offline in local dev mode
@@ -612,7 +602,7 @@ export async function verifySession(token: string) {
           where: { tokenHash },
           include: { user: true },
         }),
-        350
+        4000
       );
 
       if (session) {

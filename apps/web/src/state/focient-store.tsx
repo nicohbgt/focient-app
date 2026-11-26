@@ -1041,6 +1041,15 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
       })
         .then((res) => {
           if (res.status === 401) {
+            // Grace period: If token was established recently (<2 minutes), avoid wiping it during transient serverless cold starts
+            const createdAtStr = typeof window !== 'undefined' ? localStorage.getItem('focient_session_created_at') : null;
+            const createdAt = createdAtStr ? parseInt(createdAtStr, 10) : 0;
+            const ageMs = Date.now() - createdAt;
+            if (token === 'focient_token_google' || (createdAt && ageMs < 120000)) {
+              console.warn('Preserving fresh session during auth verification grace period.');
+              return null;
+            }
+
             authClient.clearSession();
             setUser(null);
             setIsAuthenticated(false);

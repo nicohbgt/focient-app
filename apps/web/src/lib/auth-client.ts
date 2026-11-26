@@ -60,6 +60,7 @@ export const authClient = {
     if (typeof window === 'undefined') return;
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
+    localStorage.setItem('focient_session_created_at', Date.now().toString());
     // Also set cookie for server-side auth middleware
     document.cookie = `focient_token=${encodeURIComponent(token)}; path=/; max-age=2592000; SameSite=Lax`;
     window.dispatchEvent(new Event('focient:auth-changed'));
@@ -69,6 +70,7 @@ export const authClient = {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem('focient_session_created_at');
     document.cookie = 'focient_token=; path=/; max-age=0; SameSite=Lax';
     window.dispatchEvent(new Event('focient:auth-changed'));
   },

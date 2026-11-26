@@ -140,7 +140,7 @@ export async function GET(request: Request) {
           prisma.user.findUnique({
             where: { email: cleanEmail },
           }),
-          1000
+          4000
         );
       } catch (dbErr) {
         handleDbError(dbErr);
@@ -170,7 +170,7 @@ export async function GET(request: Request) {
             prisma.user.create({
               data: newUserData,
             }),
-            1000
+            4000
           );
         } catch (dbCreateErr) {
           handleDbError(dbCreateErr);
@@ -256,7 +256,7 @@ export async function POST(request: Request) {
           prisma.user.findUnique({
             where: { email: cleanEmail },
           }),
-          1000
+          4000
         );
       } catch (dbErr) {
         handleDbError(dbErr);
@@ -286,7 +286,7 @@ export async function POST(request: Request) {
             prisma.user.create({
               data: newUserData,
             }),
-            1000
+            4000
           );
         } catch (dbCreateErr) {
           handleDbError(dbCreateErr);
