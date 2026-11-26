@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@focient/database';
-import { createSession } from '../../../../lib/auth-server';
+import {
+  createSession,
+  findLocalUserByEmail,
+  saveUserToLocalDb,
+  isDbAvailable,
+  withDbTimeout,
+  handleDbError,
+} from '../../../../lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -125,24 +132,60 @@ export async function GET(request: Request) {
     const cleanName = name.trim() || cleanEmail.split('@')[0];
 
     let isNewUser = false;
-    let user = await prisma.user.findUnique({
-      where: { email: cleanEmail },
-    });
+    let user: any = null;
+
+    if (isDbAvailable()) {
+      try {
+        user = await withDbTimeout(
+          prisma.user.findUnique({
+            where: { email: cleanEmail },
+          }),
+          1000
+        );
+      } catch (dbErr) {
+        handleDbError(dbErr);
+      }
+    }
+
+    if (!user) {
+      user = findLocalUserByEmail(cleanEmail);
+    }
 
     if (!user) {
       isNewUser = true;
-      user = await prisma.user.create({
-        data: {
-          name: cleanName,
-          email: cleanEmail,
-          passwordHash: 'GOOGLE_OAUTH_ACCOUNT',
-          roleArchetype: '',
-          workHourStart: '',
-          workHourEnd: '',
-          dailyCapacityMinutes: 480,
-          isOnboardingCompleted: false,
-        },
-      });
+      const newUserData = {
+        name: cleanName,
+        email: cleanEmail,
+        passwordHash: 'GOOGLE_OAUTH_ACCOUNT',
+        roleArchetype: 'General',
+        workHourStart: '09:00',
+        workHourEnd: '17:00',
+        dailyCapacityMinutes: 480,
+        isOnboardingCompleted: false,
+      };
+
+      if (isDbAvailable()) {
+        try {
+          user = await withDbTimeout(
+            prisma.user.create({
+              data: newUserData,
+            }),
+            1000
+          );
+        } catch (dbCreateErr) {
+          handleDbError(dbCreateErr);
+        }
+      }
+
+      if (!user) {
+        user = {
+          id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          ...newUserData,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        saveUserToLocalDb(user);
+      }
     }
 
     const { token, expiresAt } = await createSession(user.id, 'Google OAuth Native Session');
@@ -205,24 +248,60 @@ export async function POST(request: Request) {
     const cleanName = name?.trim() || cleanEmail.split('@')[0] || 'FoCient User';
 
     let isNewUser = false;
-    let user = await prisma.user.findUnique({
-      where: { email: cleanEmail },
-    });
+    let user: any = null;
+
+    if (isDbAvailable()) {
+      try {
+        user = await withDbTimeout(
+          prisma.user.findUnique({
+            where: { email: cleanEmail },
+          }),
+          1000
+        );
+      } catch (dbErr) {
+        handleDbError(dbErr);
+      }
+    }
+
+    if (!user) {
+      user = findLocalUserByEmail(cleanEmail);
+    }
 
     if (!user) {
       isNewUser = true;
-      user = await prisma.user.create({
-        data: {
-          name: cleanName,
-          email: cleanEmail,
-          passwordHash: 'GOOGLE_OAUTH_ACCOUNT',
-          roleArchetype: '',
-          workHourStart: '',
-          workHourEnd: '',
-          dailyCapacityMinutes: 480,
-          isOnboardingCompleted: false,
-        },
-      });
+      const newUserData = {
+        name: cleanName,
+        email: cleanEmail,
+        passwordHash: 'GOOGLE_OAUTH_ACCOUNT',
+        roleArchetype: 'General',
+        workHourStart: '09:00',
+        workHourEnd: '17:00',
+        dailyCapacityMinutes: 480,
+        isOnboardingCompleted: false,
+      };
+
+      if (isDbAvailable()) {
+        try {
+          user = await withDbTimeout(
+            prisma.user.create({
+              data: newUserData,
+            }),
+            1000
+          );
+        } catch (dbCreateErr) {
+          handleDbError(dbCreateErr);
+        }
+      }
+
+      if (!user) {
+        user = {
+          id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          ...newUserData,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        saveUserToLocalDb(user);
+      }
     }
 
     const { token, expiresAt } = await createSession(user.id, 'Google OAuth Session');
