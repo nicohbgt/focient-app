@@ -1063,8 +1063,15 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
         })
         .then((data) => {
           if (data?.success && data?.user) {
-            authClient.setSession(token, data.user);
-            setUser(data.user);
+            const preservedAvatar = data.user.avatarUrl || savedUser?.avatarUrl || '';
+            const preservedProvider = data.user.provider || savedUser?.provider || 'credentials';
+            const mergedUser: UserSession = {
+              ...data.user,
+              avatarUrl: preservedAvatar,
+              provider: preservedProvider,
+            };
+            authClient.setSession(token, mergedUser);
+            setUser(mergedUser);
             setIsAuthenticated(true);
             if (data.user.isOnboardingCompleted) {
               if (data.user.name) {

@@ -78,7 +78,8 @@ export async function GET(request: Request) {
             isDefault: c.isDefault,
           }))
         : getCategoriesFromLocalDb(user.id),
-      provider: 'credentials',
+      avatarUrl: fullUser.avatarUrl || user.avatarUrl || '',
+      provider: fullUser.provider || (user as any).provider || 'credentials',
     },
   });
 }

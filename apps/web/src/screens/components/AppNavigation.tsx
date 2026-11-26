@@ -114,7 +114,7 @@ export const AppNavigation: React.FC = () => {
           {/* Avatar */}
           <div className="w-7 h-7 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center overflow-hidden">
             {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt={user?.name || 'User'} className="w-full h-full object-cover" />
+              <img src={user.avatarUrl} alt={user?.name || 'User'} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
             ) : (
               getAvatarInitial(user?.name)
             )}
@@ -198,7 +198,7 @@ export const AppNavigation: React.FC = () => {
 
           <div className="w-8 h-8 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center overflow-hidden">
             {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt={user?.name || 'User'} className="w-full h-full object-cover" />
+              <img src={user.avatarUrl} alt={user?.name || 'User'} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
             ) : (
               getAvatarInitial(user?.name)
             )}

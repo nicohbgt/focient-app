@@ -17,6 +17,7 @@ import {
 import { calculateCapacityMinutes, WeekStartDay } from '../../lib/date-utils.js';
 import { TimePicker24 } from '../../components/primitive/TimePicker24.js';
 import { getAvatarInitial } from '../../lib/utils.js';
+import { supabase } from '../../lib/supabase.js';
 
 export const SettingsScreen: React.FC = () => {
   const {
@@ -80,6 +81,59 @@ export const SettingsScreen: React.FC = () => {
   const [newCatFocusType, setNewCatFocusType] = useState<FocusType>('Medium');
   const [isAddingCat, setIsAddingCat] = useState(false);
   const [isPushTesting, setIsPushTesting] = useState(false);
+  const [isSyncingGoogle, setIsSyncingGoogle] = useState(false);
+
+  // Check URL parameters for successful Google OAuth link
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('synced') === 'google') {
+        showToast(
+          language === 'id'
+            ? 'Akun Google berhasil ditautkan! Foto profil dan SSO kini aktif.'
+            : 'Google account linked successfully! Profile picture and SSO are now active.',
+          'success'
+        );
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+      }
+    }
+  }, [language, showToast]);
+
+  const handleSyncGoogle = async () => {
+    setIsSyncingGoogle(true);
+    try {
+      const redirectUri = typeof window !== 'undefined'
+        ? `${window.location.origin}/auth/callback?target=/settings`
+        : '/auth/callback?target=/settings';
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUri,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+    } catch (err: any) {
+      console.error('Failed to link Google account:', err);
+      showToast(
+        language === 'id'
+          ? 'Gagal menghubungkan dengan Google. Silakan coba lagi.'
+          : 'Failed to connect Google account. Please try again.',
+        'warning'
+      );
+      setIsSyncingGoogle(false);
+    }
+  };
 
   // Loading & Autosave states
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -654,6 +708,82 @@ export const SettingsScreen: React.FC = () => {
                       <option value={roleArchetype}>{roleArchetype}</option>
                     )}
                   </select>
+                </div>
+
+                {/* Google Account Linking / Sync Status */}
+                <div className="sm:col-span-2 pt-2 border-t border-slate-100">
+                  <label className="block text-xs font-semibold text-slate-700 mb-2">
+                    {language === 'id' ? 'Tautan & Sinkronisasi Akun' : 'Account Link & Sync'}
+                  </label>
+                  {user?.provider === 'google' ? (
+                    <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-white border border-emerald-200 flex items-center justify-center shrink-0 shadow-2xs">
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900">
+                            <span>Google SSO</span>
+                            <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full border border-emerald-300">
+                              {language === 'id' ? 'Tersinkronisasi' : 'Connected'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-emerald-700 mt-0.5">
+                            {language === 'id'
+                              ? 'Foto profil dan autentikasi tersinkronisasi otomatis dengan akun Google kamu.'
+                              : 'Profile picture and authentication are automatically synced with your Google account.'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-start sm:items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-2xs mt-0.5 sm:mt-0">
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-800">
+                            {language === 'id' ? 'Sinkronisasi Akun Google' : 'Sync with Google Account'}
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            {language === 'id'
+                              ? 'Tautkan akun Google untuk menyinkronkan foto profil Google dan mengaktifkan login instan SSO.'
+                              : 'Link your Google account to sync your Google profile picture and enable instant SSO.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleSyncGoogle}
+                        disabled={isSyncingGoogle}
+                        className="h-8.5 px-3.5 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-300 text-slate-700 font-semibold text-xs flex items-center justify-center gap-2 shadow-2xs hover:shadow-xs transition-all cursor-pointer disabled:opacity-60 shrink-0"
+                      >
+                        {isSyncingGoogle ? (
+                          <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                          </svg>
+                        )}
+                        <span>{language === 'id' ? 'Hubungkan Google' : 'Connect Google'}</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1372,13 +1502,89 @@ export const SettingsScreen: React.FC = () => {
                   <div className="text-[11px] text-slate-500">{user?.email || '-'}</div>
                 </div>
 
-                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center border border-blue-200 overflow-hidden">
+                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center border border-blue-200 overflow-hidden shrink-0">
                   {user?.avatarUrl ? (
-                    <img src={user.avatarUrl} alt={user?.name || 'User'} className="w-full h-full object-cover" />
+                    <img src={user.avatarUrl} alt={user?.name || 'User'} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                   ) : (
                     getAvatarInitial(user?.name)
                   )}
                 </div>
+              </div>
+
+              {/* Google Account Linking / Sync Status */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  {language === 'id' ? 'Tautan & Sinkronisasi Akun' : 'Account Link & Sync'}
+                </label>
+                {user?.provider === 'google' ? (
+                  <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white border border-emerald-200 flex items-center justify-center shrink-0 shadow-2xs">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900">
+                          <span>Google SSO</span>
+                          <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full border border-emerald-300">
+                            {language === 'id' ? 'Tersinkronisasi' : 'Connected'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-emerald-700 mt-0.5">
+                          {language === 'id'
+                            ? 'Foto profil dan autentikasi tersinkronisasi otomatis dengan akun Google kamu.'
+                            : 'Profile picture and authentication are automatically synced with your Google account.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start sm:items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-2xs mt-0.5 sm:mt-0">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-800">
+                          {language === 'id' ? 'Sinkronisasi Akun Google' : 'Sync with Google Account'}
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          {language === 'id'
+                            ? 'Tautkan akun Google untuk menyinkronkan foto profil Google dan mengaktifkan login instan SSO.'
+                            : 'Link your Google account to sync your Google profile picture and enable instant SSO.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleSyncGoogle}
+                      disabled={isSyncingGoogle}
+                      className="h-8.5 px-3.5 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-300 text-slate-700 font-semibold text-xs flex items-center justify-center gap-2 shadow-2xs hover:shadow-xs transition-all cursor-pointer disabled:opacity-60 shrink-0"
+                    >
+                      {isSyncingGoogle ? (
+                        <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" aria-hidden="true">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                        </svg>
+                      )}
+                      <span>{language === 'id' ? 'Hubungkan Google' : 'Connect Google'}</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Language Switcher in Settings */}

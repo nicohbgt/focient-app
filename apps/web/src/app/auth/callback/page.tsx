@@ -145,6 +145,12 @@ function AuthCallbackContent() {
           if (data.token) {
             authClient.setSession(data.token, data.user);
           }
+          const targetParam = searchParams.get('target');
+          if (targetParam && targetParam.startsWith('/')) {
+            const separator = targetParam.includes('?') ? '&' : '?';
+            window.location.href = `${targetParam}${separator}synced=google`;
+            return;
+          }
           const isNewOrNotOnboarded = Boolean(data.isNewUser || !data.user?.isOnboardingCompleted);
           const target = isNewOrNotOnboarded ? '/onboarding' : '/dashboard';
           window.location.href = target;

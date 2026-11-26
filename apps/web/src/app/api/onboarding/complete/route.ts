@@ -80,7 +80,7 @@ export async function POST(request: Request) {
               isOnboardingCompleted: true,
             },
           }),
-          350
+          4000
         );
 
         // 2. Persist initial user categories scoped strictly to user.id
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
               prisma.category.findFirst({
                 where: { userId: user.id, name: catName },
               }),
-              350
+              4000
             );
             if (!existing) {
               const colorToken =
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
                     isDefault: typeof item === 'object' && item.isDefault !== undefined ? item.isDefault : true,
                   },
                 }),
-                350
+                4000
               );
             }
           }
@@ -140,7 +140,7 @@ export async function POST(request: Request) {
               status: 'LIGHT',
             },
           }),
-          350
+          4000
         );
       } catch (dbErr) {
         handleDbError(dbErr);
@@ -201,6 +201,8 @@ export async function POST(request: Request) {
       name: updatedDbUser?.name || user.name,
       username: updatedDbUser?.username || (user as any).username || user.name,
       email: updatedDbUser?.email || user.email,
+      avatarUrl: updatedDbUser?.avatarUrl || (user as any).avatarUrl || '',
+      provider: updatedDbUser?.provider || (user as any).provider || 'credentials',
       roleArchetype,
       occupancy,
       workingRhythm,
@@ -217,7 +219,6 @@ export async function POST(request: Request) {
       quietHourEnabled,
       isOnboardingCompleted: true,
       categories: savedCategories,
-      provider: (user as any).provider || 'credentials',
     };
 
     return NextResponse.json({

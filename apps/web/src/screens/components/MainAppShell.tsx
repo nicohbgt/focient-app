@@ -255,7 +255,7 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
                 aria-label="Settings"
               >
                 {user?.avatarUrl ? (
-                  <img src={user.avatarUrl} alt={user?.name || 'User'} className="w-full h-full object-cover" />
+                  <img src={user.avatarUrl} alt={user?.name || 'User'} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                 ) : (
                   getAvatarInitial(user?.name)
                 )}
@@ -321,7 +321,7 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
                 aria-label="Settings"
               >
                 {user?.avatarUrl ? (
-                  <img src={user.avatarUrl} alt={user?.name || 'User'} className="w-full h-full object-cover" />
+                  <img src={user.avatarUrl} alt={user?.name || 'User'} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                 ) : (
                   getAvatarInitial(user?.name)
                 )}

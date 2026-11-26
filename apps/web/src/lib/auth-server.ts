@@ -108,6 +108,8 @@ export interface LocalUserRecord {
   quietHourEnabled?: boolean;
   weekStartDay?: string;
   isOnboardingCompleted: boolean;
+  avatarUrl?: string;
+  provider?: string;
   createdAt: string;
 }
 
@@ -615,6 +617,8 @@ export async function verifySession(token: string) {
             id: session.user.id,
             name: session.user.name,
             email: session.user.email,
+            avatarUrl: (session.user as any).avatarUrl || '',
+            provider: (session.user as any).provider || 'credentials',
             roleArchetype: session.user.roleArchetype || '',
             occupancy: session.user.occupancy || session.user.roleArchetype || '',
             workingRhythm: session.user.workingRhythm || '',
@@ -650,6 +654,8 @@ export async function verifySession(token: string) {
           id: localUser.id,
           name: localUser.name,
           email: localUser.email,
+          avatarUrl: localUser.avatarUrl || '',
+          provider: localUser.provider || 'credentials',
           roleArchetype: localUser.roleArchetype || '',
           occupancy: localUser.occupancy || localUser.roleArchetype || '',
           workingRhythm: localUser.workingRhythm || '',

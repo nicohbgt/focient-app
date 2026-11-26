@@ -142,6 +142,23 @@ export async function GET(request: Request) {
           }),
           4000
         );
+
+        if (user && avatarUrl && (user.avatarUrl !== avatarUrl || user.provider !== 'google')) {
+          try {
+            user = await withDbTimeout(
+              prisma.user.update({
+                where: { id: user.id },
+                data: {
+                  avatarUrl,
+                  provider: 'google',
+                },
+              }),
+              4000
+            );
+          } catch (updateErr) {
+            console.warn('Could not update avatarUrl on user:', updateErr);
+          }
+        }
       } catch (dbErr) {
         handleDbError(dbErr);
       }
@@ -149,6 +166,11 @@ export async function GET(request: Request) {
 
     if (!user) {
       user = findLocalUserByEmail(cleanEmail);
+      if (user && avatarUrl) {
+        user.avatarUrl = avatarUrl;
+        user.provider = 'google';
+        saveUserToLocalDb(user);
+      }
     }
 
     if (!user) {
@@ -162,6 +184,8 @@ export async function GET(request: Request) {
         workHourEnd: '17:00',
         dailyCapacityMinutes: 480,
         isOnboardingCompleted: false,
+        avatarUrl,
+        provider: 'google',
       };
 
       if (isDbAvailable()) {
@@ -181,6 +205,8 @@ export async function GET(request: Request) {
         user = {
           id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
           ...newUserData,
+          avatarUrl,
+          provider: 'google',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -258,6 +284,23 @@ export async function POST(request: Request) {
           }),
           4000
         );
+
+        if (user && avatarUrl && (user.avatarUrl !== avatarUrl || user.provider !== 'google')) {
+          try {
+            user = await withDbTimeout(
+              prisma.user.update({
+                where: { id: user.id },
+                data: {
+                  avatarUrl,
+                  provider: 'google',
+                },
+              }),
+              4000
+            );
+          } catch (updateErr) {
+            console.warn('Could not update avatarUrl on user:', updateErr);
+          }
+        }
       } catch (dbErr) {
         handleDbError(dbErr);
       }
@@ -265,6 +308,11 @@ export async function POST(request: Request) {
 
     if (!user) {
       user = findLocalUserByEmail(cleanEmail);
+      if (user && avatarUrl) {
+        user.avatarUrl = avatarUrl;
+        user.provider = 'google';
+        saveUserToLocalDb(user);
+      }
     }
 
     if (!user) {
@@ -278,6 +326,8 @@ export async function POST(request: Request) {
         workHourEnd: '17:00',
         dailyCapacityMinutes: 480,
         isOnboardingCompleted: false,
+        avatarUrl,
+        provider: 'google',
       };
 
       if (isDbAvailable()) {
@@ -297,6 +347,8 @@ export async function POST(request: Request) {
         user = {
           id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
           ...newUserData,
+          avatarUrl,
+          provider: 'google',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };

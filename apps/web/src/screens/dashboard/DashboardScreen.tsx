@@ -228,7 +228,7 @@ export const DashboardScreen: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-sm shadow-sm shrink-0 overflow-hidden">
             {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt={user?.name || 'User'} className="w-full h-full object-cover" />
+              <img src={user.avatarUrl} alt={user?.name || 'User'} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
             ) : (
               getAvatarInitial(user?.name)
             )}
