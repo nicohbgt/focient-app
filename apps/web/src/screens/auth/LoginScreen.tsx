@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useFocient } from '../../state/focient-store';
 import { ArrowLeftIcon, AlertCircleIcon, EyeIcon, EyeOffIcon } from '../../components/icons';
 import { GoogleSignInButton } from './GoogleSignInButton';
+import { authClient } from '../../lib/auth-client';
 
 export const LoginScreen: React.FC = () => {
   const router = useRouter();
@@ -38,7 +39,8 @@ export const LoginScreen: React.FC = () => {
     try {
       const ok = await login(email, password);
       if (ok) {
-        if (user && !user.isOnboardingCompleted) {
+        const currentUser = authClient.getUser() || user;
+        if (!currentUser || !currentUser.isOnboardingCompleted) {
           router.push('/onboarding');
         } else {
           router.push('/dashboard');

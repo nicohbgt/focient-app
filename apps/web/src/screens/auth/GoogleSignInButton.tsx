@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFocient } from '../../state/focient-store';
 import { supabase } from '../../lib/supabase';
+import { authClient } from '../../lib/auth-client';
 
 export interface GoogleSignInButtonProps {
   className?: string;
@@ -68,11 +69,12 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       // 2. Fallback: Direct authentication via store / API if no URL returned
       const success = await loginWithGoogle();
       if (success) {
-        if (mode === 'register') {
-          router.push('/onboarding');
-        } else {
-          router.push('/dashboard');
-        }
+        const currentUser = authClient.getUser();
+        const target = (!currentUser || !currentUser.isOnboardingCompleted)
+          ? '/onboarding'
+          : '/dashboard';
+        window.location.href = target;
+        return;
       }
     } catch (err: any) {
       console.error('Google Sign-In error:', err);
@@ -80,11 +82,11 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       try {
         const fallbackSuccess = await loginWithGoogle();
         if (fallbackSuccess) {
-          if (mode === 'register') {
-            router.push('/onboarding');
-          } else {
-            router.push('/dashboard');
-          }
+          const currentUser = authClient.getUser();
+          const target = (!currentUser || !currentUser.isOnboardingCompleted)
+            ? '/onboarding'
+            : '/dashboard';
+          window.location.href = target;
           return;
         }
       } catch (fallbackErr) {

@@ -1125,6 +1125,30 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(false);
       setOnboardingStep(0);
     }
+
+    const handleAuthChanged = () => {
+      const u = authClient.getUser();
+      const t = authClient.getToken();
+      if (t && u) {
+        setUser(u);
+        setIsAuthenticated(true);
+        if (u.isOnboardingCompleted) {
+          setOnboardingStep(5);
+        } else {
+          setOnboardingStep(1);
+        }
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+    };
+    window.addEventListener('focient:auth-changed', handleAuthChanged);
+    window.addEventListener('storage', handleAuthChanged);
+
+    return () => {
+      window.removeEventListener('focient:auth-changed', handleAuthChanged);
+      window.removeEventListener('storage', handleAuthChanged);
+    };
   }, []);
 
   // Onboarding state (Clean starting state matching mobile app architecture)
@@ -2444,15 +2468,22 @@ export function FocientProvider({ children }: { children: React.ReactNode }) {
       try {
         const res = await authClient.loginWithGoogle(googleProfile);
         if (res.success && res.user) {
+          const isCompleted = Boolean(res.user.isOnboardingCompleted);
           const googleUser: UserSession = {
             ...res.user,
-            isOnboardingCompleted: true,
+            isOnboardingCompleted: isCompleted,
           };
           setUser(googleUser);
           setIsAuthenticated(true);
-          setActiveNavTab('dashboard');
-          setAuthView('dashboard');
-          setOnboardingStep(5);
+          if (isCompleted) {
+            setActiveNavTab('dashboard');
+            setAuthView('dashboard');
+            setOnboardingStep(5);
+          } else {
+            setActiveNavTab('dashboard');
+            setAuthView('onboarding');
+            setOnboardingStep(1);
+          }
           authClient.setSession(authClient.getToken() || 'focient_token', googleUser);
 
           // Synchronize profile attributes

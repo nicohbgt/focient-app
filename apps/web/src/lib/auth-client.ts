@@ -62,6 +62,7 @@ export const authClient = {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     // Also set cookie for server-side auth middleware
     document.cookie = `focient_token=${encodeURIComponent(token)}; path=/; max-age=2592000; SameSite=Lax`;
+    window.dispatchEvent(new Event('focient:auth-changed'));
   },
 
   clearSession(): void {
@@ -69,6 +70,7 @@ export const authClient = {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     document.cookie = 'focient_token=; path=/; max-age=0; SameSite=Lax';
+    window.dispatchEvent(new Event('focient:auth-changed'));
   },
 
   getUser(): UserSession | null {

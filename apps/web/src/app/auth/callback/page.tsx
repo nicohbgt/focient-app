@@ -104,12 +104,10 @@ function AuthCallbackContent() {
         authClient.setSession(data.token, data.user);
       }
 
-      // 4. Redirect smoothly based on onboarding status
-      if (data.isNewUser) {
-        router.replace('/onboarding');
-      } else {
-        router.replace('/dashboard');
-      }
+      // 4. Redirect based on real onboarding state (New user or not onboarded -> /onboarding; existing onboarded -> /dashboard)
+      const isNewOrNotOnboarded = Boolean(data.isNewUser || !data.user?.isOnboardingCompleted);
+      const target = isNewOrNotOnboarded ? '/onboarding' : '/dashboard';
+      window.location.href = target;
     }
 
     handleAuth();

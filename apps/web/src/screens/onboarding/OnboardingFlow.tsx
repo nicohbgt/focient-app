@@ -3,6 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useFocient } from '../../state/focient-store';
+import { authClient } from '../../lib/auth-client';
 import { Step1WorkspaceScreen } from './Step1WorkspaceScreen';
 import { Step2RhythmScreen } from './Step2RhythmScreen';
 import { Step3TimeScreen } from './Step3TimeScreen';
@@ -15,9 +16,12 @@ export const OnboardingFlow: React.FC = () => {
 
   React.useEffect(() => {
     if (typeof window !== 'undefined' && window.location.pathname.startsWith('/onboarding')) {
-      if (!isAuthenticated) {
+      const token = authClient.getToken();
+      const savedUser = authClient.getUser();
+
+      if (!isAuthenticated && (!token || !savedUser)) {
         router.replace('/login');
-      } else if (user?.isOnboardingCompleted) {
+      } else if (user?.isOnboardingCompleted || savedUser?.isOnboardingCompleted) {
         router.replace('/dashboard');
       }
     }

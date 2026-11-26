@@ -23,6 +23,7 @@ import { NotificationCenterModal } from './NotificationCenterModal.js';
 import { calculateCapacityMinutes } from '../../lib/date-utils.js';
 import { FoCientWordmark } from '../../components/brand/FoCientWordmark.js';
 import { getAvatarInitial } from '../../lib/utils.js';
+import { authClient } from '../../lib/auth-client.js';
 
 export interface MainAppShellProps {
   children: React.ReactNode;
@@ -57,9 +58,13 @@ export const MainAppShell: React.FC<MainAppShellProps> = ({ children }) => {
   // Auth guard: If user is unauthenticated inside MainAppShell, redirect cleanly to /login
   React.useEffect(() => {
     if (typeof window !== 'undefined' && !isAuthenticated) {
-      if (!window.location.pathname.startsWith('/auth') && window.location.pathname !== '/login' && window.location.pathname !== '/') {
-        window.history.replaceState(null, '', '/login');
-        window.location.replace('/login');
+      const token = authClient.getToken();
+      const savedUser = authClient.getUser();
+      if (!token || !savedUser) {
+        if (!window.location.pathname.startsWith('/auth') && window.location.pathname !== '/login' && window.location.pathname !== '/') {
+          window.history.replaceState(null, '', '/login');
+          window.location.replace('/login');
+        }
       }
     }
   }, [isAuthenticated]);
